@@ -50,3 +50,8 @@
 - **Instruction**: Import modules for registration side effects instead of re-exporting tool symbols from `server.py` to avoid circular imports
 - **Added after**: smoke test import path hit circular import (`partially initialized module`) between `server.py` and tool modules
 
+### Sign: Declare Every JXA Filter Constant Inside Script
+- **Trigger**: Before finalizing a tool that builds OmniJS filter expressions from escaped inputs
+- **Instruction**: Ensure every interpolated filter variable (for example `statusFilter`) is declared in the embedded OmniJS string, then run the real integration test path that exercises that filter
+- **Added after**: TypeScript integration failed in `list_tags` with `Can't find variable: statusFilter` because the script referenced a variable that was never declared inside OmniJS
+

@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772292793
-generated_at: 2026-02-28T15:34:21Z
+source_mtime: 1772293242
+generated_at: 2026-02-28T15:43:00Z
 
 tasks:
   - id: "line_32"
@@ -163,42 +163,42 @@ tasks:
     raw_marker: 22.
   - id: "line_172"
     line_number: 172
-    status: pending
+    status: completed
     parallel_group: 999999
     description: TypeScript integration tests pass when run explicitly.
     indent_level: 0
     raw_marker: 23.
   - id: "line_173"
     line_number: 173
-    status: pending
+    status: completed
     parallel_group: 999999
     description: No test data leaks — all `[TEST-MCP]` items are cleaned up by
     indent_level: 0
     raw_marker: 24.
   - id: "line_184"
     line_number: 184
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Both servers start and stop cleanly:
     indent_level: 0
     raw_marker: 25.
   - id: "line_187"
     line_number: 187
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Full test commands pass for both implementations (mocked tests):
     indent_level: 0
     raw_marker: 26.
   - id: "line_191"
     line_number: 191
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Git status is clean — no untracked source files, no uncommitted
     indent_level: 0
     raw_marker: 27.
   - id: "line_193"
     line_number: 193
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Tag the repo as `v1.0.0` (if not already tagged).
     indent_level: 0
