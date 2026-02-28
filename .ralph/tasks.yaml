@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772304779
-generated_at: 2026-02-28T18:53:10Z
+source_mtime: 1772305095
+generated_at: 2026-02-28T18:58:34Z
 
 tasks:
   - id: "line_71"
@@ -100,7 +100,7 @@ tasks:
     raw_marker: 13.
   - id: "line_222"
     line_number: 222
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **`delete_tag`** — all 3 implementations.
     indent_level: 0

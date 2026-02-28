@@ -8,6 +8,7 @@ use omnifocus_mcp::{
     error::OmniFocusError,
     jxa::{escape_for_jxa, JxaRunner},
     tools::{
+        folders::create_folder,
         projects::{
             complete_project, create_project, delete_project, move_project, set_project_status,
             uncomplete_project, update_project,
@@ -235,6 +236,11 @@ async fn write_project_and_tag_tools_happy_path() {
         .await
         .expect("delete_tag should succeed");
     assert_eq!(deleted_tag["id"], "p1");
+
+    let created_folder = create_folder(&runner, "Areas", Some("Work"))
+        .await
+        .expect("create_folder should succeed");
+    assert_eq!(created_folder["id"], "p1");
 }
 
 #[tokio::test]
@@ -282,6 +288,14 @@ async fn validation_errors_for_write_tools() {
     ));
     assert!(matches!(
         create_project(&runner, "name", Some("   "), None, None, None, None).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        create_folder(&runner, "   ", None).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        create_folder(&runner, "Areas", Some("   ")).await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
@@ -764,6 +778,29 @@ async fn delete_tag_script_captures_task_count_before_deletion() {
     assert!(captured.contains("const taskCount = tag.tasks.length;"));
     assert!(captured.contains("deleteObject(tag);"));
     assert!(captured.contains("taskCount: taskCount"));
+}
+
+#[tokio::test]
+async fn create_folder_script_creates_under_optional_parent() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "folder-1", "name": "Areas"}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = create_folder(&runner, "Areas", Some("Work")).await;
+    assert!(result.is_ok());
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains("const folderName = \"Areas\";"));
+    assert!(captured.contains("const parentName = \"Work\";"));
+    assert!(captured.contains("return new Folder(folderName, parentFolder.ending);"));
 }
 
 #[tokio::test]

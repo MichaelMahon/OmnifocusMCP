@@ -219,7 +219,7 @@ Reference implementations:
           Return `{ id, name, status }`.
         - Implement and test in all 3 implementations.
 
-14. [ ] **`delete_tag`** — all 3 implementations.
+14. [x] **`delete_tag`** — all 3 implementations.
         - **Input:** `tag_name_or_id: str` (non-empty)
         - **JXA:** find tag by name or ID. Record name and task count
           (`tag.tasks.length`). Call `deleteObject(tag)`. Return
