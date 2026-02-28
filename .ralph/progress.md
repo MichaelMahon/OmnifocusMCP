@@ -71,3 +71,6 @@ Reading even two full files will blow your budget and trigger rotation.
 - completed criterion 24, all lint/test pass
 - criterion 25 smoke run: JXA bridge timed out (30s) — needs OmniFocus responding to automation
 - sessions after this entered rotation loops (fixed by truncating progress.md and adding strategy guidance)
+
+### 2026-02-28 13:59:16
+**Session 1 started** (model: auto)
