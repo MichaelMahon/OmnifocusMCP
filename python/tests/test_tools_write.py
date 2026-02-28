@@ -959,3 +959,28 @@ async def test_set_project_status_validation_error_criterion9(server_module: Any
         await server_module.set_project_status(project_id_or_name="p4", status="completed")
 
 
+@pytest.mark.asyncio
+async def test_delete_project_happy_path_criterion10(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "p5", "name": "Project Five", "deleted": True, "taskCount": 3}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.delete_project(project_id_or_name="p5")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const projectFilter = "p5";' in script
+    assert "const taskCount = document.flattenedTasks.filter" in script
+    assert "deleteObject(project);" in script
+    assert "taskCount: taskCount" in script
+
+
+@pytest.mark.asyncio
+async def test_delete_project_validation_error_criterion10(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="project_id_or_name must not be empty."):
+        await server_module.delete_project(project_id_or_name="   ")
+
+
