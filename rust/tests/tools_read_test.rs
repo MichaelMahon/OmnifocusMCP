@@ -179,7 +179,26 @@ async fn read_task_tools_happy_path() {
     let search_runner = MockRunner {
         payload: json!([task_value("t4", "searched task")]),
     };
-    let searched = search_tasks(&search_runner, "searched", 100)
+    let searched = search_tasks(
+        &search_runner,
+        "searched",
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "asc",
+        100,
+    )
         .await
         .expect("search should parse");
     assert_eq!(searched.len(), 1);
@@ -300,7 +319,26 @@ async fn empty_results_return_empty_vec() {
     .expect("list tasks should parse");
     assert!(listed.is_empty());
 
-    let searched = search_tasks(&empty_runner, "x", 100)
+    let searched = search_tasks(
+        &empty_runner,
+        "x",
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "asc",
+        100,
+    )
         .await
         .expect("search should parse");
     assert!(searched.is_empty());
@@ -404,11 +442,51 @@ async fn validation_errors_for_read_tools() {
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
-        search_tasks(&runner, "   ", 100).await,
+        search_tasks(
+            &runner,
+            "   ",
+            None,
+            None,
+            None,
+            "any",
+            None,
+            "available",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            "asc",
+            100,
+        )
+        .await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
-        search_tasks(&runner, "x", 0).await,
+        search_tasks(
+            &runner,
+            "x",
+            None,
+            None,
+            None,
+            "any",
+            None,
+            "available",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            "asc",
+            0,
+        )
+        .await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
@@ -777,7 +855,26 @@ async fn search_tasks_script_includes_completion_and_children_fields() {
         last_script: last_script.clone(),
     };
 
-    let searched = search_tasks(&runner, "shape", 2)
+    let searched = search_tasks(
+        &runner,
+        "shape",
+        Some("Errands"),
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "asc",
+        2,
+    )
         .await
         .expect("search should parse");
     assert_eq!(searched.len(), 1);

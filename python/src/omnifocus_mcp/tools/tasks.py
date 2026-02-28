@@ -365,7 +365,7 @@ async def search_tasks(
     tags: list[str] | None = None,
     tagFilterMode: Literal["any", "all"] = "any",
     flagged: bool | None = None,
-    status: Literal["available", "due_soon", "overdue", "completed", "all"] = "available",
+    status: Literal["available", "due_soon", "overdue", "completed", "all"] = "all",
     dueBefore: str | None = None,
     dueAfter: str | None = None,
     deferBefore: str | None = None,
@@ -414,6 +414,8 @@ async def search_tasks(
         )
     if sortOrder not in ("asc", "desc"):
         raise ValueError("sortOrder must be one of: asc, desc.")
+    if maxEstimatedMinutes is not None and maxEstimatedMinutes < 0:
+        raise ValueError("maxEstimatedMinutes must be greater than or equal to 0.")
     if limit < 1:
         raise ValueError("limit must be greater than 0.")
 
