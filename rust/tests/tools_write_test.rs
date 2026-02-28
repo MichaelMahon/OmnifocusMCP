@@ -8,7 +8,7 @@ use omnifocus_mcp::{
     error::OmniFocusError,
     jxa::{escape_for_jxa, JxaRunner},
     tools::{
-        folders::create_folder,
+        folders::{create_folder, get_folder},
         projects::{
             complete_project, create_project, delete_project, move_project, set_project_status,
             uncomplete_project, update_project,
@@ -241,6 +241,11 @@ async fn write_project_and_tag_tools_happy_path() {
         .await
         .expect("create_folder should succeed");
     assert_eq!(created_folder["id"], "p1");
+
+    let fetched_folder = get_folder(&runner, "Areas")
+        .await
+        .expect("get_folder should succeed");
+    assert_eq!(fetched_folder["id"], "p1");
 }
 
 #[tokio::test]
@@ -296,6 +301,10 @@ async fn validation_errors_for_write_tools() {
     ));
     assert!(matches!(
         create_folder(&runner, "Areas", Some("   ")).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        get_folder(&runner, "   ").await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
@@ -801,6 +810,37 @@ async fn create_folder_script_creates_under_optional_parent() {
     assert!(captured.contains("const folderName = \"Areas\";"));
     assert!(captured.contains("const parentName = \"Work\";"));
     assert!(captured.contains("return new Folder(folderName, parentFolder.ending);"));
+}
+
+#[tokio::test]
+async fn get_folder_script_returns_direct_children() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({
+            "id": "folder-1",
+            "name": "Work",
+            "status": "active",
+            "parentName": Value::Null,
+            "projects": [{"id": "project-1", "name": "Launch", "status": "active"}],
+            "subfolders": [{"id": "folder-2", "name": "Q1"}]
+        }),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = get_folder(&runner, "folder-1").await;
+    assert!(result.is_ok());
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains("const folderFilter = \"folder-1\";"));
+    assert!(captured.contains("Folder not found"));
+    assert!(captured.contains("projects: folder.projects.map"));
+    assert!(captured.contains("subfolders: folder.folders.map"));
 }
 
 #[tokio::test]
