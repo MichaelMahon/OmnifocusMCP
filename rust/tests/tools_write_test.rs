@@ -12,7 +12,7 @@ use omnifocus_mcp::{
             complete_project, create_project, delete_project, move_project, set_project_status,
             uncomplete_project, update_project,
         },
-        tags::{create_tag, update_tag},
+        tags::{create_tag, delete_tag, update_tag},
         tasks::{
             complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
             delete_tasks_batch, move_task, set_task_repetition, uncomplete_task, update_task,
@@ -230,6 +230,11 @@ async fn write_project_and_tag_tools_happy_path() {
         .await
         .expect("update_tag should succeed");
     assert_eq!(updated_tag["id"], "p1");
+
+    let deleted_tag = delete_tag(&runner, "p1")
+        .await
+        .expect("delete_tag should succeed");
+    assert_eq!(deleted_tag["id"], "p1");
 }
 
 #[tokio::test]
@@ -376,6 +381,10 @@ async fn validation_errors_for_write_tools() {
     ));
     assert!(matches!(
         update_tag(&runner, "tag-id", None, Some("inactive")).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        delete_tag(&runner, "   ").await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
@@ -731,6 +740,30 @@ async fn update_tag_script_sets_name_and_status() {
     assert!(captured.contains("const statusValue = \"on_hold\";"));
     assert!(captured.contains("Tag.Status.OnHold"));
     assert!(captured.contains("tag.status = targetStatus;"));
+}
+
+#[tokio::test]
+async fn delete_tag_script_captures_task_count_before_deletion() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "tag-2", "name": "Someday", "deleted": true, "taskCount": 4}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = delete_tag(&runner, "tag-2").await;
+    assert!(result.is_ok());
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains("const tagFilter = \"tag-2\";"));
+    assert!(captured.contains("const taskCount = tag.tasks.length;"));
+    assert!(captured.contains("deleteObject(tag);"));
+    assert!(captured.contains("taskCount: taskCount"));
 }
 
 #[tokio::test]

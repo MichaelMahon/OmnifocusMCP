@@ -33,7 +33,7 @@ use crate::{
             complete_project, create_project, delete_project, get_project, list_projects,
             move_project, set_project_status, uncomplete_project, update_project,
         },
-        tags::{create_tag, list_tags, update_tag},
+        tags::{create_tag, delete_tag, list_tags, update_tag},
         tasks::{
             complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
             delete_tasks_batch, get_inbox, get_task, list_subtasks, list_tasks, move_task,
@@ -212,6 +212,11 @@ struct UpdateTagParams {
     tag_name_or_id: String,
     name: Option<String>,
     status: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct TagNameOrIdParams {
+    tag_name_or_id: String,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -659,6 +664,19 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         )
         .await
         .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(
+        description = "delete a tag by id or name. warning: tasks using this tag will lose the tag assignment."
+    )]
+    async fn delete_tag(
+        &self,
+        Parameters(params): Parameters<TagNameOrIdParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = delete_tag(self.runner.as_ref(), &params.tag_name_or_id)
+            .await
+            .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 

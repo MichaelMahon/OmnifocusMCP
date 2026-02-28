@@ -422,6 +422,31 @@ async def test_update_tag_validation_error_criterion13(server_module: Any) -> No
         await server_module.update_tag(tag_name_or_id="tag-1")
 
 
+@pytest.mark.asyncio
+async def test_delete_tag_happy_path_criterion14(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "tag-2", "name": "Someday", "deleted": True, "taskCount": 4}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.delete_tag(tag_name_or_id="tag-2")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const tagFilter = "tag-2";' in script
+    assert "const taskCount = tag.tasks.length;" in script
+    assert "deleteObject(tag);" in script
+    assert "taskCount: taskCount" in script
+
+
+@pytest.mark.asyncio
+async def test_delete_tag_validation_error_criterion14(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="tag_name_or_id must not be empty."):
+        await server_module.delete_tag(tag_name_or_id="   ")
+
+
 @pytest.fixture
 def server_module(monkeypatch: pytest.MonkeyPatch) -> Any:
     class FakeFastMCP:

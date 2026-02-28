@@ -490,6 +490,39 @@ describe("tool happy paths", () => {
     });
   });
 
+  test("delete_tag deletes tag and returns deletion summary", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "tag-2",
+      name: "Someday",
+      deleted: true,
+      taskCount: 4,
+    });
+    const handler = registeredTools.get("delete_tag");
+    expect(handler).toBeDefined();
+    const result = await handler!({ tag_name_or_id: "tag-2" });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "tag-2",
+      name: "Someday",
+      deleted: true,
+      taskCount: 4,
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const tagFilter = "tag-2";');
+    expect(script).toContain("const taskCount = tag.tasks.length;");
+    expect(script).toContain("deleteObject(tag);");
+    expect(script).toContain("taskCount: taskCount");
+  });
+
+  test("delete_tag returns error for empty tag id or name", async () => {
+    const handler = registeredTools.get("delete_tag");
+    expect(handler).toBeDefined();
+    const result = await handler!({ tag_name_or_id: "   " });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "tag_name_or_id must not be empty.",
+    });
+  });
+
   test("set_project_status returns error for unsupported status value", async () => {
     const handler = registeredTools.get("set_project_status");
     expect(handler).toBeDefined();

@@ -170,12 +170,14 @@ if (!tag) {
   throw new Error(\`Tag not found: \${tagFilter}\`);
 }
 
+const tagId = tag.id.primaryKey;
 const tagName = tag.name;
 const taskCount = tag.tasks.length;
+
 deleteObject(tag);
 
 return {
-  id: tag.id.primaryKey,
+  id: tagId,
   name: tagName,
   deleted: true,
   taskCount: taskCount
