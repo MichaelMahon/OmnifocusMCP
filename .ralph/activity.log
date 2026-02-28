@@ -163,3 +163,74 @@ EOF
 ═══════════════════════════════════════════════════════════════
 Ralph Session Started: Fri Feb 27 22:50:41 CST 2026
 ═══════════════════════════════════════════════════════════════
+[22:50:44] 🟢 SESSION START: model=Auto
+[22:50:52] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/guardrails.md (28 lines, ~2.7KB)
+[22:50:52] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/RALPH_TASK.md (367 lines, ~35.8KB)
+[22:50:52] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/progress.md (170 lines, ~16.6KB)
+[22:50:52] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/errors.log (5 lines, ~.4KB)
+[22:50:52] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/activity.log (167 lines, ~16.3KB)
+[22:50:55] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/python/src/omnifocus_mcp/server.py (225 lines, ~21.9KB)
+[22:50:55] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/python/tests/conftest.py (30 lines, ~2.9KB)
+[22:51:01] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/python/src/omnifocus_mcp/jxa.py (102 lines, ~9.9KB)
+[22:51:06] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/tasks.yaml (535 lines, ~52.2KB)
+[22:51:13] 🟢 TOKENS: 41646 / 80000 (52%) [read:159KB write:0KB assist:0KB shell:0KB]
+[22:51:28] 🟢 SHELL cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test → exit 0
+[22:51:33] 🟡 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/RALPH_TASK.md (367 lines, ~35.8KB)
+[22:51:34] 🟡 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/progress.md (170 lines, ~16.6KB)
+[22:51:37] 🟡 SHELL date '+%Y-%m-%d %H:%M:%S' → exit 0
+[22:51:45] 🟡 TOKENS: 55203 / 80000 (69%) [read:211KB write:0KB assist:1KB shell:0KB]
+[22:51:49] 🟡 SHELL git diff -- . ':(exclude).ralph/activity.log' → exit 0
+[22:51:49] 🟡 SHELL git status --short → exit 0
+[22:51:49] 🟡 SHELL git log --oneline -n 5 → exit 0
+[22:51:52] 🟡 SHELL git add RALPH_TASK.md .ralph/progress.md python/src/omnifocus_mcp/server.py && git commit --trailer "Made-with: Cursor" -m "$(cat <<'EOF'
+ralph: implement list_projects read tool
+
+Add list_projects with folder and project-status filtering plus project task counts and required metadata fields, then mark criterion 20 complete and record progress for the next phase 3 step.
+EOF
+)" && git status --short → exit 0
+[22:52:17] 🟡 SHELL cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test → exit 0
+[22:52:17] 🟡 TOKENS: 55320 / 80000 (69%) [read:211KB write:0KB assist:1KB shell:0KB]
+[22:52:19] 🟡 SHELL date '+%Y-%m-%d %H:%M:%S' → exit 0
+[22:52:29] 🟡 SHELL git status --short → exit 0
+[22:52:30] 🟡 SHELL git diff -- . ':(exclude).ralph/activity.log' → exit 0
+[22:52:30] 🟡 SHELL git log --oneline -n 5 → exit 0
+[22:52:33] 🟡 SHELL git add RALPH_TASK.md .ralph/progress.md python/src/omnifocus_mcp/server.py && git commit --trailer "Made-with: Cursor" -m "$(cat <<'EOF'
+ralph: implement get_project read tool
+
+Add get_project to resolve projects by id or name and return full project metadata with root-level tasks, then mark criterion 21 complete and update Ralph progress tracking.
+EOF
+)" && git status --short → exit 0
+[22:52:36] 🟡 SHELL git push → exit 0
+[22:52:49] 🟡 TOKENS: 55403 / 80000 (69%) [read:211KB write:0KB assist:1KB shell:0KB]
+[22:52:54] 🟡 SHELL cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test → exit 0
+[22:52:58] 🟡 SHELL date '+%Y-%m-%d %H:%M:%S' → exit 0
+[22:53:14] 🟡 SHELL git status --short → exit 0
+[22:53:14] 🟡 SHELL git diff -- . ':(exclude).ralph/activity.log' → exit 0
+[22:53:14] 🟡 SHELL git log --oneline -n 5 → exit 0
+[22:53:17] 🟡 SHELL git add RALPH_TASK.md .ralph/progress.md python/src/omnifocus_mcp/server.py && git commit --trailer "Made-with: Cursor" -m "$(cat <<'EOF'
+ralph: implement list_tags read tool
+
+Add list_tags with hierarchy fields, normalized status, and available task counts, then mark criterion 22 complete and update progress for the next read-tool target.
+EOF
+)" && git status --short → exit 0
+[22:53:19] 🟡 TOKENS: 55434 / 80000 (69%) [read:211KB write:0KB assist:2KB shell:0KB]
+[22:53:28] 🟡 SHELL cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test → exit 0
+[22:53:32] 🟡 SHELL date '+%Y-%m-%d %H:%M:%S' → exit 0
+[22:53:44] 🟡 SHELL git status --short → exit 0
+[22:53:44] 🟡 SHELL git diff -- . ':(exclude).ralph/activity.log' → exit 0
+[22:53:44] 🟡 SHELL git log --oneline -n 5 → exit 0
+[22:53:47] 🟡 SHELL git add RALPH_TASK.md .ralph/progress.md python/src/omnifocus_mcp/server.py && git commit --trailer "Made-with: Cursor" -m "$(cat <<'EOF'
+ralph: implement list_folders read tool
+
+Add list_folders with parent hierarchy and folder project counts, then mark criterion 23 complete and record progress toward forecast and perspectives tools.
+EOF
+)" && git status --short → exit 0
+[22:53:49] 🟡 TOKENS: 55472 / 80000 (69%) [read:211KB write:0KB assist:2KB shell:0KB]
+[22:53:50] 🟡 SHELL git push → exit 0
+[22:53:55] 🟡 SHELL git status --short → exit 0
+[22:54:00] 🟡 SESSION END: 196442ms, ~55847 tokens used
+[22:54:00] 🟡 TOKENS: 55847 / 80000 (69%) [read:211KB write:0KB assist:3KB shell:0KB]
+
+═══════════════════════════════════════════════════════════════
+Ralph Session Started: Fri Feb 27 22:54:04 CST 2026
+═══════════════════════════════════════════════════════════════

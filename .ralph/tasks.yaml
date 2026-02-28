@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772254215
-generated_at: 2026-02-28T04:50:38Z
+source_mtime: 1772254414
+generated_at: 2026-02-28T04:54:00Z
 
 tasks:
   - id: "line_109"
@@ -142,28 +142,28 @@ tasks:
     raw_marker: 19.
   - id: "line_183"
     line_number: 183
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Tool `list_projects` — optional filters: `folder` (name), `status`
     indent_level: 0
     raw_marker: 20.
   - id: "line_188"
     line_number: 188
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Tool `get_project` — accepts project `id` or `name`. Returns full
     indent_level: 0
     raw_marker: 21.
   - id: "line_190"
     line_number: 190
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Tool `list_tags` — returns all tags: `id`, `name`, `parent` (for
     indent_level: 0
     raw_marker: 22.
   - id: "line_192"
     line_number: 192
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Tool `list_folders` — returns folder hierarchy: `id`, `name`,
     indent_level: 0
