@@ -818,6 +818,40 @@ async def test_set_task_repetition_none_schedule_type_happy_path(
 
 
 @pytest.mark.asyncio
+async def test_append_to_note_happy_path_criterion20(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "t6", "name": "Task six", "type": "task", "noteLength": 24}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.append_to_note(
+        object_type="task",
+        object_id="t6",
+        text="\nfollow-up details",
+    )
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const objectType = "task";' in script
+    assert 'const objectId = "t6";' in script
+    assert 'const textToAppend = "\\nfollow-up details";' in script
+    assert "obj.appendStringToNote(textToAppend);" in script
+    assert "noteLength: obj.note.length" in script
+
+
+@pytest.mark.asyncio
+async def test_append_to_note_validation_error_criterion20(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="object_type must be one of: task, project."):
+        await server_module.append_to_note(object_type="folder", object_id="id-1", text="text")
+    with pytest.raises(ValueError, match="object_id must not be empty."):
+        await server_module.append_to_note(object_type="task", object_id="   ", text="text")
+    with pytest.raises(ValueError, match="text must not be empty."):
+        await server_module.append_to_note(object_type="project", object_id="p1", text="   ")
+
+
+@pytest.mark.asyncio
 async def test_update_task_happy_path_duplicate(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:

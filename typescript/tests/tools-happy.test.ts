@@ -286,6 +286,34 @@ describe("tool happy paths", () => {
     });
   });
 
+  test("append_to_note appends to a task note and returns summary", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "task-1", name: "Task 1", type: "task", noteLength: 42 });
+    const handler = registeredTools.get("append_to_note");
+    expect(handler).toBeDefined();
+    const result = await handler!({ object_type: "task", object_id: "task-1", text: "more context" });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "task-1",
+      name: "Task 1",
+      type: "task",
+      noteLength: 42,
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const objectType = "task";');
+    expect(script).toContain('const objectId = "task-1";');
+    expect(script).toContain('const textValue = "more context";');
+    expect(script).toContain("obj.appendStringToNote(textValue);");
+  });
+
+  test("append_to_note returns error for invalid object type", async () => {
+    const handler = registeredTools.get("append_to_note");
+    expect(handler).toBeDefined();
+    const result = await handler!({ object_type: "folder", object_id: "task-1", text: "x" });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "object_type must be one of: task, project.",
+    });
+  });
+
   test("complete_project marks project complete and returns confirmation", async () => {
     runOmniJsMock.mockResolvedValueOnce({ id: "p1", name: "Project 1", completed: true });
     const handler = registeredTools.get("complete_project");
