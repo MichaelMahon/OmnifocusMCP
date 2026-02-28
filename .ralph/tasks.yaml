@@ -3,133 +3,210 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772302052
-generated_at: 2026-02-28T18:08:00Z
+source_mtime: 1772302467
+generated_at: 2026-02-28T18:17:33Z
 
 tasks:
-  - id: "line_39"
-    line_number: 39
-    status: completed
+  - id: "line_71"
+    line_number: 71
+    status: pending
     parallel_group: 999999
-    description: Read `python/src/omnifocus_mcp/tools/tasks.py` to understand the
+    description: **`delete_tasks_batch` — Rust only.** Python and TypeScript already
     indent_level: 0
     raw_marker: 1.
-  - id: "line_41"
-    line_number: 41
-    status: completed
+  - id: "line_87"
+    line_number: 87
+    status: pending
     parallel_group: 999999
-    description: Add `delete_tasks_batch` tool to `python/src/omnifocus_mcp/tools/tasks.py`:
+    description: **`uncomplete_task`** — all 3 implementations.
     indent_level: 0
     raw_marker: 2.
-  - id: "line_61"
-    line_number: 61
-    status: completed
+  - id: "line_101"
+    line_number: 101
+    status: pending
     parallel_group: 999999
-    description: Add tests in `python/tests/test_tools_write.py`:
+    description: **`create_subtask`** — all 3 implementations.
     indent_level: 0
     raw_marker: 3.
-  - id: "line_66"
-    line_number: 66
-    status: completed
+  - id: "line_112"
+    line_number: 112
+    status: pending
     parallel_group: 999999
-    description: `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
+    description: **`list_subtasks`** — all 3 implementations.
     indent_level: 0
     raw_marker: 4.
-  - id: "line_74"
-    line_number: 74
-    status: completed
+  - id: "line_121"
+    line_number: 121
+    status: pending
     parallel_group: 999999
-    description: Read `typescript/src/tools/tasks.ts` to understand the existing
+    description: **`set_task_repetition`** — all 3 implementations.
     indent_level: 0
     raw_marker: 5.
-  - id: "line_76"
-    line_number: 76
-    status: completed
+  - id: "line_134"
+    line_number: 134
+    status: pending
     parallel_group: 999999
-    description: Add `delete_tasks_batch` tool to `typescript/src/tools/tasks.ts`:
+    description: All lint and test commands pass for Phase 1:
     indent_level: 0
     raw_marker: 6.
-  - id: "line_82"
-    line_number: 82
-    status: completed
+  - id: "line_145"
+    line_number: 145
+    status: pending
     parallel_group: 999999
-    description: Add tests in `typescript/tests/tools-tasks.test.ts` (or
+    description: **`uncomplete_project`** — all 3 implementations.
     indent_level: 0
     raw_marker: 7.
-  - id: "line_84"
-    line_number: 84
-    status: completed
+  - id: "line_154"
+    line_number: 154
+    status: pending
     parallel_group: 999999
-    description: `cd typescript && npx tsc --noEmit && npm run lint && npm test` all pass.
+    description: **`update_project`** — all 3 implementations.
     indent_level: 0
     raw_marker: 8.
-  - id: "line_92"
-    line_number: 92
-    status: completed
+  - id: "line_170"
+    line_number: 170
+    status: pending
     parallel_group: 999999
-    description: Read `rust/src/tools/tasks.rs` to understand the existing
+    description: **`set_project_status`** — all 3 implementations.
     indent_level: 0
     raw_marker: 9.
-  - id: "line_94"
-    line_number: 94
-    status: completed
+  - id: "line_182"
+    line_number: 182
+    status: pending
     parallel_group: 999999
-    description: Add `delete_tasks_batch` function to `rust/src/tools/tasks.rs`:
+    description: **`delete_project`** — all 3 implementations.
     indent_level: 0
     raw_marker: 10.
-  - id: "line_99"
-    line_number: 99
-    status: completed
+  - id: "line_193"
+    line_number: 193
+    status: pending
     parallel_group: 999999
-    description: Register the tool in `rust/src/server.rs`:
+    description: **`move_project`** — all 3 implementations.
     indent_level: 0
     raw_marker: 11.
-  - id: "line_103"
-    line_number: 103
-    status: completed
+  - id: "line_203"
+    line_number: 203
+    status: pending
     parallel_group: 999999
-    description: Add tests in `rust/tests/tools_write_test.rs`:
+    description: All lint and test commands pass for Phase 2 (same as criterion 6).
     indent_level: 0
     raw_marker: 12.
-  - id: "line_105"
-    line_number: 105
-    status: completed
+  - id: "line_211"
+    line_number: 211
+    status: pending
     parallel_group: 999999
-    description: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` all pass.
+    description: **`update_tag`** — all 3 implementations.
     indent_level: 0
     raw_marker: 13.
-  - id: "line_113"
-    line_number: 113
-    status: completed
+  - id: "line_222"
+    line_number: 222
+    status: pending
     parallel_group: 999999
-    description: Add `delete_tasks_batch` to the Rust smoke test
+    description: **`delete_tag`** — all 3 implementations.
     indent_level: 0
     raw_marker: 14.
-  - id: "line_116"
-    line_number: 116
-    status: completed
+  - id: "line_231"
+    line_number: 231
+    status: pending
     parallel_group: 999999
-    description: Run the smoke test against real OmniFocus — zero failures.
+    description: **`create_folder`** — all 3 implementations.
     indent_level: 0
     raw_marker: 15.
-  - id: "line_118"
-    line_number: 118
-    status: completed
+  - id: "line_240"
+    line_number: 240
+    status: pending
     parallel_group: 999999
-    description: Verify all three implementations produce identical tool names
+    description: **`get_folder`** — all 3 implementations.
     indent_level: 0
     raw_marker: 16.
-  - id: "line_128"
-    line_number: 128
-    status: completed
+  - id: "line_249"
+    line_number: 249
+    status: pending
     parallel_group: 999999
-    description: Update `README.md` tool count and tool list table to include
+    description: **`update_folder`** — all 3 implementations.
     indent_level: 0
     raw_marker: 17.
-  - id: "line_130"
-    line_number: 130
-    status: completed
+  - id: "line_258"
+    line_number: 258
+    status: pending
+    parallel_group: 999999
+    description: **`delete_folder`** — all 3 implementations.
+    indent_level: 0
+    raw_marker: 18.
+  - id: "line_268"
+    line_number: 268
+    status: pending
+    parallel_group: 999999
+    description: All lint and test commands pass for Phase 3 (same as criterion 6).
+    indent_level: 0
+    raw_marker: 19.
+  - id: "line_276"
+    line_number: 276
+    status: pending
+    parallel_group: 999999
+    description: **`append_to_note`** — all 3 implementations.
+    indent_level: 0
+    raw_marker: 20.
+  - id: "line_284"
+    line_number: 284
+    status: pending
+    parallel_group: 999999
+    description: **`search_projects`** — all 3 implementations.
+    indent_level: 0
+    raw_marker: 21.
+  - id: "line_291"
+    line_number: 291
+    status: pending
+    parallel_group: 999999
+    description: **`search_tags`** — all 3 implementations.
+    indent_level: 0
+    raw_marker: 22.
+  - id: "line_298"
+    line_number: 298
+    status: pending
+    parallel_group: 999999
+    description: All lint and test commands pass for Phase 4 (same as criterion 6).
+    indent_level: 0
+    raw_marker: 23.
+  - id: "line_306"
+    line_number: 306
+    status: pending
+    parallel_group: 999999
+    description: Update `rust/examples/smoke_test.rs` to exercise all new tools:
+    indent_level: 0
+    raw_marker: 24.
+  - id: "line_324"
+    line_number: 324
+    status: pending
+    parallel_group: 999999
+    description: Run smoke test against real OmniFocus — zero failures.
+    indent_level: 0
+    raw_marker: 25.
+  - id: "line_327"
+    line_number: 327
+    status: pending
+    parallel_group: 999999
+    description: Verify tool parity across all 3 implementations:
+    indent_level: 0
+    raw_marker: 26.
+  - id: "line_339"
+    line_number: 339
+    status: pending
+    parallel_group: 999999
+    description: Update top-level `README.md`:
+    indent_level: 0
+    raw_marker: 27.
+  - id: "line_344"
+    line_number: 344
+    status: pending
     parallel_group: 999999
     description: Update `rust/README.md` if it has a separate tool listing.
     indent_level: 0
-    raw_marker: 18.
+    raw_marker: 28.
+  - id: "line_346"
+    line_number: 346
+    status: pending
+    parallel_group: 999999
+    description: Update `docs/install-rust.md` if it references tool counts.
+    indent_level: 0
+    raw_marker: 29.
