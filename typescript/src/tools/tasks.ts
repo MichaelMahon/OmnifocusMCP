@@ -164,6 +164,82 @@ return { id: task.id.primaryKey, name: task.name };
   );
 
   server.tool(
+    "create_subtask",
+    "create a new subtask under an existing parent task by id.",
+    {
+      name: z.string().min(1),
+      parent_task_id: z.string().min(1),
+      note: z.string().optional(),
+      dueDate: z.string().optional(),
+      deferDate: z.string().optional(),
+      flagged: z.boolean().optional(),
+      tags: z.array(z.string()).optional(),
+      estimatedMinutes: z.number().int().optional(),
+    },
+    async ({ name, parent_task_id, note, dueDate, deferDate, flagged, tags, estimatedMinutes }) => {
+      try {
+        const normalizedName = name.trim();
+        if (normalizedName === "") {
+          throw new Error("name must not be empty.");
+        }
+        const normalizedParentTaskId = parent_task_id.trim();
+        if (normalizedParentTaskId === "") {
+          throw new Error("parent_task_id must not be empty.");
+        }
+        const taskName = escapeForJxa(normalizedName);
+        const parentTaskId = escapeForJxa(normalizedParentTaskId);
+        const noteValue = note === undefined ? "null" : escapeForJxa(note);
+        const dueDateValue = dueDate === undefined ? "null" : escapeForJxa(dueDate);
+        const deferDateValue = deferDate === undefined ? "null" : escapeForJxa(deferDate);
+        const flaggedValue = flagged === undefined ? "null" : flagged ? "true" : "false";
+        const tagsValue = tags === undefined ? "null" : JSON.stringify(tags);
+        const estimatedMinutesValue =
+          estimatedMinutes === undefined ? "null" : String(estimatedMinutes);
+        const script = `
+const taskName = ${taskName};
+const parentTaskId = ${parentTaskId};
+const noteValue = ${noteValue};
+const dueDateValue = ${dueDateValue};
+const deferDateValue = ${deferDateValue};
+const flaggedValue = ${flaggedValue};
+const tagNames = ${tagsValue};
+const estimatedMinutesValue = ${estimatedMinutesValue};
+
+const parentTask = document.flattenedTasks.find(item => item.id.primaryKey === parentTaskId);
+if (!parentTask) {
+  throw new Error(\`Parent task not found: \${parentTaskId}\`);
+}
+
+const task = new Task(taskName, parentTask.ending);
+
+if (noteValue !== null) task.note = noteValue;
+if (dueDateValue !== null) task.dueDate = new Date(dueDateValue);
+if (deferDateValue !== null) task.deferDate = new Date(deferDateValue);
+if (flaggedValue !== null) task.flagged = flaggedValue;
+if (estimatedMinutesValue !== null) task.estimatedMinutes = estimatedMinutesValue;
+
+if (tagNames !== null) {
+  tagNames.forEach(tagName => {
+    const tag = document.flattenedTags.byName(tagName);
+    if (tag) task.addTag(tag);
+  });
+}
+
+return {
+  id: task.id.primaryKey,
+  name: task.name,
+  parentTaskId: parentTask.id.primaryKey,
+  parentTaskName: parentTask.name
+};
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
     "create_tasks_batch",
     "create multiple tasks in one call and return created task summaries.",
     { tasks: z.array(z.object({ name: z.string().min(1), project: z.string().optional() })).min(1) },
