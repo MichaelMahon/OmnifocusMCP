@@ -228,7 +228,7 @@ Reference implementations:
           tag will lose the tag assignment.
         - Implement and test in all 3 implementations.
 
-15. [ ] **`create_folder`** — all 3 implementations.
+15. [x] **`create_folder`** — all 3 implementations.
         - **Input:** `name: str` (required, non-empty),
           `parent: str | null` (parent folder name)
         - **JXA:** if parent is null, `new Folder(name)`. Otherwise

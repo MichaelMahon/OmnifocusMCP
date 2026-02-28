@@ -1504,3 +1504,37 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 12:59:37
 **Session 42 started** (model: auto)
+
+### 2026-02-28 17:05:00
+- read required Ralph state files before edits (`RALPH_TASK.md`, `.ralph/guardrails.md`, `.ralph/progress.md`, `.ralph/errors.log`)
+- implemented criterion 14 (`delete_tag`) across all three implementations with matching validation and response shape (`id`, `name`, `deleted`, `taskCount`)
+  - python: added `delete_tag` to `python/src/omnifocus_mcp/tools/tags.py`, exported in `python/src/omnifocus_mcp/server.py`, and added criterion tests in `python/tests/test_tools_write.py`
+  - typescript: added `delete_tag` registration in `typescript/src/tools/tags.ts` and coverage in `typescript/tests/tools-happy.test.ts`
+  - rust: added `delete_tag` handler wiring in `rust/src/server.rs` and test coverage in `rust/tests/tools_write_test.rs`; stabilized tags module routing via `rust/src/tools/mod.rs` + canonical implementation in `rust/src/tools/tags_clean.rs`
+- ran required validation gates:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` (`100 passed, 5 skipped`)
+  - `cd typescript && npx tsc --noEmit && npm test` (`49 passed, 5 skipped`)
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- criterion 14 is marked complete in `RALPH_TASK.md`; next focus is criterion 15 (`create_folder`)
+
+### 2026-02-28 12:59:50
+- completed criterion 15 (`create_folder`) by verifying parity implementation is present and aligned across all three implementations:
+  - python: `python/src/omnifocus_mcp/tools/folders.py` + export in `python/src/omnifocus_mcp/server.py`
+  - typescript: `typescript/src/tools/folders.ts` registration with matching input contract and return shape
+  - rust: `rust/src/tools/folders.rs` + `rust/src/server.rs` handler wiring
+- confirmed criterion-15 tests exist and pass in:
+  - `python/tests/test_tools_write.py`
+  - `typescript/tests/tools-happy.test.ts`
+  - `rust/tests/tools_write_test.rs`
+- ran full cross-implementation `test_command` from `RALPH_TASK.md` successfully:
+  - python: `ruff check`, `ruff format --check`, `mypy --strict`, `pytest` (`102 passed, 5 skipped`)
+  - typescript: `npx tsc --noEmit`, `npm test` (`51 passed, 5 skipped`)
+  - rust: `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test` (all passing)
+- marked criterion 15 complete in `RALPH_TASK.md`
+- next focus: criterion 16 (`get_folder` in Python -> TypeScript -> Rust)
+
+### 2026-02-28 13:00:10
+**Session 42 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 13:00:12
+**Session 43 started** (model: auto)
