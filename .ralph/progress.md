@@ -5,9 +5,9 @@
 ## Summary
 
 - Current task: OmniFocus MCP — Superior read-side filtering, sorting, and aggregation
-- Current status: Phase 1 complete. Phase 2 complete. Phase 3 criterion 10 complete; continuing Phase 3.
-- Next criterion: **11** — add status filter and sorting to `list_tags`
-- Remaining: criteria 11-36 (26 criteria across Phases 3-11)
+- Current status: Phase 1 complete. Phase 2 complete. Phase 3 criteria 10-11 complete; continuing Phase 3.
+- Next criterion: **12** — add filter params to `search_tasks`
+- Remaining: criteria 12-36 (25 criteria across Phases 3-11)
 
 ## How This Works
 
@@ -21,7 +21,7 @@ This is how Ralph maintains continuity across iterations.
 |-------|------------------------------------|----------|------|
 | 1     | Enhanced list_tasks                | 1–6      | 6/6  |
 | 2     | Enhanced list_projects/get_project | 7–9      | 3/3  |
-| 3     | Enhanced get_inbox/list_tags/search| 10–13    | 1/4  |
+| 3     | Enhanced get_inbox/list_tags/search| 10–13    | 2/4  |
 | 4     | Aggregate Count Tools              | 14–16    | 0/3  |
 | 5     | Enhanced get_forecast              | 17–18    | 0/2  |
 | 6     | Tests and Parity Verification      | 19–20    | 0/2  |
@@ -31,7 +31,7 @@ This is how Ralph maintains continuity across iterations.
 | 10    | Duplicate Task                     | 32–33    | 0/2  |
 | 11    | Final Parity & Docs                | 34–36    | 0/3  |
 
-**Total: 10 / 36 criteria complete**
+**Total: 11 / 36 criteria complete**
 
 ## Key Context
 
@@ -152,6 +152,13 @@ This is how Ralph maintains continuity across iterations.
 - reused fresh full-gate pass from this session (all python/typescript/rust checks green)
 - marked criterion 10 complete in `RALPH_TASK.md`
 - next: criterion 11 (`list_tags` status filter, sorting, and `totalTaskCount`)
+
+### 2026-02-28 15:01:12
+- completed criterion 11: `list_tags` now supports `statusFilter`, sorting (`sortBy`, `sortOrder`), and `totalTaskCount` in python/typescript/rust
+- validated script/test coverage updates across implementations and integration assertions for `totalTaskCount`
+- reran full gates successfully after formatting fixes: python lint+format+mypy+pytest, typescript typecheck+tests, rust fmt+clippy+tests
+- marked criterion 11 complete in `RALPH_TASK.md`
+- next: criterion 12 (`search_tasks` parity with enhanced `list_tasks` filters)
 
 ### 2026-02-28 14:58:19
 **Session 10 ended** - 🔄 Context rotation (token limit reached)

@@ -266,7 +266,7 @@ See individual phase criteria below.
           JXA script.
         - All lint/test commands pass.
 
-11. [ ] **Add status filter and sorting to `list_tags`** —
+11. [x] **Add status filter and sorting to `list_tags`** —
         all 3 implementations.
         - New optional param: `statusFilter: str = "all"` (enum:
           `"active"`, `"on_hold"`, `"dropped"`, `"all"`). Default `"all"`

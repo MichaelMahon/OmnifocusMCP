@@ -783,6 +783,21 @@ async def test_list_tags_status_filter_and_sorting_script(
 
 
 @pytest.mark.asyncio
+async def test_list_tags_name_sort_script(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    configured = mock_server_run_omnijs(
+        [{"id": "tag3", "name": "alpha", "parent": None, "availableTaskCount": 1, "totalTaskCount": 1, "status": "active"}]
+    )
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tags(sortBy="name", sortOrder="asc", limit=5)
+    script = state["calls"][0]["script"]
+    assert 'const sortBy = "name";' in script
+    assert 'const sortOrder = "asc";' in script
+    assert 'if (sortBy === "name") {' in script
+
+
+@pytest.mark.asyncio
 async def test_list_folders_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = [{"id": "f1", "name": "Work", "parentName": None, "projectCount": 2}]
     configured = mock_server_run_omnijs(payload)
@@ -914,6 +929,12 @@ async def test_list_projects_invalid_sort_validation_error(server_module: Any) -
 async def test_list_tags_invalid_status_filter_validation_error(server_module: Any) -> None:
     with pytest.raises(ValueError, match="statusFilter must be one of"):
         await server_module.list_tags(statusFilter="invalid")  # type: ignore[arg-type]
+
+
+@pytest.mark.asyncio
+async def test_list_tags_invalid_sort_validation_error(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="sortBy must be one of"):
+        await server_module.list_tags(sortBy="invalid")  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio

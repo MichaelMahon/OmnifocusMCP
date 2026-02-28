@@ -223,7 +223,7 @@ async fn read_non_task_tools_happy_path() {
     assert!(searched_projects.is_array());
 
     let tags_runner = MockRunner {
-        payload: json!([{"id": "g1", "name": "home"}]),
+        payload: json!([{"id": "g1", "name": "home", "totalTaskCount": 2}]),
     };
     let tags = list_tags(&tags_runner, "all", None, "asc", 100)
         .await
@@ -455,6 +455,18 @@ async fn validation_errors_for_read_tools() {
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
+        list_tags(&runner, "invalid", None, "asc", 10).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        list_tags(&runner, "invalid", None, "asc", 10).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        list_tags(&runner, "all", Some("invalid"), "asc", 10).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
         list_folders(&runner, 0).await,
         Err(OmniFocusError::Validation(_))
     ));
@@ -487,7 +499,9 @@ async fn get_inbox_script_includes_completion_and_children_fields() {
         .lock()
         .expect("script capture lock should succeed")
         .clone();
-    assert!(script.contains("completionDate: task.completionDate ? task.completionDate.toISOString() : null,"));
+    assert!(script.contains(
+        "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
+    ));
     assert!(script.contains("hasChildren: task.hasChildren"));
 }
 
@@ -515,6 +529,30 @@ async fn list_projects_script_includes_stalled_and_next_task_fields() {
     ));
     assert!(script.contains("nextTaskId: nextTask ? nextTask.id.primaryKey : null,"));
     assert!(script.contains("nextTaskName: nextTask ? nextTask.name : null,"));
+}
+
+#[tokio::test]
+async fn list_tags_script_includes_total_count_and_sorting() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([{"id": "g2", "name": "home"}]),
+        last_script: last_script.clone(),
+    };
+
+    let tags = list_tags(&runner, "active", Some("totalTaskCount"), "desc", 7)
+        .await
+        .expect("tags should parse");
+    assert!(tags.is_array());
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const statusFilter = "active";"#));
+    assert!(script.contains(r#"const sortBy = "totalTaskCount";"#));
+    assert!(script.contains(r#"const sortOrder = "desc";"#));
+    assert!(script.contains("totalTaskCount: counts.totalTaskCount,"));
+    assert!(script.contains("return sortedTags.slice(0, 7);"));
 }
 
 #[tokio::test]
@@ -584,6 +622,77 @@ async fn list_projects_stalled_only_and_explicit_sort_are_in_script() {
     assert!(script.contains("if (stalledOnly && !isStalled) return false;"));
     assert!(script.contains(r#"const sortBy = "taskCount";"#));
     assert!(script.contains(r#"const sortOrder = "desc";"#));
+}
+
+#[tokio::test]
+async fn list_tags_status_filter_and_total_task_count_are_in_script() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([{"id": "tag1", "name": "errands"}]),
+        last_script: last_script.clone(),
+    };
+
+    let tags = list_tags(&runner, "all", None, "asc", 9)
+        .await
+        .expect("tags should parse");
+    assert!(tags.is_array());
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const statusFilter = "all";"#));
+    assert!(script.contains("totalTaskCount: counts.totalTaskCount,"));
+    assert!(script.contains("return sortedTags.slice(0, 9);"));
+}
+
+#[tokio::test]
+async fn list_tags_sort_and_status_filter_are_in_script() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([{"id": "tag2", "name": "home"}]),
+        last_script: last_script.clone(),
+    };
+
+    let tags = list_tags(&runner, "active", Some("totalTaskCount"), "desc", 7)
+        .await
+        .expect("tags should parse");
+    assert!(tags.is_array());
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const statusFilter = "active";"#));
+    assert!(script.contains(r#"const sortBy = "totalTaskCount";"#));
+    assert!(script.contains(r#"const sortOrder = "desc";"#));
+    assert!(
+        script.contains(r#"statusFilter === "all" || normalizeTagStatus(tag) === statusFilter"#)
+    );
+    assert!(script.contains("return sortedTags.slice(0, 7);"));
+}
+
+#[tokio::test]
+async fn list_tags_name_sort_is_in_script() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([{"id": "tag3", "name": "alpha"}]),
+        last_script: last_script.clone(),
+    };
+
+    let tags = list_tags(&runner, "all", Some("name"), "asc", 5)
+        .await
+        .expect("tags should parse");
+    assert!(tags.is_array());
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const sortBy = "name";"#));
+    assert!(script.contains(r#"const sortOrder = "asc";"#));
+    assert!(script.contains(r#"if (sortBy === "name") {"#));
+    assert!(script.contains("return sortedTags.slice(0, 5);"));
 }
 
 #[tokio::test]

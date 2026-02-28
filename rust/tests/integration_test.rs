@@ -295,7 +295,14 @@ async fn test_read_tools_return_valid_json() -> Result<(), Box<dyn std::error::E
     if let Some(first) = tags_array.first() {
         assert_has_keys(
             first,
-            &["id", "name", "parent", "availableTaskCount", "status"],
+            &[
+                "id",
+                "name",
+                "parent",
+                "availableTaskCount",
+                "totalTaskCount",
+                "status",
+            ],
         );
     }
 

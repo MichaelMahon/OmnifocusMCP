@@ -403,6 +403,45 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain("hasChildren: task.hasChildren");
   });
 
+  test("list_tags includes totalTaskCount and default sorting envelope", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "tag-1", name: "home" }]);
+    await getTool("list_tags")({ limit: 9 });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const statusFilter = "all";');
+    expect(script).toContain("totalTaskCount: counts.totalTaskCount,");
+    expect(script).toContain("return sortedTags.slice(0, 9);");
+  });
+
+  test("list_tags status filter and count sorting are included in script", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "tag-2", name: "work" }]);
+    await getTool("list_tags")({
+      statusFilter: "active",
+      sortBy: "totalTaskCount",
+      sortOrder: "desc",
+      limit: 7,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const statusFilter = "active";');
+    expect(script).toContain('const sortBy = "totalTaskCount";');
+    expect(script).toContain('const sortOrder = "desc";');
+    expect(script).toContain('statusFilter === "all" || normalizeTagStatus(tag) === statusFilter');
+    expect(script).toContain("return sortedTags.slice(0, 7);");
+  });
+
+  test("list_tags name sorting is included in script", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "tag-3", name: "alpha" }]);
+    await getTool("list_tags")({
+      sortBy: "name",
+      sortOrder: "asc",
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const sortBy = "name";');
+    expect(script).toContain('const sortOrder = "asc";');
+    expect(script).toContain('if (sortBy === "name") {');
+    expect(script).toContain("return sortedTags.slice(0, 5);");
+  });
+
   test("get_project generates id/name lookup script", async () => {
     runOmniJsMock.mockResolvedValueOnce({ id: "proj-1", name: "Project" });
     const result = await getTool("get_project")({ project_id_or_name: "Project" });
@@ -460,6 +499,49 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain("if (stalledOnly && !isStalled) return false;");
     expect(script).toContain('const sortBy = "taskCount";');
     expect(script).toContain('const sortOrder = "desc";');
+  });
+
+  test("list_tags includes status filter and totalTaskCount mapping", async () => {
+    runOmniJsMock.mockResolvedValueOnce([
+      { id: "tag-1", name: "Errands", availableTaskCount: 3, totalTaskCount: 5 },
+    ]);
+    const result = await getTool("list_tags")({ statusFilter: "all", limit: 9 });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const statusFilter = "all";');
+    expect(script).toContain("totalTaskCount: counts.totalTaskCount,");
+    expect(script).toContain("return sortedTags.slice(0, 9);");
+    expect(JSON.parse(result.content[0].text)).toEqual([
+      { id: "tag-1", name: "Errands", availableTaskCount: 3, totalTaskCount: 5 },
+    ]);
+  });
+
+  test("list_tags supports sorting and status filtering", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "tag-2", name: "Home" }]);
+    await getTool("list_tags")({
+      statusFilter: "active",
+      sortBy: "totalTaskCount",
+      sortOrder: "desc",
+      limit: 7,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const statusFilter = "active";');
+    expect(script).toContain('const sortBy = "totalTaskCount";');
+    expect(script).toContain('const sortOrder = "desc";');
+    expect(script).toContain('statusFilter === "all" || normalizeTagStatus(tag) === statusFilter');
+    expect(script).toContain("return sortedTags.slice(0, 7);");
+  });
+
+  test("list_tags supports name sorting", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "tag-3", name: "Alpha" }]);
+    await getTool("list_tags")({
+      sortBy: "name",
+      sortOrder: "asc",
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const sortBy = "name";');
+    expect(script).toContain('const sortOrder = "asc";');
+    expect(script).toContain('if (sortBy === "name") {');
   });
 
   test("create_task generates project-aware creation script", async () => {

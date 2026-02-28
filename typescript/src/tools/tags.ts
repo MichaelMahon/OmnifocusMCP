@@ -9,15 +9,17 @@ export function register(server: Server): void {
     "list tags with availability counts and optional status filter.",
     {
       statusFilter: z.enum(["active", "on_hold", "dropped", "all"]).default("all"),
-      sortBy: z.enum(["name", "availableTaskCount", "totalTaskCount"]).optional(),
+      sortBy: z.enum(["name", "availableTaskCount", "totalTaskCount"]).nullable().optional(),
       sortOrder: z.enum(["asc", "desc"]).default("asc"),
       limit: z.number().int().min(1).default(100),
     },
     async ({ statusFilter, sortBy, sortOrder, limit }) => {
       try {
-        const statusFilterValue = escapeForJxa(statusFilter);
-        const sortByValue = sortBy === undefined ? "null" : escapeForJxa(sortBy);
-        const sortOrderValue = escapeForJxa(sortOrder);
+        const effectiveStatusFilter = statusFilter ?? "all";
+        const effectiveSortOrder = sortOrder ?? "asc";
+        const statusFilterValue = escapeForJxa(effectiveStatusFilter);
+        const sortByValue = sortBy == null ? "null" : escapeForJxa(sortBy);
+        const sortOrderValue = escapeForJxa(effectiveSortOrder);
         const script = `
 const statusFilter = ${statusFilterValue};
 const sortBy = ${sortByValue};

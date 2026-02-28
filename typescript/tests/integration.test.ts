@@ -216,7 +216,7 @@ integrationDescribe("typescript integration", () => {
       expect(project.id).toBe(createdProject.id);
       expect(project).toHaveProperty("rootTasks");
 
-      const tags = parseToolResult(await listTags({ status: "all", limit: 20 })) as unknown[];
+      const tags = parseToolResult(await listTags({ statusFilter: "all", limit: 20 })) as unknown[];
       expect(Array.isArray(tags)).toBe(true);
 
       const folders = parseToolResult(await listFolders({ limit: 20 })) as unknown[];
