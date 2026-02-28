@@ -1,9 +1,9 @@
 import json
-from typing import Any, Callable, TypeVar, cast
+from typing import Any, Callable, Literal, TypeVar, cast
 
 from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
 
-from omnifocus_mcp.jxa import run_omnijs
+from omnifocus_mcp.jxa import escape_for_jxa, run_omnijs
 
 
 F = TypeVar("F", bound=Callable[..., Any])
@@ -45,6 +45,83 @@ return tasks.map(task => {{
     flagged: task.flagged,
     dueDate: task.dueDate ? task.dueDate.toISOString() : null,
     deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+    tags: tags,
+    estimatedMinutes: task.estimatedMinutes
+  }};
+}});
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@_typed_tool(mcp)
+async def list_tasks(
+    project: str | None = None,
+    tag: str | None = None,
+    flagged: bool | None = None,
+    status: Literal["available", "due_soon", "overdue", "completed", "all"] = "available",
+    limit: int = 100,
+) -> str:
+    """list tasks with optional project, tag, flagged, and status filters.
+
+    returns tasks with id, name, note, flagged state, due/defer dates,
+    completion state, project name, tag names, and estimated minutes.
+    """
+    if limit < 1:
+        raise ValueError("limit must be greater than 0.")
+
+    project_filter = "null" if project is None else escape_for_jxa(project)
+    tag_filter = "null" if tag is None else escape_for_jxa(tag)
+    flagged_filter = "null" if flagged is None else ("true" if flagged else "false")
+    status_filter = escape_for_jxa(status)
+
+    script = f"""
+const projectFilter = {project_filter};
+const tagFilter = {tag_filter};
+const flaggedFilter = {flagged_filter};
+const statusFilter = {status_filter};
+const now = new Date();
+const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
+
+const tasks = document.flattenedTasks
+  .filter(task => {{
+    if (projectFilter !== null) {{
+      const projectName = task.containingProject ? task.containingProject.name : null;
+      if (projectName !== projectFilter) return false;
+    }}
+
+    if (tagFilter !== null) {{
+      const hasTag = task.tags.some(taskTag => taskTag.name === tagFilter);
+      if (!hasTag) return false;
+    }}
+
+    if (flaggedFilter !== null && task.flagged !== flaggedFilter) return false;
+
+    if (statusFilter === "all") return true;
+    if (statusFilter === "completed") return task.completed;
+    if (task.completed) return false;
+
+    const dueDate = task.dueDate;
+    if (statusFilter === "available") return true;
+    if (statusFilter === "overdue") return dueDate !== null && dueDate < now;
+    if (statusFilter === "due_soon") {{
+      return dueDate !== null && dueDate >= now && dueDate <= soon;
+    }}
+    return false;
+  }})
+  .slice(0, {limit});
+
+return tasks.map(task => {{
+  const tags = task.tags.map(taskTag => taskTag.name);
+  return {{
+    id: task.id.primaryKey,
+    name: task.name,
+    note: task.note,
+    flagged: task.flagged,
+    dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+    deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+    completed: task.completed,
+    projectName: task.containingProject ? task.containingProject.name : null,
     tags: tags,
     estimatedMinutes: task.estimatedMinutes
   }};

@@ -169,7 +169,7 @@ parameter (default 100).
 16. [x] Tool `get_inbox` — returns all inbox (unprocessed) tasks. Each task
         includes: `id`, `name`, `note`, `flagged`, `dueDate`, `deferDate`,
         `tags[]`, `estimatedMinutes`.
-17. [ ] Tool `list_tasks` — workhorse query tool. Optional filters: `project`
+17. [x] Tool `list_tasks` — workhorse query tool. Optional filters: `project`
         (name), `tag` (name), `flagged` (bool), `status` (available |
         due_soon | overdue | completed | all), `limit` (default 100).
         Returns task objects with: `id`, `name`, `note`, `flagged`,
