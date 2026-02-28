@@ -335,6 +335,21 @@ async def test_list_tasks_tags_filter_all_mode(
 
 
 @pytest.mark.asyncio
+async def test_list_tasks_tags_filter_any_mode_with_multiple_tags(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(tags=["Home", "Deep"], tagFilterMode="any", limit=5)
+
+    script = state["calls"][0]["script"]
+    assert 'const tagNames = ["Home", "Deep"];' in script
+    assert "task.tags.some(t => tagNames.includes(t.name))" in script
+
+
+@pytest.mark.asyncio
 async def test_list_tasks_tags_filter_merges_tag_and_tags_union(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:

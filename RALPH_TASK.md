@@ -133,7 +133,7 @@ See individual phase criteria below.
          date filters with existing project/tag/flagged filters.
        - All lint/test commands pass for all 3 implementations.
 
-2. [ ] **Add multi-tag filtering to `list_tasks`** — all 3 implementations.
+2. [x] **Add multi-tag filtering to `list_tasks`** — all 3 implementations.
        - New optional params: `tags: list[str] | null`,
          `tagFilterMode: str = "any"` (enum: `"any"`, `"all"`).
        - **Backward compatibility:** keep existing `tag` param (single

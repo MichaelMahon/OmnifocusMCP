@@ -617,6 +617,94 @@ async fn list_tasks_invalid_date_error_bubbles_up() {
 }
 
 #[tokio::test]
+async fn list_tasks_tag_filters_support_any_all_merge_and_empty_array() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-tags", "tagged task")]),
+        last_script: last_script.clone(),
+    };
+
+    list_tasks(
+        &runner,
+        None,
+        Some("Home"),
+        Some(vec!["Errands".to_string(), "Home".to_string()]),
+        "all",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        5,
+    )
+    .await
+    .expect("list tasks with merged all-mode tags should parse");
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains("const tagNames = [\"Home\",\"Errands\"];"));
+    assert!(script.contains("const tagFilterMode = \"all\";"));
+    assert!(script.contains("tagNames.every(tn => task.tags.some(t => t.name === tn))"));
+
+    list_tasks(
+        &runner,
+        None,
+        None,
+        Some(vec!["Home".to_string(), "Deep".to_string()]),
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        5,
+    )
+    .await
+    .expect("list tasks with any-mode tags should parse");
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains("const tagNames = [\"Home\",\"Deep\"];"));
+    assert!(script.contains("const tagFilterMode = \"any\";"));
+    assert!(script.contains("task.tags.some(t => tagNames.includes(t.name))"));
+
+    list_tasks(
+        &runner,
+        None,
+        None,
+        Some(vec![]),
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        5,
+    )
+    .await
+    .expect("list tasks with empty tags array should parse");
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains("const tagNames = null;"));
+}
+
+#[tokio::test]
 async fn list_tasks_tags_filter_modes_and_merging_are_in_script() {
     let last_script = Arc::new(Mutex::new(String::new()));
     let runner = CapturingRunner {

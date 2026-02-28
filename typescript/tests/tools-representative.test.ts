@@ -115,6 +115,19 @@ describe("representative read and write tool handlers", () => {
   test("list_tasks supports multiple tags in any mode", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "task-any", name: "any mode" }]);
     await getTool("list_tasks")({
+      tags: ["Home", "Deep"],
+      tagFilterMode: "any",
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const tagNames = ["Home","Deep"];');
+    expect(script).toContain('const tagFilterMode = "any";');
+    expect(script).toContain("task.tags.some(t => tagNames.includes(t.name))");
+  });
+
+  test("list_tasks supports multiple tags in any mode", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-any", name: "any mode" }]);
+    await getTool("list_tasks")({
       tags: ["Home", "Errands"],
       tagFilterMode: "any",
       limit: 5,

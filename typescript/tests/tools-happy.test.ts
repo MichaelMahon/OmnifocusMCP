@@ -69,7 +69,8 @@ describe("tool happy paths", () => {
     expect(JSON.parse(result.content[0].text)).toEqual([{ id: "t1", name: "Task 1" }]);
     const script = String(runOmniJsMock.mock.calls[0][0]);
     expect(script).toContain("const projectFilter = \"Errands\";");
-    expect(script).toContain("const tagFilter = \"Home\";");
+    expect(script).toContain("const tagNames = [\"Home\"];");
+    expect(script).toContain("const tagFilterMode = \"any\";");
     expect(script).toContain("const flaggedFilter = true;");
   });
 

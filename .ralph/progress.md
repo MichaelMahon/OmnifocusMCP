@@ -5,9 +5,9 @@
 ## Summary
 
 - Current task: OmniFocus MCP — Full API parity (19 new tools across 3 implementations)
-- Current status: All phases complete (criteria 1-29 of 29).
-- Next criterion: none — task complete
-- Remaining: none
+- Current status: Iteration 12 in progress (criterion 2 complete).
+- Next criterion: 3 — add duration filter to `list_tasks`
+- Remaining: criteria 3-36
 
 ## How This Works
 
@@ -196,8 +196,26 @@ Reading even two full files will blow your budget and trigger rotation.
 ### 2026-02-28 14:31:25
 **Session 12 started** (model: auto)
 
+### 2026-02-28 14:32:20
+- confirmed criterion 2 (multi-tag filtering for `list_tasks`) is implemented in python/typescript/rust with:
+  - merged `tag` + `tags` union behavior
+  - `tagFilterMode` `"any"` and `"all"` jxa logic
+  - empty tags-array ignore behavior
+- reran full `RALPH_TASK.md` `test_command` successfully across all implementations:
+  - python: `ruff`, `ruff format --check`, `mypy --strict`, `pytest`
+  - typescript: `npx tsc --noEmit`, `npm test`
+  - rust: `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test`
+- updated `RALPH_TASK.md` criterion 2 to `[x]`
+- next criterion: 3 (add `maxEstimatedMinutes` duration filter)
+
 ### 2026-02-28 14:31:47
 **Session 12 ended** - 🔄 Context rotation (token limit reached)
 
 ### 2026-02-28 14:31:49
 **Session 13 started** (model: auto)
+
+### 2026-02-28 14:32:27
+**Session 13 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 14:32:29
+**Session 14 started** (model: auto)
