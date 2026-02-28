@@ -190,7 +190,7 @@ Reference implementations:
           task count, and ask for explicit confirmation."
         - Implement and test in all 3 implementations.
 
-11. [ ] **`move_project`** — all 3 implementations.
+11. [x] **`move_project`** — all 3 implementations.
         - **Input:** `project_id_or_name: str` (non-empty),
           `folder: str | null` (folder name; null moves to top level)
         - **JXA:** find project by ID or name. If folder is null, call
@@ -200,7 +200,7 @@ Reference implementations:
           Return `{ id, name, folderName }`.
         - Implement and test in all 3 implementations.
 
-12. [ ] All lint and test commands pass for Phase 2 (same as criterion 6).
+12. [x] All lint and test commands pass for Phase 2 (same as criterion 6).
 
 ---
 

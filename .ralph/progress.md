@@ -1357,3 +1357,34 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 12:50:14
 **Session 28 started** (model: auto)
+
+### 2026-02-28 12:51:00
+- completed criterion 11 (`move_project`) across Python, TypeScript, and Rust with matching input contract (`project_id_or_name`, `folder`) and return shape (`id`, `name`, `folderName`)
+- normalized all implementations to the same OmniJS flow for top-level and folder moves:
+  - `if (folderName === null) destination = library.ending`
+  - otherwise lookup folder by name and use `targetFolder.ending`
+  - call `moveSections([project], destination)` and return updated folder name
+- fixed duplication regressions encountered during iteration:
+  - removed duplicate `move_project` tool registrations in `typescript/src/tools/projects.ts`
+  - aligned stale test assertions in `typescript/tests/tools-happy.test.ts` to the canonical script shape
+  - removed duplicate `move_project` function definitions in `rust/src/tools/projects.rs` and aligned rust write-tool script assertions
+- ran required quality gates:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` (`86 passed, 5 skipped`)
+  - `cd typescript && npx tsc --noEmit && npm test` (`48 passed, 5 skipped`)
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 11 complete in `RALPH_TASK.md`
+- next focus: criterion 12 (phase 2 full lint/typecheck/test gate)
+
+### 2026-02-28 12:51:20
+- completed criterion 12 by confirming the Phase 2 cross-implementation quality gate passes after `move_project` parity fixes:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd typescript && npx tsc --noEmit && npm test`
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+- marked criterion 12 complete in `RALPH_TASK.md`
+- next focus: criterion 13 (`update_tag` in Python -> TypeScript -> Rust)
+
+### 2026-02-28 12:50:45
+**Session 28 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 12:50:47
+**Session 29 started** (model: auto)

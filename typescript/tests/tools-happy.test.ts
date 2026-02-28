@@ -417,7 +417,7 @@ describe("tool happy paths", () => {
     const script = String(runOmniJsMock.mock.calls[0][0]);
     expect(script).toContain('const projectFilter = "p6";');
     expect(script).toContain('const folderName = "Work";');
-    expect(script).toContain("const destination = (() => {");
+    expect(script).toContain("let destination;");
     expect(script).toContain("moveSections([project], destination);");
   });
 
