@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772255285
-generated_at: 2026-02-28T05:08:12Z
+source_mtime: 1772255315
+generated_at: 2026-02-28T05:09:01Z
 
 tasks:
   - id: "line_109"
@@ -289,7 +289,7 @@ tasks:
     raw_marker: 40.
   - id: "line_247"
     line_number: 247
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Test `update_task` only modifies provided fields (omitted fields
     indent_level: 0

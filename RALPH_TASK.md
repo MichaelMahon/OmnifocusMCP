@@ -244,7 +244,7 @@ write tools return confirmation with the affected item's current state.
         required fields. Verify JXA script differs correctly.
 40. [x] Test `create_tasks_batch` creates N tasks in a single JXA call
         (verify single `run_omnijs` invocation, not N calls).
-41. [ ] Test `update_task` only modifies provided fields (omitted fields
+41. [x] Test `update_task` only modifies provided fields (omitted fields
         must NOT be nulled out in the JXA script).
 42. [ ] Error-path tests: `complete_task` with nonexistent ID → error.
         `create_task` with empty name → validation error.

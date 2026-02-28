@@ -451,6 +451,42 @@ async def test_update_task_happy_path(mock_server_run_omnijs: Callable[[Any], di
 
 
 @pytest.mark.asyncio
+async def test_update_task_only_includes_provided_fields_in_updates_payload(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "id": "t5",
+        "name": "Renamed",
+        "note": "existing note",
+        "flagged": True,
+        "dueDate": None,
+        "deferDate": None,
+        "completed": False,
+        "projectName": "Work",
+        "tags": ["existing"],
+        "estimatedMinutes": 10,
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.update_task(task_id="t5", name="Renamed", flagged=False)
+
+    assert len(state["calls"]) == 1
+    script = state["calls"][0]["script"]
+    updates_line = next(line for line in script.splitlines() if line.startswith("const updates = "))
+    updates_payload = updates_line.removeprefix("const updates = ").removesuffix(";")
+    updates = json.loads(updates_payload)
+
+    assert updates == {"name": "Renamed", "flagged": False}
+    assert "note" not in updates
+    assert "dueDate" not in updates
+    assert "deferDate" not in updates
+    assert "tags" not in updates
+    assert "estimatedMinutes" not in updates
+
+
+@pytest.mark.asyncio
 async def test_delete_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = {"id": "t6", "name": "Drop me", "deleted": True, "warning": None}
     configured = mock_server_run_omnijs(payload)
@@ -574,3 +610,23 @@ async def test_create_task_optional_fields_vs_required_only(
     assert "const flaggedValue = null;" in required_only_script
     assert "const tagNames = null;" in required_only_script
     assert "const estimatedMinutesValue = null;" in required_only_script
+
+
+@pytest.mark.asyncio
+async def test_complete_task_nonexistent_id_error(
+    server_module: Any,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
+        raise RuntimeError("Task not found: missing-id")
+
+    monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
+
+    with pytest.raises(RuntimeError, match="Task not found: missing-id"):
+        await server_module.complete_task("missing-id")
+
+
+@pytest.mark.asyncio
+async def test_create_task_empty_name_validation_error(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="name must not be empty."):
+        await server_module.create_task("   ")

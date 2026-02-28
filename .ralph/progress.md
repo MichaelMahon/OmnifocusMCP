@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 6
-- Current status: Phase 4 in progress (criterion 39 complete; next 40).
+- Current status: Phase 4 in progress (criterion 40 complete; next 41).
 
 ## How This Works
 
@@ -449,8 +449,39 @@ This is how Ralph maintains continuity across iterations.
 ### 2026-02-27 23:07:37
 **Session 9 started** (model: auto)
 
+### 2026-02-27 23:08:40
+**Session 9 update**
+- completed phase 4 criterion 41 (`update_task` only modifies provided fields)
+- added targeted write-tool tests in `python/tests/test_tools_write.py`:
+  - `test_create_tasks_batch_uses_single_omnijs_call_for_multiple_tasks` to explicitly verify single `run_omnijs` invocation for N batch items
+  - `test_update_task_only_includes_provided_fields_in_updates_payload` to parse `const updates = ...;` from generated JXA and confirm omitted fields are absent
+- re-ran full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 4 criterion 42 (write-tool error-path tests for nonexistent completion id and empty create name)
+
 ### 2026-02-27 23:08:13
 **Session 9 ended** - 🔄 Context rotation (token limit reached)
 
+### 2026-02-27 23:11:10
+**Session 10 started** (model: auto)
+
+### 2026-02-27 23:11:40
+**Session 10 update**
+- completed phase 4 criterion 40 (`create_tasks_batch` single-call verification)
+- confirmed `python/tests/test_tools_write.py` already verifies batch behavior:
+  - N task inputs are passed in one call
+  - single invocation is asserted with `len(state["calls"]) == 1`
+- re-ran full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 4 criterion 41 (`update_task` omitted fields not nulled)
+
 ### 2026-02-27 23:08:15
 **Session 10 started** (model: auto)
+
+### 2026-02-27 23:09:02
+**Session 10 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-27 23:09:04
+**Session 11 started** (model: auto)
