@@ -49,7 +49,7 @@ This is the foundation everything else builds on.
        - How to wire stdio transport
        - How to define tool parameter schemas
        Document findings as a comment block at the top of `rust/Cargo.toml`.
-2. [ ] Create `.cursor/rules/rust-conventions.mdc` with:
+2. [x] Create `.cursor/rules/rust-conventions.mdc` with:
        - Tooling: `cargo fmt`, `cargo clippy -- -D warnings`, `cargo test`
        - Edition 2021, MSRV matching `rmcp`'s requirement (check Cargo.toml)
        - Error handling: `thiserror` for error enums, `?` operator,
@@ -64,7 +64,7 @@ This is the foundation everything else builds on.
          `serde_json::to_string()`, raw string literals for script
          templates
        - Binary crate: commit `Cargo.lock` to version control
-3. [ ] Create `rust/Cargo.toml` with:
+3. [x] Create `rust/Cargo.toml` with:
        - `[package]` name = `"omnifocus-mcp"`, version matching project
        - Dependencies: `rmcp` (with `transport-io` feature or equivalent),
          `tokio` (full features), `serde` + `serde_json`, `schemars`,
@@ -72,7 +72,7 @@ This is the foundation everything else builds on.
        - Dev dependencies: `tokio` test utils
        - `[features] integration = []`
        - Adjust dependency list based on SDK research from criterion 1
-4. [ ] Create `rust/src/error.rs`:
+4. [x] Create `rust/src/error.rs`:
        ```rust
        #[derive(thiserror::Error, Debug)]
        pub enum OmniFocusError {
@@ -85,7 +85,7 @@ This is the foundation everything else builds on.
        }
        ```
        Include `Display` messages matching the Python error strings.
-5. [ ] Create `rust/src/types.rs` with result structs:
+5. [x] Create `rust/src/types.rs` with result structs:
        - `TaskResult` (id, name, note, flagged, completed, project,
          due_date, defer_date, completion_date, tags, estimated_minutes,
          in_inbox, has_children, sequential)
@@ -98,7 +98,7 @@ This is the foundation everything else builds on.
        - `PerspectiveResult` (id, name)
        All structs derive `Serialize`, `Deserialize`, `Debug`, `Clone`.
        Use `Option<T>` for nullable fields. Use `Vec<String>` for tags.
-6. [ ] Create `rust/src/jxa.rs` with three layers matching Python's jxa.py:
+6. [x] Create `rust/src/jxa.rs` with three layers matching Python's jxa.py:
        - `run_jxa(script) -> Result<String>` — low-level osascript call.
          Uses `tokio::sync::Mutex<()>` for serialized execution,
          `tokio::process::Command` calling `osascript -l JavaScript -e`,
@@ -122,21 +122,21 @@ This is the foundation everything else builds on.
        - The outer JXA template: `const app = Application('OmniFocus');
          const result = app.evaluateJavascript({escaped}); result;`
          — note the lowercase 's' in `evaluateJavascript`
-7. [ ] Create `rust/src/lib.rs` that re-exports all modules: `error`,
+7. [x] Create `rust/src/lib.rs` that re-exports all modules: `error`,
        `types`, `jxa`, `tools`, `resources`, `prompts`, `server`.
        This allows tests to `use omnifocus_mcp::*` cleanly.
-8. [ ] `cargo build` succeeds with no errors.
-9. [ ] Create `rust/tests/jxa_test.rs` with unit tests:
+8. [x] `cargo build` succeeds with no errors.
+9. [x] Create `rust/tests/jxa_test.rs` with unit tests:
        - `escape_for_jxa` handles quotes, backslashes, newlines, unicode,
          null characters
        - `OmniFocusError` display messages match expected strings
        - Mock `JxaRunner` returns canned data, verify parsing
        - Envelope unwrapping: `{ok: true, data: ...}` returns data,
          `{ok: false, error: "..."}` returns friendly error
-10. [ ] JXA bridge probe against real OmniFocus:
+10. [x] JXA bridge probe against real OmniFocus:
         `RealJxaRunner::new().run_omnijs("return document.flattenedTasks.length;")`
         returns a number. Create `rust/examples/probe.rs` for this.
-11. [ ] `cargo test && cargo clippy -- -D warnings && cargo fmt --check`
+11. [x] `cargo test && cargo clippy -- -D warnings && cargo fmt --check`
         all pass.
 
 ---

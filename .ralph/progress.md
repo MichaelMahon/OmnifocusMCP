@@ -327,3 +327,14 @@ This is how Ralph maintains continuity across iterations.
 - findings captured: tool registration (`#[tool_router]` + `#[tool_handler]`), prompt registration (`#[prompt_router]` + `#[prompt_handler]`), resource registration via `ServerHandler` trait methods, stdio wiring (`serve(stdio())` + `waiting()`), and typed tool params via `Parameters<T>`
 - marked criterion 1 complete in `RALPH_TASK.md`
 - next focus: criterion 2 (`.cursor/rules/rust-conventions.mdc`)
+
+### 2026-02-28 11:20:00
+- completed criterion 2 by adding `.cursor/rules/rust-conventions.mdc` with required tooling, msrv/edition, async, testing, organization, and jxa safety conventions
+- completed criterion 3 by creating a valid `rust/Cargo.toml` (package metadata, dependencies, dev-dependencies, integration feature) while preserving criterion 1 sdk research notes
+- completed criteria 4-7 by creating `rust/src/error.rs`, `rust/src/types.rs`, `rust/src/jxa.rs`, `rust/src/lib.rs`, and module placeholders for `tools`, `resources`, `prompts`, and `server`
+- completed criterion 8 with `cd rust && cargo build` success
+- completed criterion 9 by adding `rust/tests/jxa_test.rs` with escaping, error-display, mock runner, and envelope-unwrapping tests
+- completed criterion 10 with real probe `cd rust && cargo run --example probe` returning numeric result (`889`)
+- completed criterion 11 with `cd rust && cargo test && cargo clippy -- -D warnings && cargo fmt --check` passing
+- marked criteria 2-11 complete in `RALPH_TASK.md`
+- next focus: begin phase 2 criterion 12 (`rust/src/tools/mod.rs` full re-exports + tool module implementation)

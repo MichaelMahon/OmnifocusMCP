@@ -11,3 +11,23 @@
 # - tool parameter schemas: use `Parameters<T>` wrapper and derive
 #   `Serialize`, `Deserialize`, and `JsonSchema` on `T`; rmcp generates tool schema from `T`
 
+[package]
+name = "omnifocus-mcp"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rmcp = { version = "0.17", features = ["server", "transport-io", "macros", "schemars"] }
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+schemars = "1"
+thiserror = "2"
+clap = { version = "4", features = ["derive"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["test-util"] }
+
+[features]
+integration = []
+
