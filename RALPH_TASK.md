@@ -348,11 +348,11 @@ Ensure both implementations are complete, documented, and consistent.
 72. [x] Top-level `README.md` updated with feature comparison table,
         installation instructions for both implementations, MCP client
         config examples for popular clients, and links.
-73. [ ] MCP client configs for both implementations tested. Documented
+73. [x] MCP client configs for both implementations tested. Documented
         how to switch between Python and TS versions in any client.
-74. [ ] Both implementations pass their respective full check commands
+74. [x] Both implementations pass their respective full check commands
         with no warnings (lint + typecheck + tests).
-75. [ ] `.gitignore` is complete, repo is clean, tagged as `v1.0.0`.
+75. [x] `.gitignore` is complete, repo is clean, tagged as `v1.0.0`.
 
 ---
 

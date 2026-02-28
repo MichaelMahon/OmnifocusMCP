@@ -1,7 +1,24 @@
 # Ralph config (may contain API key)
 .cursor/ralph-config.json
+
+# Ralph runtime logs
+.ralph/activity.log
+.ralph/errors.log
+
+# Python artifacts
 node_modules/
 dist/
 __pycache__/
 .venv/
 *.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# TypeScript artifacts
+typescript/node_modules/
+typescript/dist/
+
+# OS/editor files
+.DS_Store

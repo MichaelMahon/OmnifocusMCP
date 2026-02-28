@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772256617
-generated_at: 2026-02-28T05:30:33Z
+source_mtime: 1772256760
+generated_at: 2026-02-28T05:32:51Z
 
 tasks:
   - id: "line_109"
@@ -506,28 +506,28 @@ tasks:
     raw_marker: 71.
   - id: "line_348"
     line_number: 348
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Top-level `README.md` updated with feature comparison table,
     indent_level: 0
     raw_marker: 72.
   - id: "line_351"
     line_number: 351
-    status: pending
+    status: completed
     parallel_group: 999999
     description: MCP client configs for both implementations tested. Documented
     indent_level: 0
     raw_marker: 73.
   - id: "line_353"
     line_number: 353
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Both implementations pass their respective full check commands
     indent_level: 0
     raw_marker: 74.
   - id: "line_355"
     line_number: 355
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `.gitignore` is complete, repo is clean, tagged as `v1.0.0`.
     indent_level: 0
