@@ -273,7 +273,7 @@ Reference implementations:
 
 ### Success Criteria
 
-20. [ ] **`append_to_note`** — all 3 implementations.
+20. [x] **`append_to_note`** — all 3 implementations.
         - **Input:** `object_type: str` (one of: "task", "project"),
           `object_id: str` (non-empty), `text: str` (non-empty)
         - **JXA:** find the task or project by ID. Call
