@@ -13,7 +13,10 @@ use omnifocus_mcp::{
         perspectives::list_perspectives,
         projects::{get_project, list_projects, search_projects},
         tags::{list_tags, search_tags},
-        tasks::{get_inbox, get_task, list_subtasks, list_tasks as list_tasks_with_duration, search_tasks},
+        tasks::{
+            get_inbox, get_task, list_subtasks, list_tasks as list_tasks_with_duration,
+            search_tasks,
+        },
     },
 };
 use serde_json::{json, Value};
@@ -70,6 +73,7 @@ async fn list_tasks<R: JxaRunner>(
     defer_after: Option<&str>,
     completed_before: Option<&str>,
     completed_after: Option<&str>,
+    max_estimated_minutes: Option<i32>,
     limit: i32,
 ) -> Result<Vec<omnifocus_mcp::types::TaskResult>, OmniFocusError> {
     list_tasks_with_duration(
@@ -86,7 +90,7 @@ async fn list_tasks<R: JxaRunner>(
         defer_after,
         completed_before,
         completed_after,
-        None,
+        max_estimated_minutes,
         limit,
     )
     .await
@@ -517,6 +521,7 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
+        None,
         5,
     )
     .await
@@ -538,6 +543,7 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         "any",
         None,
         "available",
+        None,
         None,
         None,
         None,
@@ -645,7 +651,7 @@ async fn list_tasks_duration_filter_script_contains_expected_logic() {
         last_script: last_script.clone(),
     };
 
-    let listed_15 = list_tasks(
+    let listed_15 = list_tasks_with_duration(
         &runner,
         None,
         None,
@@ -674,7 +680,7 @@ async fn list_tasks_duration_filter_script_contains_expected_logic() {
         "if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;"
     ));
 
-    let listed_60 = list_tasks(
+    let listed_60 = list_tasks_with_duration(
         &runner,
         None,
         None,
@@ -898,68 +904,4 @@ async fn list_tasks_empty_tags_array_is_ignored() {
         .expect("script capture lock should succeed")
         .clone();
     assert!(script.contains("const tagNames = null;"));
-}
-
-#[tokio::test]
-async fn list_tasks_duration_filter_values_and_null_exclusion_are_in_script() {
-    let last_script = Arc::new(Mutex::new(String::new()));
-    let runner = CapturingRunner {
-        payload: json!([task_value("t-duration", "duration task")]),
-        last_script: last_script.clone(),
-    };
-
-    list_tasks(
-        &runner,
-        None,
-        None,
-        None,
-        "any",
-        None,
-        "available",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        Some(15),
-        5,
-    )
-    .await
-    .expect("list tasks with 15-minute duration filter should parse");
-
-    let script_15 = last_script
-        .lock()
-        .expect("script capture lock should succeed")
-        .clone();
-    assert!(script_15.contains("const maxEstimatedMinutes = 15;"));
-    assert!(script_15.contains(
-        "if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;"
-    ));
-
-    list_tasks(
-        &runner,
-        None,
-        None,
-        None,
-        "any",
-        None,
-        "available",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        Some(60),
-        5,
-    )
-    .await
-    .expect("list tasks with 60-minute duration filter should parse");
-
-    let script_60 = last_script
-        .lock()
-        .expect("script capture lock should succeed")
-        .clone();
-    assert!(script_60.contains("const maxEstimatedMinutes = 60;"));
 }

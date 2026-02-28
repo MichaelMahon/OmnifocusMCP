@@ -34,6 +34,18 @@ export function register(server: Server): void {
       completedBefore: z.string().optional(),
       completedAfter: z.string().optional(),
       maxEstimatedMinutes: z.number().int().min(0).optional(),
+      sortBy: z
+        .enum([
+          "dueDate",
+          "deferDate",
+          "name",
+          "completionDate",
+          "estimatedMinutes",
+          "project",
+          "flagged",
+        ])
+        .optional(),
+      sortOrder: z.enum(["asc", "desc"]).default("asc"),
       limit: z.number().int().min(1).default(100),
     },
     async ({
@@ -50,6 +62,8 @@ export function register(server: Server): void {
       completedBefore,
       completedAfter,
       maxEstimatedMinutes,
+      sortBy,
+      sortOrder,
       limit,
     }) => {
       try {
@@ -68,6 +82,8 @@ export function register(server: Server): void {
             completedBefore,
             completedAfter,
             maxEstimatedMinutes,
+            sortBy,
+            sortOrder,
             limit
           )
         );
@@ -702,8 +718,24 @@ export async function listTasksData(
   completedBefore: string | undefined,
   completedAfter: string | undefined,
   maxEstimatedMinutes: number | undefined,
+  sortBy:
+    | "dueDate"
+    | "deferDate"
+    | "name"
+    | "completionDate"
+    | "estimatedMinutes"
+    | "project"
+    | "flagged"
+    | undefined,
+  sortOrder: "asc" | "desc",
   limit: number
 ): Promise<unknown> {
+  let effectiveSortBy = sortBy;
+  let effectiveSortOrder = sortOrder;
+  if ((completedBefore !== undefined || completedAfter !== undefined) && effectiveSortBy === undefined) {
+    effectiveSortBy = "completionDate";
+    effectiveSortOrder = "desc";
+  }
   const projectFilter = project === undefined ? "null" : escapeForJxa(project.trim());
   const mergedTagNames: string[] = [];
   if (tag !== undefined) {
@@ -731,6 +763,8 @@ export async function listTasksData(
   const completedBeforeFilter = completedBefore === undefined ? "null" : escapeForJxa(completedBefore);
   const completedAfterFilter = completedAfter === undefined ? "null" : escapeForJxa(completedAfter);
   const maxEstimatedMinutesFilter = maxEstimatedMinutes === undefined ? "null" : String(maxEstimatedMinutes);
+  const sortByFilter = effectiveSortBy === undefined ? "null" : escapeForJxa(effectiveSortBy);
+  const sortOrderFilter = escapeForJxa(effectiveSortOrder);
   const script = `
 const projectFilter = ${projectFilter};
 const tagNames = ${tagNamesFilter};
@@ -744,6 +778,8 @@ const deferAfterRaw = ${deferAfterFilter};
 const completedBeforeRaw = ${completedBeforeFilter};
 const completedAfterRaw = ${completedAfterFilter};
 const maxEstimatedMinutes = ${maxEstimatedMinutesFilter};
+const sortBy = ${sortByFilter};
+const sortOrder = ${sortOrderFilter};
 const now = new Date();
 const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
 const parseOptionalDate = (value, fieldName) => {
@@ -761,7 +797,7 @@ const deferAfter = parseOptionalDate(deferAfterRaw, "deferAfter");
 const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
 const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
 const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;
-const tasks = document.flattenedTasks
+const filteredTasks = document.flattenedTasks
   .filter(task => {
     if (projectFilter !== null) {
       const projectName = task.containingProject ? task.containingProject.name : null;
@@ -803,8 +839,52 @@ const tasks = document.flattenedTasks
     if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
     if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;
     return true;
-  })
-  .slice(0, ${limit});
+  });
+const compareValues = (aValue, bValue, isString = false) => {
+  if (aValue === null && bValue === null) return 0;
+  if (aValue === null) return 1;
+  if (bValue === null) return -1;
+  let left = aValue;
+  let right = bValue;
+  if (isString) {
+    left = String(aValue).toLowerCase();
+    right = String(bValue).toLowerCase();
+  }
+  if (left < right) return sortOrder === "asc" ? -1 : 1;
+  if (left > right) return sortOrder === "asc" ? 1 : -1;
+  return 0;
+};
+const sortedTasks = sortBy === null ? filteredTasks : filteredTasks.slice().sort((a, b) => {
+  let aValue = null;
+  let bValue = null;
+  let isString = false;
+  if (sortBy === "dueDate") {
+    aValue = a.dueDate;
+    bValue = b.dueDate;
+  } else if (sortBy === "deferDate") {
+    aValue = a.deferDate;
+    bValue = b.deferDate;
+  } else if (sortBy === "name") {
+    aValue = a.name;
+    bValue = b.name;
+    isString = true;
+  } else if (sortBy === "completionDate") {
+    aValue = a.completionDate;
+    bValue = b.completionDate;
+  } else if (sortBy === "estimatedMinutes") {
+    aValue = a.estimatedMinutes;
+    bValue = b.estimatedMinutes;
+  } else if (sortBy === "project") {
+    aValue = a.containingProject ? a.containingProject.name : null;
+    bValue = b.containingProject ? b.containingProject.name : null;
+    isString = true;
+  } else if (sortBy === "flagged") {
+    aValue = a.flagged;
+    bValue = b.flagged;
+  }
+  return compareValues(aValue, bValue, isString);
+});
+const tasks = sortedTasks.slice(0, ${limit});
 return tasks.map(task => ({
   id: task.id.primaryKey,
   name: task.name,
