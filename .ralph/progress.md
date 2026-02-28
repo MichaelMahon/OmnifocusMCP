@@ -783,6 +783,15 @@ This is how Ralph maintains continuity across iterations.
 - confirmed criteria 11-13 are marked complete in `RALPH_TASK.md`
 - next focus: criterion 14 (`rust/examples/smoke_test.rs` batch-delete validation path)
 
+### 2026-02-28 12:08:08
+- completed criterion 14 by confirming `rust/examples/smoke_test.rs` exercises `delete_tasks_batch` by creating three tasks, deleting them in one call, and asserting all three report `deleted: true`
+- completed criterion 15 by running `cd rust && cargo run --example smoke_test` against real OmniFocus with `0 failures` (`smoke test PASSED`)
+- completed criterion 16 by manually verifying parity for `delete_tasks_batch` across Python, TypeScript, and Rust: same tool name, same input field (`task_ids`), and same response shape (`deleted_count`, `not_found_count`, `results`)
+- completed criterion 17 by updating root `README.md` tool table and count to include `delete_tasks_batch` (20 tools total)
+- completed criterion 18 by updating `rust/README.md` tool counts/listing to include `delete_tasks_batch`
+- ran the full task verification command from `RALPH_TASK.md` successfully across all implementations (python/ts/rust checks and tests passing)
+- all criteria in `RALPH_TASK.md` are now checked complete
+
 ### 2026-02-28 12:05:16
 **Session 5 ended** - 🔄 Context rotation (token limit reached)
 
