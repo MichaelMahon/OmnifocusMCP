@@ -26,7 +26,7 @@ use crate::{
         PROJECTS_RESOURCE_URI, TODAY_RESOURCE_URI,
     },
     tools::{
-        folders::{create_folder, list_folders},
+        folders::{create_folder, get_folder, list_folders},
         forecast::get_forecast,
         perspectives::list_perspectives,
         projects::{
@@ -211,6 +211,11 @@ struct CreateTagParams {
 struct CreateFolderParams {
     name: String,
     parent: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct FolderNameOrIdParams {
+    folder_name_or_id: String,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -703,6 +708,17 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         Parameters(params): Parameters<CreateFolderParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = create_folder(self.runner.as_ref(), &params.name, params.parent.as_deref())
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "get folder details by id or name, including direct projects and subfolders.")]
+    async fn get_folder(
+        &self,
+        Parameters(params): Parameters<FolderNameOrIdParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = get_folder(self.runner.as_ref(), &params.folder_name_or_id)
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
