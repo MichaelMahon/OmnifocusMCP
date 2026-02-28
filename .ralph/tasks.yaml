@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772292513
-generated_at: 2026-02-28T15:28:59Z
+source_mtime: 1772292793
+generated_at: 2026-02-28T15:34:21Z
 
 tasks:
   - id: "line_32"
@@ -156,7 +156,7 @@ tasks:
     raw_marker: 21.
   - id: "line_169"
     line_number: 169
-    status: pending
+    status: completed
     parallel_group: 999999
     description: TypeScript: `typescript/tests/integration.test.ts` created with
     indent_level: 0
