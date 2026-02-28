@@ -1009,3 +1009,35 @@ return {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@_typed_tool(mcp)
+async def create_tag(name: str, parent: str | None = None) -> str:
+    """create a tag with optional parent tag nesting and return its id."""
+    if name.strip() == "":
+        raise ValueError("name must not be empty.")
+    if parent is not None and parent.strip() == "":
+        raise ValueError("parent must not be empty when provided.")
+
+    tag_name = escape_for_jxa(name.strip())
+    parent_name = "null" if parent is None else escape_for_jxa(parent.strip())
+
+    script = f"""
+const tagName = {tag_name};
+const parentName = {parent_name};
+
+const tag = (() => {{
+  if (parentName === null) return new Tag(tagName);
+  const parentTag = document.flattenedTags.byName(parentName);
+  if (!parentTag) {{
+    throw new Error(`Tag not found: ${{parentName}}`);
+  }}
+  return new Tag(tagName, parentTag.ending);
+}})();
+
+return {{
+  id: tag.id.primaryKey
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)

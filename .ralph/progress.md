@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 5
-- Current status: Phase 4 in progress (criterion 36 complete; next 37).
+- Current status: Phase 4 in progress (criterion 37 complete; next 38).
 
 ## How This Works
 
@@ -20,13 +20,13 @@ This is how Ralph maintains continuity across iterations.
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
 | 3     | Python: Read Tools + Tests        | 16–28     | 13/13 |
-| 4     | Python: Write Tools + Tests       | 29–43     | 8/15 |
+| 4     | Python: Write Tools + Tests       | 29–43     | 9/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 36 / 75 criteria complete**
+**Total: 37 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -383,3 +383,15 @@ This is how Ralph maintains continuity across iterations.
   - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
   - `cd ../typescript && npx tsc --noEmit && npm test`
 - next up: phase 4 criterion 37 (`create_tag`)
+
+### 2026-02-27 23:05:08
+**Session 6 update**
+- completed phase 4 criterion 37 (`create_tag`)
+- extended `python/src/omnifocus_mcp/server.py` with `create_tag(name, parent)`:
+  - validates non-empty tag name and non-empty parent when parent is provided
+  - creates top-level tags or nested tags under a resolved parent tag by name
+  - returns a clear `Tag not found` error when the requested parent does not exist
+- re-ran full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 4 criterion 38 (write-tool happy-path tests)
