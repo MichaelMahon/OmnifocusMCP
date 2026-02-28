@@ -96,13 +96,13 @@ Reference:
         - **Validation:** same rules as Python (non-empty vec, non-empty strings)
         - **JXA script:** character-identical to Python/TypeScript
         - **Escape:** serialize `task_ids` via `serde_json::to_string()`
-11. [ ] Register the tool in `rust/src/server.rs`:
+11. [x] Register the tool in `rust/src/server.rs`:
         - Add `#[tool(description = "...")]` method with the approval
           language in the description
         - Input params struct with `task_ids: Vec<String>`
-12. [ ] Add tests in `rust/tests/tools_write_test.rs`:
+12. [x] Add tests in `rust/tests/tools_write_test.rs`:
         - Happy path, partial failure, validation errors
-13. [ ] `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` all pass.
+13. [x] `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` all pass.
 
 ---
 

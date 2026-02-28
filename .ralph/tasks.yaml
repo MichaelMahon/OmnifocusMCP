@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772301833
-generated_at: 2026-02-28T18:04:26Z
+source_mtime: 1772301911
+generated_at: 2026-02-28T18:05:15Z
 
 tasks:
   - id: "line_39"
@@ -79,21 +79,21 @@ tasks:
     raw_marker: 10.
   - id: "line_99"
     line_number: 99
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Register the tool in `rust/src/server.rs`:
     indent_level: 0
     raw_marker: 11.
   - id: "line_103"
     line_number: 103
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Add tests in `rust/tests/tools_write_test.rs`:
     indent_level: 0
     raw_marker: 12.
   - id: "line_105"
     line_number: 105
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` all pass.
     indent_level: 0
