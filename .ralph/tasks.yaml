@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772290162
-generated_at: 2026-02-28T14:49:56Z
+source_mtime: 1772290267
+generated_at: 2026-02-28T14:56:06Z
 
 tasks:
   - id: "line_32"
@@ -23,49 +23,49 @@ tasks:
     raw_marker: 2.
   - id: "line_39"
     line_number: 39
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Smoke test calls every read tool function and verifies each returns
     indent_level: 0
     raw_marker: 3.
   - id: "line_44"
     line_number: 44
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Smoke test runs a full task CRUD lifecycle:
     indent_level: 0
     raw_marker: 4.
   - id: "line_52"
     line_number: 52
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Smoke test runs successfully against real OmniFocus with zero
     indent_level: 0
     raw_marker: 5.
   - id: "line_65"
     line_number: 65
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Every `# BUG:` documented in Phase 1 has a corresponding fix
     indent_level: 0
     raw_marker: 6.
   - id: "line_67"
     line_number: 67
-    status: pending
+    status: completed
     parallel_group: 999999
     description: The same fixes are applied to the TypeScript source
     indent_level: 0
     raw_marker: 7.
   - id: "line_69"
     line_number: 69
-    status: pending
+    status: completed
     parallel_group: 999999
     description: All existing mocked unit tests still pass after fixes:
     indent_level: 0
     raw_marker: 8.
   - id: "line_72"
     line_number: 72
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Smoke test (`python/scripts/smoke_test.py`) passes cleanly
     indent_level: 0
