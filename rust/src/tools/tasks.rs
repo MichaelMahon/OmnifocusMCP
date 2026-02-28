@@ -1683,6 +1683,76 @@ return {{
     runner.run_omnijs(&script).await
 }
 
+pub async fn duplicate_task<R: JxaRunner>(
+    runner: &R,
+    task_id: &str,
+    include_children: bool,
+) -> Result<Value> {
+    if task_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_id must not be empty.".to_string(),
+        ));
+    }
+
+    let task_id_filter = escape_for_jxa(task_id.trim());
+    let include_children_value = if include_children { "true" } else { "false" };
+    let script = format!(
+        r#"const taskId = {task_id_filter};
+const includeChildren = {include_children_value};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+const insertionLocation = task.containingProject ? task.containingProject.ending : inbox.ending;
+const clonedTask = (() => {{
+  if (includeChildren) {{
+    const duplicates = duplicateTasks([task], insertionLocation);
+    return duplicates && duplicates.length > 0 ? duplicates[0] : null;
+  }}
+  const manualClone = new Task(task.name, insertionLocation);
+  manualClone.note = task.note;
+  manualClone.flagged = task.flagged;
+  manualClone.dueDate = task.dueDate;
+  manualClone.deferDate = task.deferDate;
+  manualClone.estimatedMinutes = task.estimatedMinutes;
+  task.tags.forEach(tag => {{
+    manualClone.addTag(tag);
+  }});
+  return manualClone;
+}})();
+if (!clonedTask) {{
+  throw new Error(`Failed to duplicate task: ${{taskId}}`);
+}}
+return {{
+  id: clonedTask.id.primaryKey,
+  name: clonedTask.name,
+  note: clonedTask.note,
+  flagged: clonedTask.flagged,
+  dueDate: clonedTask.dueDate ? clonedTask.dueDate.toISOString() : null,
+  deferDate: clonedTask.deferDate ? clonedTask.deferDate.toISOString() : null,
+  completed: clonedTask.completed,
+  completionDate: clonedTask.completionDate ? clonedTask.completionDate.toISOString() : null,
+  projectName: clonedTask.containingProject ? clonedTask.containingProject.name : null,
+  tags: clonedTask.tags.map(tag => tag.name),
+  estimatedMinutes: clonedTask.estimatedMinutes,
+  hasChildren: clonedTask.hasChildren,
+  taskStatus: (() => {{
+    const s = String(clonedTask.taskStatus);
+    if (s.includes("Available")) return "available";
+    if (s.includes("Blocked")) return "blocked";
+    if (s.includes("Next")) return "next";
+    if (s.includes("DueSoon")) return "due_soon";
+    if (s.includes("Overdue")) return "overdue";
+    if (s.includes("Completed")) return "completed";
+    if (s.includes("Dropped")) return "dropped";
+    return "unknown";
+  }})()
+}};"#
+    );
+
+    runner.run_omnijs(&script).await
+}
+
 #[allow(clippy::too_many_arguments)]
 pub async fn search_tasks_with_planned<R: JxaRunner>(
     runner: &R,

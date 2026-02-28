@@ -583,6 +583,23 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
+    #[tool(
+        description = "duplicate a task with all its properties. if the task has subtasks, they are cloned too by default."
+    )]
+    async fn duplicate_task(
+        &self,
+        Parameters(params): Parameters<DuplicateTaskParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = duplicate_task(
+            self.runner.as_ref(),
+            &params.task_id,
+            params.include_children.unwrap_or(true),
+        )
+        .await
+        .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
     #[tool(description = "remove one notification from a task by id.")]
     async fn remove_notification(
         &self,

@@ -14,9 +14,9 @@ use omnifocus_mcp::{
         projects::{get_project, get_project_counts, list_projects, search_projects},
         tags::{list_tags, search_tags},
         tasks::{
-            add_notification, get_inbox, get_task, get_task_counts, list_notifications,
-            list_subtasks, list_tasks as list_tasks_with_duration, list_tasks_with_planned,
-            remove_notification, search_tasks, search_tasks_with_planned,
+            add_notification, duplicate_task, get_inbox, get_task, get_task_counts,
+            list_notifications, list_subtasks, list_tasks as list_tasks_with_duration,
+            list_tasks_with_planned, remove_notification, search_tasks, search_tasks_with_planned,
         },
     },
 };
@@ -546,6 +546,10 @@ async fn validation_errors_for_read_tools() {
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
+        duplicate_task(&runner, "   ", true).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
         search_tasks(
             &runner,
             "   ",
@@ -955,6 +959,53 @@ async fn remove_notification_script_removes_notification_by_id() {
     ));
     assert!(script.contains("task.removeNotification(notification);"));
     assert!(script.contains("removed: true"));
+}
+
+#[tokio::test]
+async fn duplicate_task_script_supports_children_and_manual_clone_modes() {
+    let with_children_script = Arc::new(Mutex::new(String::new()));
+    let with_children_runner = CapturingRunner {
+        payload: json!({
+            "id": "copy-1",
+            "name": "Copied task",
+            "taskStatus": "available"
+        }),
+        last_script: with_children_script.clone(),
+    };
+    let with_children = duplicate_task(&with_children_runner, "t3", true)
+        .await
+        .expect("duplicate_task includeChildren=true should parse");
+    assert!(with_children.is_object());
+    let with_children_script_text = with_children_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(with_children_script_text.contains(r#"const taskId = "t3";"#));
+    assert!(with_children_script_text.contains("const includeChildren = true;"));
+    assert!(with_children_script_text.contains("const duplicates = duplicateTasks([task], insertionLocation);"));
+    assert!(with_children_script_text.contains("taskStatus: (() => {"));
+
+    let without_children_script = Arc::new(Mutex::new(String::new()));
+    let without_children_runner = CapturingRunner {
+        payload: json!({
+            "id": "copy-2",
+            "name": "Copied task flat"
+        }),
+        last_script: without_children_script.clone(),
+    };
+    let without_children = duplicate_task(&without_children_runner, "t3", false)
+        .await
+        .expect("duplicate_task includeChildren=false should parse");
+    assert!(without_children.is_object());
+    let without_children_script_text = without_children_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(without_children_script_text.contains("const includeChildren = false;"));
+    assert!(without_children_script_text.contains(
+        "const manualClone = new Task(task.name, insertionLocation);"
+    ));
+    assert!(without_children_script_text.contains("manualClone.addTag(tag);"));
 }
 
 #[tokio::test]
