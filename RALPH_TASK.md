@@ -179,7 +179,7 @@ Reference implementations:
          `markIncomplete()`). This tool sets the organizational status.
        - Implement and test in all 3 implementations.
 
-10. [ ] **`delete_project`** — all 3 implementations.
+10. [x] **`delete_project`** — all 3 implementations.
         - **Input:** `project_id_or_name: str` (non-empty)
         - **JXA:** find project by ID or name. Record name and task
           count before deletion. Call `deleteObject(project)`. Return

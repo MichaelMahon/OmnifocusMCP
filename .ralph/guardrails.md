@@ -80,3 +80,8 @@
 - **Instruction**: Add explicit runtime validation in handlers for constrained fields that tests can pass as raw values, and assert against the handler error message rather than schema-only errors
 - **Added after**: TypeScript `set_project_status` happy/invalid tests failed because mock tool invocation bypassed zod schema enforcement
 
+### Sign: Scan For Duplicate Registrations Before Full Gates
+- **Trigger**: Before running full cross-implementation lint/typecheck/tests for a criterion
+- **Instruction**: Run `rg` for the target tool symbol in Python/TypeScript/Rust sources and tests, then remove duplicate definitions/registrations before validation
+- **Added after**: full gate failed due repeated `set_project_status` definitions in Python and inconsistent duplicate handler variants in TypeScript
+

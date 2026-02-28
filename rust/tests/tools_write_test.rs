@@ -9,8 +9,8 @@ use omnifocus_mcp::{
     jxa::{escape_for_jxa, JxaRunner},
     tools::{
         projects::{
-            complete_project, create_project, delete_project, set_project_status, uncomplete_project,
-            update_project,
+            complete_project, create_project, delete_project, set_project_status,
+            uncomplete_project, update_project,
         },
         tags::create_tag,
         tasks::{
