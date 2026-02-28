@@ -123,6 +123,7 @@ describe("representative read and write tool handlers", () => {
     await getTool("list_tasks")({ status: "all", limit: 2 });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain("completionDate: task.completionDate ? task.completionDate.toISOString() : null,");
+    expect(script).toContain("plannedDate: (() => {");
     expect(script).toContain("hasChildren: task.hasChildren");
     expect(script).toContain('if (s.includes("Available")) return "available";');
   });
@@ -585,6 +586,7 @@ describe("representative read and write tool handlers", () => {
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain('const queryFilter = "shape".toLowerCase();');
     expect(script).toContain("completionDate: task.completionDate ? task.completionDate.toISOString() : null,");
+    expect(script).toContain("plannedDate: (() => {");
     expect(script).toContain("hasChildren: task.hasChildren");
     expect(script).toContain('if (s.includes("Overdue")) return "overdue";');
   });

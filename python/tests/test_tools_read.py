@@ -282,6 +282,7 @@ async def test_list_tasks_happy_path(
             "deferDate": None,
             "completed": False,
             "completionDate": None,
+            "plannedDate": None,
             "projectName": "Proj",
             "tags": ["urgent"],
             "estimatedMinutes": 30,
@@ -302,6 +303,10 @@ async def test_list_tasks_happy_path(
     assert 'const statusFilter = "due_soon";' in state["calls"][0]["script"]
     assert (
         "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
+        in state["calls"][0]["script"]
+    )
+    assert (
+        "plannedDate: plannedDate ? plannedDate.toISOString() : null,"
         in state["calls"][0]["script"]
     )
     assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
@@ -348,6 +353,10 @@ async def test_list_tasks_date_filters_are_included_in_script(
     )
     assert (
         "if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;"
+        in script
+    )
+    assert (
+        "if (plannedAfter !== null && !(plannedDate !== null && plannedDate > plannedAfter)) return false;"
         in script
     )
     assert ".slice(0, 9)" in script
@@ -738,6 +747,7 @@ async def test_search_tasks_happy_path(
             "deferDate": None,
             "completed": False,
             "completionDate": None,
+            "plannedDate": None,
             "projectName": None,
             "tags": [],
             "estimatedMinutes": 5,
@@ -756,6 +766,10 @@ async def test_search_tasks_happy_path(
     assert 'const queryFilter = "milk".toLowerCase();' in state["calls"][0]["script"]
     assert (
         "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
+        in state["calls"][0]["script"]
+    )
+    assert (
+        "plannedDate: plannedDate ? plannedDate.toISOString() : null,"
         in state["calls"][0]["script"]
     )
     assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]

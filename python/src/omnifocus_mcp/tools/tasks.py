@@ -215,7 +215,18 @@ const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
 const plannedBefore = parseOptionalDate(plannedBeforeRaw, "plannedBefore");
 const plannedAfter = parseOptionalDate(plannedAfterRaw, "plannedAfter");
 const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;
+const supportsPlannedDate = (() => {{
+  try {{
+    const sampleTask = document.flattenedTasks[0];
+    if (!sampleTask) return true;
+    void sampleTask.plannedDate;
+    return true;
+  }} catch (e) {{
+    return false;
+  }}
+}})();
 const getPlannedDate = (task) => {{
+  if (!supportsPlannedDate) return null;
   try {{
     const value = task.plannedDate;
     return value === undefined ? null : value;
@@ -268,9 +279,11 @@ const filteredTasks = document.flattenedTasks
     if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
     if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
     if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
-    const plannedDate = getPlannedDate(task);
-    if (plannedBefore !== null && !(plannedDate !== null && plannedDate < plannedBefore)) return false;
-    if (plannedAfter !== null && !(plannedDate !== null && plannedDate > plannedAfter)) return false;
+    if (supportsPlannedDate) {{
+      const plannedDate = getPlannedDate(task);
+      if (plannedBefore !== null && !(plannedDate !== null && plannedDate < plannedBefore)) return false;
+      if (plannedAfter !== null && !(plannedDate !== null && plannedDate > plannedAfter)) return false;
+    }}
     if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;
 
     return true;
@@ -371,8 +384,6 @@ async def _get_task_counts_legacy(
     deferAfter: str | None = None,
     completedBefore: str | None = None,
     completedAfter: str | None = None,
-    plannedBefore: str | None = None,
-    plannedAfter: str | None = None,
     maxEstimatedMinutes: int | None = None,
 ) -> str:
     """get aggregate task counts for any filter combination without listing tasks."""
@@ -418,12 +429,6 @@ async def _get_task_counts_legacy(
     completed_after_filter = (
         "null" if completedAfter is None else escape_for_jxa(completedAfter)
     )
-    planned_before_filter = (
-        "null" if plannedBefore is None else escape_for_jxa(plannedBefore)
-    )
-    planned_after_filter = (
-        "null" if plannedAfter is None else escape_for_jxa(plannedAfter)
-    )
     max_estimated_minutes_filter = (
         "null" if maxEstimatedMinutes is None else str(maxEstimatedMinutes)
     )
@@ -438,8 +443,6 @@ const deferBeforeRaw = {defer_before_filter};
 const deferAfterRaw = {defer_after_filter};
 const completedBeforeRaw = {completed_before_filter};
 const completedAfterRaw = {completed_after_filter};
-const plannedBeforeRaw = {planned_before_filter};
-const plannedAfterRaw = {planned_after_filter};
 const maxEstimatedMinutes = {max_estimated_minutes_filter};
 const now = new Date();
 const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
@@ -1059,7 +1062,18 @@ const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
 const plannedBefore = parseOptionalDate(plannedBeforeRaw, "plannedBefore");
 const plannedAfter = parseOptionalDate(plannedAfterRaw, "plannedAfter");
 const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;
+const supportsPlannedDate = (() => {{
+  try {{
+    const sampleTask = document.flattenedTasks[0];
+    if (!sampleTask) return true;
+    void sampleTask.plannedDate;
+    return true;
+  }} catch (e) {{
+    return false;
+  }}
+}})();
 const getPlannedDate = (task) => {{
+  if (!supportsPlannedDate) return null;
   try {{
     const value = task.plannedDate;
     return value === undefined ? null : value;
@@ -1116,9 +1130,11 @@ const filteredTasks = document.flattenedTasks
     if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
     if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
     if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
-    const plannedDate = getPlannedDate(task);
-    if (plannedBefore !== null && !(plannedDate !== null && plannedDate < plannedBefore)) return false;
-    if (plannedAfter !== null && !(plannedDate !== null && plannedDate > plannedAfter)) return false;
+    if (supportsPlannedDate) {{
+      const plannedDate = getPlannedDate(task);
+      if (plannedBefore !== null && !(plannedDate !== null && plannedDate < plannedBefore)) return false;
+      if (plannedAfter !== null && !(plannedDate !== null && plannedDate > plannedAfter)) return false;
+    }}
     if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;
 
     return true;

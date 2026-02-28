@@ -189,7 +189,9 @@ async fn read_task_tools_happy_path() {
             "effectiveDueDate": null,
             "effectiveDeferDate": null,
             "effectiveFlagged": false,
-            "modified": null
+            "modified": null,
+            "plannedDate": null,
+            "effectivePlannedDate": null
         }),
     };
     let single = get_task(&get_runner, "t3").await.expect("task should load");
@@ -198,6 +200,8 @@ async fn read_task_tools_happy_path() {
     assert_eq!(single["effectiveDeferDate"], Value::Null);
     assert_eq!(single["effectiveFlagged"], Value::Bool(false));
     assert_eq!(single["modified"], Value::Null);
+    assert_eq!(single["plannedDate"], Value::Null);
+    assert_eq!(single["effectivePlannedDate"], Value::Null);
 
     let subtasks_runner = MockRunner {
         payload: json!([task_value("st1", "child task")]),
@@ -747,6 +751,9 @@ async fn get_task_and_list_subtasks_scripts_include_task_status_mapper() {
             "effectiveFlagged": false,
             "completed": false,
             "completionDate": null,
+            "modified": null,
+            "plannedDate": null,
+            "effectivePlannedDate": null,
             "taskStatus": "available",
             "projectName": null,
             "tags": [],
@@ -774,6 +781,11 @@ async fn get_task_and_list_subtasks_scripts_include_task_status_mapper() {
     assert!(get_task_script_text.contains("effectiveFlagged: task.effectiveFlagged,"));
     assert!(get_task_script_text
         .contains("modified: task.modified ? task.modified.toISOString() : null,"));
+    assert!(get_task_script_text
+        .contains("plannedDate: plannedDate ? plannedDate.toISOString() : null,"));
+    assert!(get_task_script_text.contains(
+        "effectivePlannedDate: effectivePlannedDate ? effectivePlannedDate.toISOString() : null,"
+    ));
     assert!(get_task_script_text.contains("taskStatus: (() => {"));
     assert!(get_task_script_text.contains("String(task.taskStatus)"));
 
