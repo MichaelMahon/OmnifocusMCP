@@ -106,14 +106,14 @@ Set up the monorepo structure, top-level README, and shared configuration.
 
 ### Success Criteria
 
-1. [ ] Monorepo directory structure created: `python/`, `typescript/`,
+1. [x] Monorepo directory structure created: `python/`, `typescript/`,
        top-level `README.md`, `.gitignore` (covers node_modules, dist,
        __pycache__, .venv, *.pyc).
-2. [ ] Top-level `README.md` explains: what this project is, that there are
+2. [x] Top-level `README.md` explains: what this project is, that there are
        two implementations (Python + TS), prerequisites (macOS, OmniFocus 3+,
        Node 18+ / Python 3.10+), compatible MCP clients (Claude Desktop,
        Cursor, Cline, Zed, etc.), and links to each implementation's README.
-3. [ ] Git repo initialized with an initial commit.
+3. [x] Git repo initialized with an initial commit.
 
 ---
 

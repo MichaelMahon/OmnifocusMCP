@@ -4,8 +4,8 @@
 
 ## Summary
 
-- Iterations completed: 0
-- Current status: Initialized — RALPH_TASK.md revised with 75 criteria across 8 phases (tests added).
+- Iterations completed: 1
+- Current status: Phase 1 criteria 1-3 completed (repo scaffold baseline done).
 
 ## How This Works
 
@@ -17,7 +17,7 @@ This is how Ralph maintains continuity across iterations.
 
 | Phase | Description                       | Criteria  | Done |
 |-------|-----------------------------------|-----------|------|
-| 1     | Repo Scaffolding                  | 1–3       | 0/3  |
+| 1     | Repo Scaffolding                  | 1–3       | 3/3  |
 | 2     | Python: JXA Layer + Tests         | 4–15      | 0/12 |
 | 3     | Python: Read Tools + Tests        | 16–28     | 0/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 0/15 |
@@ -26,7 +26,7 @@ This is how Ralph maintains continuity across iterations.
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 0 / 75 criteria complete**
+**Total: 3 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -40,3 +40,12 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-27 22:41:35
 **Session 1 started** (model: auto)
+
+### 2026-02-27 22:44:00
+**Session 1 update**
+- completed phase 1 criteria 1-3:
+  - created `python/` and `typescript/` directories (with `.gitkeep`)
+  - added top-level `README.md` with project overview, prerequisites, client compatibility, and implementation doc links
+  - expanded `.gitignore` to include required python/node artifacts
+- verified existing git history includes initial commit(s)
+- next up: phase 2 criterion 4 (`python/pyproject.toml`)
