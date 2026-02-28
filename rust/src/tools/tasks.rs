@@ -1390,41 +1390,35 @@ pub async fn add_notification<R: JxaRunner>(
     }
 
     let task_id_filter = escape_for_jxa(task_id.trim());
-    let absolute_date_filter = absolute_date
+    let absolute_date_value = absolute_date
         .map(|value| escape_for_jxa(value.trim()))
         .unwrap_or_else(|| "null".to_string());
-    let relative_offset_filter = relative_offset
+    let relative_offset_value = relative_offset
         .map(|value| value.to_string())
         .unwrap_or_else(|| "null".to_string());
     let script = format!(
         r#"const taskId = {task_id_filter};
-const absoluteDateRaw = {absolute_date_filter};
-const relativeOffset = {relative_offset_filter};
-const absoluteDate = (() => {{
-  if (absoluteDateRaw === null) return null;
-  const parsed = new Date(absoluteDateRaw);
-  if (Number.isNaN(parsed.getTime())) {{
-    throw new Error("absoluteDate must be a valid ISO 8601 date string.");
-  }}
-  return parsed;
-}})();
+const absoluteDate = {absolute_date_value};
+const relativeOffset = {relative_offset_value};
 const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
 if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
-const created = (() => {{
-  if (absoluteDate !== null) {{
-    return task.addNotification(absoluteDate);
+let notification = null;
+if (absoluteDate !== null) {{
+  const parsedAbsoluteDate = new Date(absoluteDate);
+  if (Number.isNaN(parsedAbsoluteDate.getTime())) {{
+    throw new Error("absoluteDate must be a valid ISO 8601 date string.");
   }}
-  const effectiveDueDate = task.effectiveDueDate;
-  if (effectiveDueDate === null) {{
+  notification = task.addNotification(parsedAbsoluteDate);
+}} else {{
+  if (task.effectiveDueDate === null) {{
     throw new Error("relativeOffset requires a task with an effective due date.");
   }}
-  return task.addNotification(relativeOffset);
-}})();
-const notification = created || task.notifications[task.notifications.length - 1];
+  notification = task.addNotification(relativeOffset);
+}}
 if (!notification) {{
-  throw new Error(`Failed to create notification for task: ${{taskId}}`);
+  throw new Error("Failed to create notification.");
 }}
 return {{
   id: notification.id.primaryKey,

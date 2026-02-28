@@ -324,39 +324,33 @@ return task.notifications.map(n => ({
           throw new Error("absoluteDate must not be empty when provided.");
         }
         const taskId = escapeForJxa(normalizedTaskId);
-        const absoluteDateRaw =
+        const absoluteDateValue =
           absoluteDate === undefined ? "null" : escapeForJxa(absoluteDate.trim());
         const relativeOffsetValue =
           relativeOffset === undefined ? "null" : String(relativeOffset);
         const script = `
 const taskId = ${taskId};
-const absoluteDateRaw = ${absoluteDateRaw};
+const absoluteDate = ${absoluteDateValue};
 const relativeOffset = ${relativeOffsetValue};
-const absoluteDate = (() => {
-  if (absoluteDateRaw === null) return null;
-  const parsed = new Date(absoluteDateRaw);
-  if (Number.isNaN(parsed.getTime())) {
-    throw new Error("absoluteDate must be a valid ISO 8601 date string.");
-  }
-  return parsed;
-})();
 const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
 if (!task) {
   throw new Error(\`Task not found: \${taskId}\`);
 }
-const created = (() => {
-  if (absoluteDate !== null) {
-    return task.addNotification(absoluteDate);
+let notification = null;
+if (absoluteDate !== null) {
+  const parsedAbsoluteDate = new Date(absoluteDate);
+  if (Number.isNaN(parsedAbsoluteDate.getTime())) {
+    throw new Error("absoluteDate must be a valid ISO 8601 date string.");
   }
-  const effectiveDueDate = task.effectiveDueDate;
-  if (effectiveDueDate === null) {
+  notification = task.addNotification(parsedAbsoluteDate);
+} else {
+  if (task.effectiveDueDate === null) {
     throw new Error("relativeOffset requires a task with an effective due date.");
   }
-  return task.addNotification(relativeOffset);
-})();
-const notification = created || task.notifications[task.notifications.length - 1];
+  notification = task.addNotification(relativeOffset);
+}
 if (!notification) {
-  throw new Error(\`Failed to create notification for task: \${taskId}\`);
+  throw new Error("Failed to create notification.");
 }
 return {
   id: notification.id.primaryKey,
