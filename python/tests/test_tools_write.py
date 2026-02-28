@@ -999,7 +999,8 @@ async def test_move_project_happy_path_criterion11(
     script = state["calls"][0]["script"]
     assert 'const projectFilter = "p6";' in script
     assert 'const folderName = "Work";' in script
-    assert "destination = targetFolder.ending;" in script
+    assert "const destination = (() => {" in script
+    assert "return targetFolder.ending;" in script
     assert "moveSections([project], destination);" in script
 
 
