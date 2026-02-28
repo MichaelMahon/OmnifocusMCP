@@ -212,7 +212,7 @@ Connect everything into a working MCP server.
 
 ### Success Criteria
 
-23. [ ] Create `rust/src/resources.rs` with 3 resource handlers matching
+23. [x] Create `rust/src/resources.rs` with 3 resource handlers matching
         Python's `resources.py` exactly:
         - `omnifocus://inbox` — returns current inbox tasks as JSON
           (calls `get_inbox()` internally)
