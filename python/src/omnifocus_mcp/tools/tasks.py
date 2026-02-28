@@ -810,6 +810,7 @@ return {{
   effectiveFlagged: task.effectiveFlagged,
   completed: task.completed,
   completionDate: task.completionDate ? task.completionDate.toISOString() : null,
+  modified: task.modified ? task.modified.toISOString() : null,
   taskStatus: (() => {{
     const s = String(task.taskStatus);
     if (s.includes("Available")) return "available";

@@ -460,7 +460,7 @@ availability that OmniFocus shows in its UI.
         - Add tests verifying effective fields are present.
         - All lint/test commands pass.
 
-25. [ ] **Add `modified` timestamp to `get_task` and `get_project`** —
+25. [x] **Add `modified` timestamp to `get_task` and `get_project`** —
         all 3 implementations.
         - New response field: `modified: task.modified ? task.modified.toISOString() : null`
         - Added to `get_task` and `get_project` responses only (not

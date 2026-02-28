@@ -188,7 +188,8 @@ async fn read_task_tools_happy_path() {
             "name": "single task",
             "effectiveDueDate": null,
             "effectiveDeferDate": null,
-            "effectiveFlagged": false
+            "effectiveFlagged": false,
+            "modified": null
         }),
     };
     let single = get_task(&get_runner, "t3").await.expect("task should load");
@@ -196,6 +197,7 @@ async fn read_task_tools_happy_path() {
     assert_eq!(single["effectiveDueDate"], Value::Null);
     assert_eq!(single["effectiveDeferDate"], Value::Null);
     assert_eq!(single["effectiveFlagged"], Value::Bool(false));
+    assert_eq!(single["modified"], Value::Null);
 
     let subtasks_runner = MockRunner {
         payload: json!([task_value("st1", "child task")]),
@@ -276,12 +278,13 @@ async fn read_non_task_tools_happy_path() {
     assert!(projects.is_array());
 
     let project_runner = MockRunner {
-        payload: json!({"id": "p1", "name": "project one"}),
+        payload: json!({"id": "p1", "name": "project one", "modified": null}),
     };
     let project = get_project(&project_runner, "p1")
         .await
         .expect("project should load");
     assert_eq!(project["id"], "p1");
+    assert_eq!(project["modified"], Value::Null);
 
     let search_projects_runner = MockRunner {
         payload: json!([{"id": "p8", "name": "personal admin", "status": "active", "folderName": "personal"}]),
@@ -769,6 +772,8 @@ async fn get_task_and_list_subtasks_scripts_include_task_status_mapper() {
         "effectiveDeferDate: task.effectiveDeferDate ? task.effectiveDeferDate.toISOString() : null,"
     ));
     assert!(get_task_script_text.contains("effectiveFlagged: task.effectiveFlagged,"));
+    assert!(get_task_script_text
+        .contains("modified: task.modified ? task.modified.toISOString() : null,"));
     assert!(get_task_script_text.contains("taskStatus: (() => {"));
     assert!(get_task_script_text.contains("String(task.taskStatus)"));
 
@@ -1190,6 +1195,7 @@ async fn get_project_script_includes_stalled_and_count_fields() {
     assert!(script.contains(
         "completionDate: project.completionDate ? project.completionDate.toISOString() : null,"
     ));
+    assert!(script.contains("modified: project.modified ? project.modified.toISOString() : null,"));
 }
 
 #[tokio::test]

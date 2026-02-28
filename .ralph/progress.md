@@ -6,8 +6,8 @@
 
 - Current task: OmniFocus MCP — Superior read-side filtering, sorting, and aggregation
 - Current status: Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, and Phase 7 complete. Phase 8 is in progress.
-- Next criterion: **25** — add `modified` timestamp to `get_task` and `get_project` across all 3 implementations
-- Remaining: criteria 25-36 (12 criteria across Phases 8-11)
+- Next criterion: **26** — add `plannedDate` support across all 3 implementations
+- Remaining: criteria 26-36 (11 criteria across Phases 8-11)
 
 ## How This Works
 
@@ -693,3 +693,18 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 15:32:57
 **Session 65 started** (model: auto)
+
+### 2026-02-28 15:34:10
+- completed criterion 25 verification (`modified` timestamp on `get_task` and `get_project`) across python/typescript/rust
+- confirmed mapper parity and test coverage for `modified` fields in all three implementations
+- reran required gates:
+  - full python + typescript gate passed (`ruff`/`mypy`/`pytest`, `tsc`, `npm test`)
+  - rust gate passed after formatter-applied line wrap (`cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test`)
+- marked criterion 25 complete in `RALPH_TASK.md`
+- next: criterion 26 (`plannedDate` response/filter support across all 3 implementations)
+
+### 2026-02-28 15:33:49
+**Session 65 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 15:33:51
+**Session 66 started** (model: auto)
