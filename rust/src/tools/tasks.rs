@@ -529,12 +529,6 @@ pub async fn get_task_counts_legacy3<R: JxaRunner>(
     let completed_after_filter = completed_after
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
-    let planned_before_filter = planned_before
-        .map(escape_for_jxa)
-        .unwrap_or_else(|| "null".to_string());
-    let planned_after_filter = planned_after
-        .map(escape_for_jxa)
-        .unwrap_or_else(|| "null".to_string());
     let max_estimated_minutes_filter = max_estimated_minutes
         .map(|value| value.to_string())
         .unwrap_or_else(|| "null".to_string());
@@ -1124,6 +1118,12 @@ pub async fn get_task_counts_duplicate<R: JxaRunner>(
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
     let completed_after_filter = completed_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let planned_before_filter = planned_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let planned_after_filter = planned_after
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
     let max_estimated_minutes_filter = max_estimated_minutes
