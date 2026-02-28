@@ -14,7 +14,7 @@ use omnifocus_mcp::{
         projects::{get_project, list_projects, search_projects},
         tags::{list_tags, search_tags},
         tasks::{
-            get_inbox, get_task, list_subtasks, list_tasks as list_tasks_with_duration,
+            get_inbox, get_task, get_task_counts, list_subtasks, list_tasks as list_tasks_with_duration,
             search_tasks,
         },
     },
@@ -607,6 +607,117 @@ async fn get_inbox_script_includes_completion_and_children_fields() {
         "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
     ));
     assert!(script.contains("hasChildren: task.hasChildren"));
+}
+
+#[tokio::test]
+async fn get_task_counts_script_includes_filters_and_counts() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!({
+            "total": 6,
+            "available": 3,
+            "completed": 2,
+            "overdue": 1,
+            "dueSoon": 2,
+            "flagged": 2,
+            "deferred": 1
+        }),
+        last_script: last_script.clone(),
+    };
+
+    let counts = get_task_counts(
+        &runner,
+        Some("Errands"),
+        None,
+        Some(vec!["Home".to_string()]),
+        "any",
+        Some(true),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+    .await
+    .expect("task counts should parse");
+    assert_eq!(counts.total, 6);
+    assert_eq!(counts.available, 3);
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const projectFilter = "Errands";"#));
+    assert!(script.contains(r#"const tagNames = ["Home"];"#));
+    assert!(script.contains("const flaggedFilter = true;"));
+    assert!(script.contains("const counts = {"));
+    assert!(script.contains("counts.overdue += 1;"));
+}
+
+#[tokio::test]
+async fn get_task_counts_validation_errors() {
+    let runner = ErrorRunner {
+        message: "runner should not execute for validation errors".to_string(),
+    };
+    assert!(matches!(
+        get_task_counts(
+            &runner,
+            Some("  "),
+            None,
+            None,
+            "any",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        get_task_counts(
+            &runner,
+            None,
+            None,
+            None,
+            "invalid",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        get_task_counts(
+            &runner,
+            None,
+            None,
+            None,
+            "any",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(-1),
+        )
+        .await,
+        Err(OmniFocusError::Validation(_))
+    ));
 }
 
 #[tokio::test]

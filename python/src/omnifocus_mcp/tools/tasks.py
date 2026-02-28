@@ -646,16 +646,24 @@ async def get_task_counts(
             normalized_tag = tag_name.strip()
             if normalized_tag and normalized_tag not in merged_tag_names:
                 merged_tag_names.append(normalized_tag)
-    tag_names_filter = "null" if len(merged_tag_names) == 0 else json.dumps(merged_tag_names)
+    tag_names_filter = (
+        "null" if len(merged_tag_names) == 0 else json.dumps(merged_tag_names)
+    )
     tag_filter_mode_filter = escape_for_jxa(tagFilterMode)
     flagged_filter = "null" if flagged is None else ("true" if flagged else "false")
     due_before_filter = "null" if dueBefore is None else escape_for_jxa(dueBefore)
     due_after_filter = "null" if dueAfter is None else escape_for_jxa(dueAfter)
     defer_before_filter = "null" if deferBefore is None else escape_for_jxa(deferBefore)
     defer_after_filter = "null" if deferAfter is None else escape_for_jxa(deferAfter)
-    completed_before_filter = "null" if completedBefore is None else escape_for_jxa(completedBefore)
-    completed_after_filter = "null" if completedAfter is None else escape_for_jxa(completedAfter)
-    max_estimated_minutes_filter = "null" if maxEstimatedMinutes is None else str(maxEstimatedMinutes)
+    completed_before_filter = (
+        "null" if completedBefore is None else escape_for_jxa(completedBefore)
+    )
+    completed_after_filter = (
+        "null" if completedAfter is None else escape_for_jxa(completedAfter)
+    )
+    max_estimated_minutes_filter = (
+        "null" if maxEstimatedMinutes is None else str(maxEstimatedMinutes)
+    )
     script = f"""
 const projectFilter = {project_filter};
 const tagNames = {tag_names_filter};
