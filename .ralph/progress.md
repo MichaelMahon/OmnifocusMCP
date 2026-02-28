@@ -2212,3 +2212,21 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 13:37:51
 **Session 26 started** (model: auto)
+
+### 2026-02-28 13:41:20
+- finalized criterion 24 smoke coverage updates in `rust/examples/smoke_test.rs`:
+  - fixed subtask verification to match `list_subtasks` typed return (`Vec<TaskResult>`) by checking `item.id`
+  - strengthened `append_to_note` verification by fetching the task via `get_task` and asserting appended note text is present
+  - improved cleanup behavior to use tool APIs for deletion (`delete_project`, `delete_tag`) instead of completion/custom drop script paths
+- reran validation after fixes:
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (passing)
+  - full Ralph `test_command` from `RALPH_TASK.md` across python/typescript/rust (passing)
+- criterion state check:
+  - `RALPH_TASK.md` criterion 24 remains marked complete (`[x]`)
+- next focus: criterion 25 (`cd rust && cargo run --example smoke_test` against real OmniFocus; if blocked by app/permissions, emit `<ralph>GUTTER</ralph>`)
+
+### 2026-02-28 13:38:06
+**Session 26 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 13:38:08
+**Session 27 started** (model: auto)

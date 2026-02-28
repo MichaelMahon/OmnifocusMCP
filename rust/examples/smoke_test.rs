@@ -342,6 +342,16 @@ impl SmokeTest {
         .await?;
         let updated_project_name =
             require_string_key(&updated_project, "name", "update_project result")?.to_string();
+        if updated_project
+            .get("note")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            != "updated project note"
+        {
+            return Err(OmniFocusError::Validation(
+                "update_project did not set project note.".to_string(),
+            ));
+        }
 
         let on_hold_project = set_project_status(runner, &project_id, "on_hold").await?;
         if on_hold_project
