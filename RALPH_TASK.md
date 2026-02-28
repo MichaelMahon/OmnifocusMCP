@@ -182,7 +182,7 @@ Use the trait-based approach: tool functions accept `&dyn JxaRunner`
           sequential?: bool)` — NO tags parameter
         - `complete_project(project_id_or_name: String)` — accepts
           BOTH ID and name
-16. [ ] Create `rust/src/tools/tags.rs`:
+16. [x] Create `rust/src/tools/tags.rs`:
         - `list_tags(limit: i32 = 100)` — NO status parameter
         - `create_tag(name: String, parent?: String)`
 17. [ ] Create `rust/src/tools/folders.rs`:

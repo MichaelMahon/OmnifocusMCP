@@ -372,3 +372,10 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 11:04:57
 **Session 3 started** (model: auto)
+
+### 2026-02-28 11:05:59
+- completed criterion 16 by implementing `rust/src/tools/tags.rs` with `list_tags(limit)` and `create_tag(name, parent?)` using Python-parity OmniJS scripts and required validation
+- verified escaping and parent lookup behavior in `create_tag` and removed status filtering from `list_tags` to match current Python contract
+- ran the Rust task test command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 16 complete in `RALPH_TASK.md`
+- next focus: criterion 17 (`rust/src/tools/folders.rs`)
