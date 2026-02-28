@@ -12,7 +12,7 @@ fn parse_task_list(value: Value) -> Result<Vec<TaskResult>> {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn get_task_counts_legacy3<R: JxaRunner>(
+pub async fn get_task_counts<R: JxaRunner>(
     runner: &R,
     project: Option<&str>,
     tag: Option<&str>,
@@ -416,7 +416,7 @@ return counts;"#
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn get_task_counts<R: JxaRunner>(
+pub async fn get_task_counts_legacy3<R: JxaRunner>(
     runner: &R,
     project: Option<&str>,
     tag: Option<&str>,
