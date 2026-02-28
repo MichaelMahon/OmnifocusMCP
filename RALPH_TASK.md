@@ -321,10 +321,10 @@ Reference implementations:
         - `delete_tasks_batch`: create 3 tasks → batch delete → verify
         - Clean up all test data.
 
-25. [ ] Run smoke test against real OmniFocus — zero failures.
+25. [x] Run smoke test against real OmniFocus — zero failures.
         Fix any bugs discovered before proceeding.
 
-26. [ ] Verify tool parity across all 3 implementations:
+26. [x] Verify tool parity across all 3 implementations:
         - Same tool names
         - Same input parameter names and types
         - Same response shapes
