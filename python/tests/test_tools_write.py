@@ -123,6 +123,7 @@ async def test_create_subtask_happy_path(
     assert "const task = new Task(taskName, parentTask.ending);" in script
 
 
+@pytest.mark.asyncio
 async def test_create_task_optional_field_matrix(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
@@ -1111,6 +1112,7 @@ async def test_create_subtask_empty_parent_validation_error(server_module: Any) 
         await tasks_mod.create_subtask("Task", parent_task_id="   ")
 
 
+@pytest.mark.asyncio
 async def test_set_task_repetition_invalid_schedule_type_validation_error(server_module: Any) -> None:
     with pytest.raises(
         ValueError,
