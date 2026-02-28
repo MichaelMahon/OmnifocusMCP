@@ -406,7 +406,25 @@ describe("representative read and write tool handlers", () => {
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain('const projectFilter = "Project";');
     expect(script).toContain("item.id.primaryKey === projectFilter || item.name === projectFilter");
+    expect(script).toContain("const nextTask = project.nextTask;");
+    expect(script).toContain('const isStalled = normalizeProjectStatus(project) === "active"');
+    expect(script).toContain("completedTaskCount: allProjectTasks.filter(task => task.completed).length,");
+    expect(script).toContain(
+      "availableTaskCount: allProjectTasks.filter(task => !task.completed && (task.deferDate === null || task.deferDate <= new Date())).length,"
+    );
     expect(JSON.parse(result.content[0].text)).toEqual({ id: "proj-1", name: "Project" });
+  });
+
+  test("list_projects includes stalled and next task projection fields", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "proj-2", name: "Project 2" }]);
+    const result = await getTool("list_projects")({ status: "active", limit: 5 });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain("const nextTask = project.nextTask;");
+    expect(script).toContain('const isStalled = normalizeProjectStatus(project) === "active"');
+    expect(script).toContain("completionDate: project.completionDate ? project.completionDate.toISOString() : null,");
+    expect(script).toContain("nextTaskId: nextTask ? nextTask.id.primaryKey : null,");
+    expect(script).toContain("nextTaskName: nextTask ? nextTask.name : null,");
+    expect(JSON.parse(result.content[0].text)).toEqual([{ id: "proj-2", name: "Project 2" }]);
   });
 
   test("create_task generates project-aware creation script", async () => {

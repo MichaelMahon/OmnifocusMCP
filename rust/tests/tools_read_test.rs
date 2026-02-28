@@ -448,6 +448,61 @@ async fn validation_errors_for_read_tools() {
 }
 
 #[tokio::test]
+async fn list_projects_script_includes_stalled_and_next_task_fields() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([{"id": "p1", "name": "project one"}]),
+        last_script: last_script.clone(),
+    };
+
+    let projects = list_projects(&runner, None, "active", 3)
+        .await
+        .expect("projects should parse");
+    assert!(projects.is_array());
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains("const nextTask = project.nextTask;"));
+    assert!(script.contains(r#"const isStalled = normalizeProjectStatus(project) === "active""#));
+    assert!(script.contains(
+        "completionDate: project.completionDate ? project.completionDate.toISOString() : null,"
+    ));
+    assert!(script.contains("nextTaskId: nextTask ? nextTask.id.primaryKey : null,"));
+    assert!(script.contains("nextTaskName: nextTask ? nextTask.name : null,"));
+}
+
+#[tokio::test]
+async fn get_project_script_includes_stalled_and_count_fields() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!({"id": "p1", "name": "project one"}),
+        last_script: last_script.clone(),
+    };
+
+    let project = get_project(&runner, "p1")
+        .await
+        .expect("project should parse");
+    assert_eq!(project["id"], "p1");
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains("const nextTask = project.nextTask;"));
+    assert!(script.contains(r#"const isStalled = normalizeProjectStatus(project) === "active""#));
+    assert!(script
+        .contains("completedTaskCount: allProjectTasks.filter(task => task.completed).length,"));
+    assert!(script.contains(
+        "availableTaskCount: allProjectTasks.filter(task => !task.completed && (task.deferDate === null || task.deferDate <= new Date())).length,"
+    ));
+    assert!(script.contains(
+        "completionDate: project.completionDate ? project.completionDate.toISOString() : null,"
+    ));
+}
+
+#[tokio::test]
 async fn list_tasks_date_filter_script_contains_expected_logic() {
     let last_script = Arc::new(Mutex::new(String::new()));
     let runner = CapturingRunner {

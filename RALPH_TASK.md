@@ -201,7 +201,7 @@ See individual phase criteria below.
 
 ### Success Criteria
 
-7. [ ] **Add stalled detection to `list_projects` and `get_project`** —
+7. [x] **Add stalled detection to `list_projects` and `get_project`** —
        all 3 implementations.
        - **New response fields on list_projects project objects:**
          `completionDate`, `isStalled`, `nextTaskId`, `nextTaskName`
