@@ -28,6 +28,7 @@ struct SmokeTest {
     created_task_ids: Vec<String>,
     created_project_ids: Vec<String>,
     created_tag_ids: Vec<String>,
+    created_folder_ids: Vec<String>,
 }
 
 impl SmokeTest {
@@ -38,6 +39,7 @@ impl SmokeTest {
             created_task_ids: Vec::new(),
             created_project_ids: Vec::new(),
             created_tag_ids: Vec::new(),
+            created_folder_ids: Vec::new(),
         }
     }
 
@@ -325,6 +327,11 @@ impl SmokeTest {
             let _ = complete_project(runner, &project_id).await;
         }
         self.created_project_ids.clear();
+
+        for folder_id in self.created_folder_ids.clone() {
+            let _ = delete_folder(runner, &folder_id).await;
+        }
+        self.created_folder_ids.clear();
 
         if !self.created_tag_ids.is_empty() {
             let ids_json = match serde_json::to_string(&self.created_tag_ids) {
