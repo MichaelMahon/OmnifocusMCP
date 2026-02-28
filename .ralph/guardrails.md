@@ -25,3 +25,8 @@
 
 (Signs added from observed failures will appear below)
 
+### Sign: Probe OmniJS Bridge Early
+- **Trigger**: Before running full Phase 1 smoke validation
+- **Instruction**: Run a minimal `evaluateJavaScript` probe first; if it hangs, stop and resolve Automation/bridge issues before broader checks
+- **Added after**: `uv run python scripts/smoke_test.py` timed out on every OmniJS call while OmniFocus itself was running
+

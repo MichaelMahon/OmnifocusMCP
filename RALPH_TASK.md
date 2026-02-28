@@ -29,7 +29,7 @@ few tasks, projects, and tags.
 
 ### Success Criteria
 
-1. [ ] Create `python/scripts/smoke_test.py` — a standalone async script
+1. [x] Create `python/scripts/smoke_test.py` — a standalone async script
        that imports from `omnifocus_mcp` and runs through a validation
        sequence. Not a pytest test — a runnable script with clear
        pass/fail output. Must be runnable via `python scripts/smoke_test.py`

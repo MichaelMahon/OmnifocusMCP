@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 0
-- Current status: Initialized — RALPH_TASK v2 written with 28 criteria across 5 phases.
+- Current status: Phase 1 started. smoke test script created; real OmniJS bridge execution currently timing out.
 - Previous task: v1 completed (75/75), archived at `.ralph/RALPH_TASK_v1_complete.md`.
 
 ## How This Works
@@ -18,13 +18,13 @@ This is how Ralph maintains continuity across iterations.
 
 | Phase | Description                    | Criteria  | Done |
 |-------|--------------------------------|-----------|------|
-| 1     | Real OmniFocus Smoke Test      | 1–5       | 0/5  |
+| 1     | Real OmniFocus Smoke Test      | 1–5       | 1/5  |
 | 2     | Fix JXA Bugs                   | 6–9       | 0/4  |
 | 3     | Split Monolith Files           | 10–17     | 0/8  |
 | 4     | Integration Tests              | 18–24     | 0/7  |
 | 5     | Final Cleanup                  | 25–28     | 0/4  |
 
-**Total: 0 / 28 criteria complete**
+**Total: 1 / 28 criteria complete**
 
 ## Key Context
 
@@ -40,3 +40,9 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 08:37:13
 **Session 1 started** (model: auto)
+
+### 2026-02-28 08:43:00
+- completed criterion 1 by adding `python/scripts/smoke_test.py` with async pass/fail checks for bridge, read tools, and task lifecycle
+- ran `uv run pytest tests/ -v` in `python/`: 64 passed
+- attempted `uv run python scripts/smoke_test.py`: all smoke steps timed out at the OmniFocus `evaluateJavaScript` bridge (30s timeout)
+- next focus: resolve OmniJS bridge timeout to complete criteria 2–5
