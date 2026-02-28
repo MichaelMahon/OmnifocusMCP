@@ -3,6 +3,7 @@ use serde_json::Value;
 use crate::{
     error::{OmniFocusError, Result},
     jxa::{escape_for_jxa, JxaRunner},
+    types::ProjectCountsResult,
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -245,6 +246,69 @@ return projectsMatching(queryValue)
     );
 
     runner.run_omnijs(&script).await
+}
+
+pub async fn get_project_counts<R: JxaRunner>(
+    runner: &R,
+    folder: Option<&str>,
+) -> Result<ProjectCountsResult> {
+    if let Some(folder_name) = folder {
+        if folder_name.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "folder must not be empty when provided.".to_string(),
+            ));
+        }
+    }
+
+    let folder_filter = folder
+        .map(|value| escape_for_jxa(value.trim()))
+        .unwrap_or_else(|| "null".to_string());
+    let script = format!(
+        r#"const folderFilter = {folder_filter};
+
+const normalizeProjectStatus = (project) => {{
+  const rawStatus = String(project.status || "").toLowerCase();
+  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {{
+    return "on_hold";
+  }}
+  if (rawStatus.includes("completed")) return "completed";
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+}};
+
+const counts = {{
+  total: 0,
+  active: 0,
+  onHold: 0,
+  completed: 0,
+  dropped: 0,
+  stalled: 0
+}};
+
+document.flattenedProjects.forEach(project => {{
+  if (folderFilter !== null) {{
+    const folderName = project.folder ? project.folder.name : null;
+    if (folderName !== folderFilter) return;
+  }}
+
+  const status = normalizeProjectStatus(project);
+  const isStalled = status === "active"
+    && project.flattenedTasks.some(t => !t.completed)
+    && project.nextTask === null;
+
+  counts.total += 1;
+  if (status === "active") counts.active += 1;
+  if (status === "on_hold") counts.onHold += 1;
+  if (status === "completed") counts.completed += 1;
+  if (status === "dropped") counts.dropped += 1;
+  if (isStalled) counts.stalled += 1;
+}});
+
+return counts;"#
+    );
+
+    let value = runner.run_omnijs(&script).await?;
+    Ok(serde_json::from_value(value)?)
 }
 
 pub async fn get_project<R: JxaRunner>(runner: &R, project_id_or_name: &str) -> Result<Value> {

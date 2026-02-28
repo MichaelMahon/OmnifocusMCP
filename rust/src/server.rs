@@ -33,8 +33,9 @@ use crate::{
         forecast::get_forecast,
         perspectives::list_perspectives,
         projects::{
-            complete_project, create_project, delete_project, get_project, list_projects,
-            move_project, search_projects, set_project_status, uncomplete_project, update_project,
+            complete_project, create_project, delete_project, get_project, get_project_counts,
+            list_projects, move_project, search_projects, set_project_status, uncomplete_project,
+            update_project,
         },
         tags::{create_tag, delete_tag, list_tags, search_tags, update_tag},
         tasks::{
@@ -244,6 +245,11 @@ struct ListProjectsParams {
     #[serde(rename = "sortOrder")]
     sort_order: Option<String>,
     limit: Option<i32>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct GetProjectCountsParams {
+    folder: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -733,6 +739,19 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         )
         .await
         .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(
+        description = "get aggregate project counts by status without listing individual projects."
+    )]
+    async fn get_project_counts(
+        &self,
+        Parameters(params): Parameters<GetProjectCountsParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = get_project_counts(self.runner.as_ref(), params.folder.as_deref())
+            .await
+            .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 

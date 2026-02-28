@@ -859,6 +859,38 @@ async def test_list_projects_stalled_only_and_sorting_script(
 
 
 @pytest.mark.asyncio
+async def test_get_project_counts_happy_path_and_script(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "total": 5,
+        "active": 2,
+        "onHold": 1,
+        "completed": 1,
+        "dropped": 1,
+        "stalled": 1,
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.get_project_counts(folder="Work")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const folderFilter = "Work";' in script
+    assert "const counts = {" in script
+    assert "counts.onHold += 1;" in script
+    assert "counts.stalled += 1;" in script
+
+
+@pytest.mark.asyncio
+async def test_get_project_counts_validation_error(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="folder must not be empty when provided."):
+        await server_module.get_project_counts(folder="   ")
+
+
+@pytest.mark.asyncio
 async def test_search_projects_happy_path_criterion21(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
