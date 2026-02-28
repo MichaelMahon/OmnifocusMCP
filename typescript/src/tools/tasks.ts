@@ -19,10 +19,12 @@ export function register(server: Server): void {
 
   server.tool(
     "list_tasks",
-    "list tasks with optional filters for project, tag, flagged state, and status.",
+    "list tasks with optional filters for project, tag/tags, flagged state, status, and date ranges.",
     {
       project: z.string().min(1).optional(),
       tag: z.string().min(1).optional(),
+      tags: z.array(z.string().min(1)).optional(),
+      tagFilterMode: z.enum(["any", "all"]).default("any"),
       flagged: z.boolean().optional(),
       status: z.enum(["available", "due_soon", "overdue", "completed", "all"]).default("available"),
       dueBefore: z.string().optional(),
@@ -33,12 +35,28 @@ export function register(server: Server): void {
       completedAfter: z.string().optional(),
       limit: z.number().int().min(1).default(100),
     },
-    async ({ project, tag, flagged, status, dueBefore, dueAfter, deferBefore, deferAfter, completedBefore, completedAfter, limit }) => {
+    async ({
+      project,
+      tag,
+      tags,
+      tagFilterMode,
+      flagged,
+      status,
+      dueBefore,
+      dueAfter,
+      deferBefore,
+      deferAfter,
+      completedBefore,
+      completedAfter,
+      limit,
+    }) => {
       try {
         return textResult(
           await listTasksData(
             project,
             tag,
+            tags,
+            tagFilterMode,
             flagged,
             status,
             dueBefore,
@@ -670,6 +688,8 @@ return tasks.map(task => ({
 export async function listTasksData(
   project: string | undefined,
   tag: string | undefined,
+  tags: string[] | undefined,
+  tagFilterMode: "any" | "all",
   flagged: boolean | undefined,
   status: TaskStatus,
   dueBefore: string | undefined,
@@ -681,7 +701,23 @@ export async function listTasksData(
   limit: number
 ): Promise<unknown> {
   const projectFilter = project === undefined ? "null" : escapeForJxa(project.trim());
-  const tagFilter = tag === undefined ? "null" : escapeForJxa(tag.trim());
+  const mergedTagNames: string[] = [];
+  if (tag !== undefined) {
+    const normalizedTag = tag.trim();
+    if (normalizedTag.length > 0 && !mergedTagNames.includes(normalizedTag)) {
+      mergedTagNames.push(normalizedTag);
+    }
+  }
+  if (tags !== undefined) {
+    for (const tagName of tags) {
+      const normalizedTag = tagName.trim();
+      if (normalizedTag.length > 0 && !mergedTagNames.includes(normalizedTag)) {
+        mergedTagNames.push(normalizedTag);
+      }
+    }
+  }
+  const tagNamesFilter = mergedTagNames.length === 0 ? "null" : JSON.stringify(mergedTagNames);
+  const tagFilterModeFilter = escapeForJxa(tagFilterMode);
   const flaggedFilter = flagged === undefined ? "null" : flagged ? "true" : "false";
   const statusFilter = escapeForJxa(status);
   const dueBeforeFilter = dueBefore === undefined ? "null" : escapeForJxa(dueBefore);
@@ -692,7 +728,8 @@ export async function listTasksData(
   const completedAfterFilter = completedAfter === undefined ? "null" : escapeForJxa(completedAfter);
   const script = `
 const projectFilter = ${projectFilter};
-const tagFilter = ${tagFilter};
+const tagNames = ${tagNamesFilter};
+const tagFilterMode = ${tagFilterModeFilter};
 const flaggedFilter = ${flaggedFilter};
 const statusFilter = ${statusFilter};
 const dueBeforeRaw = ${dueBeforeFilter};
@@ -724,9 +761,14 @@ const tasks = document.flattenedTasks
       const projectName = task.containingProject ? task.containingProject.name : null;
       if (projectName !== projectFilter) return false;
     }
-    if (tagFilter !== null) {
-      const hasTag = task.tags.some(taskTag => taskTag.name === tagFilter);
-      if (!hasTag) return false;
+    if (tagNames !== null && tagNames.length > 0) {
+      let tagMatches = false;
+      if (tagFilterMode === "all") {
+        tagMatches = tagNames.every(tn => task.tags.some(t => t.name === tn));
+      } else {
+        tagMatches = task.tags.some(t => tagNames.includes(t.name));
+      }
+      if (!tagMatches) return false;
     }
     if (flaggedFilter !== null && task.flagged !== flaggedFilter) return false;
     let statusMatches = false;

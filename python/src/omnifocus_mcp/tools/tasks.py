@@ -43,6 +43,8 @@ return tasks.map(task => {{
 async def list_tasks(
     project: str | None = None,
     tag: str | None = None,
+    tags: list[str] | None = None,
+    tagFilterMode: Literal["any", "all"] = "any",
     flagged: bool | None = None,
     status: Literal[
         "available", "due_soon", "overdue", "completed", "all"
@@ -55,7 +57,7 @@ async def list_tasks(
     completedAfter: str | None = None,
     limit: int = 100,
 ) -> str:
-    """list tasks with optional project, tag, flagged, status, and date filters.
+    """list tasks with optional project, tag filters, flagged, status, and date filters.
 
     returns tasks with id, name, note, flagged state, due/defer dates,
     completion state, project name, tag names, and estimated minutes.
@@ -66,13 +68,33 @@ async def list_tasks(
         raise ValueError("project must not be empty when provided.")
     if tag is not None and tag.strip() == "":
         raise ValueError("tag must not be empty when provided.")
+    if tags is not None:
+        for tag_name in tags:
+            if tag_name.strip() == "":
+                raise ValueError("tags entries must not be empty when provided.")
+    if tagFilterMode not in ("any", "all"):
+        raise ValueError("tagFilterMode must be one of: any, all.")
     if status not in ("available", "due_soon", "overdue", "completed", "all"):
         raise ValueError(
             "status must be one of: available, due_soon, overdue, completed, all."
         )
 
     project_filter = "null" if project is None else escape_for_jxa(project)
-    tag_filter = "null" if tag is None else escape_for_jxa(tag)
+    merged_tag_names: list[str] = []
+    seen_tag_names: set[str] = set()
+    if tag is not None:
+        normalized_tag = tag.strip()
+        if normalized_tag not in seen_tag_names:
+            merged_tag_names.append(normalized_tag)
+            seen_tag_names.add(normalized_tag)
+    if tags is not None:
+        for tag_name in tags:
+            normalized_tag = tag_name.strip()
+            if normalized_tag not in seen_tag_names:
+                merged_tag_names.append(normalized_tag)
+                seen_tag_names.add(normalized_tag)
+    tag_names_filter = "null" if len(merged_tag_names) == 0 else json.dumps(merged_tag_names)
+    tag_filter_mode_filter = escape_for_jxa(tagFilterMode)
     flagged_filter = "null" if flagged is None else ("true" if flagged else "false")
     status_filter = escape_for_jxa(status)
     due_before_filter = "null" if dueBefore is None else escape_for_jxa(dueBefore)
@@ -88,7 +110,8 @@ async def list_tasks(
 
     script = f"""
 const projectFilter = {project_filter};
-const tagFilter = {tag_filter};
+const tagNames = {tag_names_filter};
+const tagFilterMode = {tag_filter_mode_filter};
 const flaggedFilter = {flagged_filter};
 const statusFilter = {status_filter};
 const dueBeforeRaw = {due_before_filter};
@@ -122,9 +145,14 @@ const tasks = document.flattenedTasks
       if (projectName !== projectFilter) return false;
     }}
 
-    if (tagFilter !== null) {{
-      const hasTag = task.tags.some(taskTag => taskTag.name === tagFilter);
-      if (!hasTag) return false;
+    if (tagNames !== null && tagNames.length > 0) {{
+      let tagMatches = false;
+      if (tagFilterMode === "all") {{
+        tagMatches = tagNames.every(tn => task.tags.some(t => t.name === tn));
+      }} else {{
+        tagMatches = task.tags.some(t => tagNames.includes(t.name));
+      }}
+      if (!tagMatches) return false;
     }}
 
     if (flaggedFilter !== null && task.flagged !== flaggedFilter) return false;
