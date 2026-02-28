@@ -233,5 +233,21 @@ Reading even two full files will blow your budget and trigger rotation.
 ### 2026-02-28 14:32:54
 **Session 14 ended** - 🔄 Context rotation (token limit reached)
 
+### 2026-02-28 14:35:00
+- completed criterion 2 (`list_tasks` multi-tag filtering) across Python/TypeScript/Rust
+- implemented `tags` + `tagFilterMode` with `tag` alias merge-union behavior and empty-array ignore behavior
+- added parity tests for any/all modes and merged `tag`+`tags` handling
+- reran full task gate command successfully:
+  - python: `ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
+  - typescript: `npx tsc --noEmit && npm test`
+  - rust: `cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+- next criterion: 3 (`maxEstimatedMinutes` duration filter)
+
 ### 2026-02-28 14:32:56
 **Session 15 started** (model: auto)
+
+### 2026-02-28 14:33:19
+**Session 15 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 14:33:21
+**Session 16 started** (model: auto)

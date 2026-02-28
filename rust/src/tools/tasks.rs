@@ -57,6 +57,7 @@ pub async fn list_tasks<R: JxaRunner>(
     defer_after: Option<&str>,
     completed_before: Option<&str>,
     completed_after: Option<&str>,
+    max_estimated_minutes: Option<i32>,
     limit: i32,
 ) -> Result<Vec<TaskResult>> {
     if limit < 1 {
@@ -91,6 +92,13 @@ pub async fn list_tasks<R: JxaRunner>(
         return Err(OmniFocusError::Validation(
             "tagFilterMode must be one of: any, all.".to_string(),
         ));
+    }
+    if let Some(max_minutes) = max_estimated_minutes {
+        if max_minutes < 0 {
+            return Err(OmniFocusError::Validation(
+                "maxEstimatedMinutes must be greater than or equal to 0.".to_string(),
+            ));
+        }
     }
     if !matches!(
         status,
@@ -153,6 +161,9 @@ pub async fn list_tasks<R: JxaRunner>(
     let completed_after_filter = completed_after
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
+    let max_estimated_minutes_filter = max_estimated_minutes
+        .map(|value| value.to_string())
+        .unwrap_or_else(|| "null".to_string());
 
     let script = format!(
         r#"const projectFilter = {project_filter};
@@ -166,6 +177,7 @@ const deferBeforeRaw = {defer_before_filter};
 const deferAfterRaw = {defer_after_filter};
 const completedBeforeRaw = {completed_before_filter};
 const completedAfterRaw = {completed_after_filter};
+const maxEstimatedMinutes = {max_estimated_minutes_filter};
 const now = new Date();
 const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
 const parseOptionalDate = (value, fieldName) => {{
@@ -227,6 +239,7 @@ const tasks = document.flattenedTasks
     if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
     if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
     if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
+    if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;
     return true;
   }})
   .slice(0, {limit});
