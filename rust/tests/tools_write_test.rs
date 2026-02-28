@@ -9,7 +9,7 @@ use omnifocus_mcp::{
     jxa::{escape_for_jxa, JxaRunner},
     tools::{
         projects::{
-            complete_project, create_project, delete_project, set_project_status,
+            complete_project, create_project, delete_project, move_project, set_project_status,
             uncomplete_project, update_project,
         },
         tags::create_tag,
@@ -194,6 +194,11 @@ async fn write_project_and_tag_tools_happy_path() {
         .expect("delete_project should succeed");
     assert_eq!(deleted_project["id"], "p1");
 
+    let moved_project = move_project(&runner, "p1", Some("Work"))
+        .await
+        .expect("move_project should succeed");
+    assert_eq!(moved_project["id"], "p1");
+
     let updated_project = update_project(
         &runner,
         "p1",
@@ -275,6 +280,14 @@ async fn validation_errors_for_write_tools() {
     ));
     assert!(matches!(
         delete_project(&runner, "   ").await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        move_project(&runner, "   ", Some("Work")).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        move_project(&runner, "project", Some("   ")).await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
@@ -644,6 +657,37 @@ async fn delete_project_script_captures_task_count_before_deletion() {
     assert!(captured.contains("const taskCount = document.flattenedTasks.filter"));
     assert!(captured.contains("deleteObject(project);"));
     assert!(captured.contains("taskCount: taskCount"));
+}
+
+#[tokio::test]
+async fn move_project_script_moves_to_folder_or_library() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "p6", "name": "Project Six", "folderName": "Work"}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let to_folder = move_project(&runner, "p6", Some("Work")).await;
+    assert!(to_folder.is_ok());
+    let to_top_level = move_project(&runner, "p6", None).await;
+    assert!(to_top_level.is_ok());
+
+    let captured = scripts.lock().expect("scripts lock should succeed");
+    let folder_script = captured
+        .first()
+        .cloned()
+        .expect("move_project folder script should be captured");
+    let top_level_script = captured
+        .get(1)
+        .cloned()
+        .expect("move_project top-level script should be captured");
+    assert!(folder_script.contains("const projectFilter = \"p6\";"));
+    assert!(folder_script.contains("const folderName = \"Work\";"));
+    assert!(folder_script.contains("destination = targetFolder.ending;"));
+    assert!(folder_script.contains("moveSections([project], destination);"));
+    assert!(top_level_script.contains("const folderName = null;"));
+    assert!(top_level_script.contains("destination = library.ending;"));
 }
 
 #[tokio::test]

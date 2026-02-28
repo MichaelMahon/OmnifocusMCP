@@ -344,6 +344,89 @@ describe("tool happy paths", () => {
     });
   });
 
+  test("move_project moves project to target folder and returns summary", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "p6",
+      name: "Project Six",
+      folderName: "Work",
+    });
+    const handler = registeredTools.get("move_project");
+    expect(handler).toBeDefined();
+    const result = await handler!({ project_id_or_name: "p6", folder: "Work" });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "p6",
+      name: "Project Six",
+      folderName: "Work",
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const projectFilter = "p6";');
+    expect(script).toContain('const folderName = "Work";');
+    expect(script).toContain("moveSections([project], destination);");
+    expect(script).toContain("folderName: project.folder ? project.folder.name : null");
+  });
+
+  test("move_project returns error for empty folder when provided", async () => {
+    const handler = registeredTools.get("move_project");
+    expect(handler).toBeDefined();
+    const result = await handler!({ project_id_or_name: "p6", folder: "   " });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "folder must not be empty when provided.",
+    });
+  });
+
+  test("move_project supports moving project to top level", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "p6", name: "Project Six", folderName: null });
+    const handler = registeredTools.get("move_project");
+    expect(handler).toBeDefined();
+    const result = await handler!({ project_id_or_name: "p6", folder: null });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "p6",
+      name: "Project Six",
+      folderName: null,
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain("const folderName = null;");
+    expect(script).toContain("if (folderName === null) return library.ending;");
+  });
+
+  test("move_project returns error for empty project id or name", async () => {
+    const handler = registeredTools.get("move_project");
+    expect(handler).toBeDefined();
+    const result = await handler!({ project_id_or_name: "   ", folder: "Work" });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "project_id_or_name must not be empty.",
+    });
+  });
+
+  test("move_project returns updated project folder payload", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "p6", name: "Project Six", folderName: "Work" });
+    const handler = registeredTools.get("move_project");
+    expect(handler).toBeDefined();
+    const result = await handler!({ project_id_or_name: "p6", folder: "Work" });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "p6",
+      name: "Project Six",
+      folderName: "Work",
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const projectFilter = "p6";');
+    expect(script).toContain('const folderName = "Work";');
+    expect(script).toContain("moveSections([project], destination);");
+    expect(script).toContain("destination = targetFolder.ending;");
+  });
+
+  test("move_project returns error for empty folder string", async () => {
+    const handler = registeredTools.get("move_project");
+    expect(handler).toBeDefined();
+    const result = await handler!({ project_id_or_name: "p6", folder: "   " });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "folder must not be empty when provided.",
+    });
+  });
+
   test("set_project_status sets organizational project status", async () => {
     runOmniJsMock.mockResolvedValueOnce({ id: "p4", name: "Project Four", status: "on_hold" });
     const handler = registeredTools.get("set_project_status");
