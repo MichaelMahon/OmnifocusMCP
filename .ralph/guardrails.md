@@ -55,6 +55,11 @@
 - **Instruction**: Ensure every interpolated filter variable (for example `statusFilter`) is declared in the embedded OmniJS string, then run the real integration test path that exercises that filter
 - **Added after**: TypeScript integration failed in `list_tags` with `Can't find variable: statusFilter` because the script referenced a variable that was never declared inside OmniJS
 
+### Sign: Recreate Corrupted Test Files From Scratch
+- **Trigger**: When a new test file reports repeated inner-attribute parse errors at multiple line numbers
+- **Instruction**: Delete the file and recreate a single canonical version before running fmt/clippy/tests, then verify only one `#![cfg(...)]` header remains
+- **Added after**: `rust/tests/integration_test.rs` accumulated duplicated blocks and failed default `cargo test` with multiple `inner attribute is not permitted` errors
+
 ### Sign: Verify Single-Definition File Integrity After Large Rewrites
 - **Trigger**: After replacing a large file with generated or merged content
 - **Instruction**: Immediately validate symbol uniqueness (for example with `rg` counts for core types/functions) before running broader test commands

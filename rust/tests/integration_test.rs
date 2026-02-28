@@ -77,6 +77,9 @@ impl Drop for CleanupRegistry {
       const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
       if (!task) return;
       try {{
+        if (!task.completed) task.markComplete();
+      }} catch (_) {{}}
+      try {{
         task.drop(false);
       }} catch (_) {{}}
     }});
@@ -86,7 +89,11 @@ impl Drop for CleanupRegistry {
       const project = document.flattenedProjects.find(item => item.id.primaryKey === projectId);
       if (!project) return;
       try {{
-        project.markComplete();
+        if (typeof Project !== "undefined" && Project.Status && Project.Status.Dropped) {{
+          project.status = Project.Status.Dropped;
+        }} else {{
+          project.markComplete();
+        }}
       }} catch (_) {{}}
     }});
 

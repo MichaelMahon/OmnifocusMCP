@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772300526
-generated_at: 2026-02-28T17:42:26Z
+source_mtime: 1772300734
+generated_at: 2026-02-28T17:45:36Z
 
 tasks:
   - id: "line_44"
@@ -282,56 +282,56 @@ tasks:
     raw_marker: 39.
   - id: "line_329"
     line_number: 329
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Create `docs/install-rust.md` with:
     indent_level: 0
     raw_marker: 40.
   - id: "line_347"
     line_number: 347
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Update top-level `README.md`:
     indent_level: 0
     raw_marker: 41.
   - id: "line_352"
     line_number: 352
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Release binary smoke test: build release binary, run the
     indent_level: 0
     raw_marker: 42.
   - id: "line_361"
     line_number: 361
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `cargo fmt --check` is clean (no formatting issues).
     indent_level: 0
     raw_marker: 43.
   - id: "line_362"
     line_number: 362
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `cargo clippy -- -D warnings` is clean (no lint warnings).
     indent_level: 0
     raw_marker: 44.
   - id: "line_363"
     line_number: 363
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `cargo test` passes (all mocked tests, integration skipped).
     indent_level: 0
     raw_marker: 45.
   - id: "line_364"
     line_number: 364
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `.gitignore` updated to exclude `rust/target/`.
     indent_level: 0
     raw_marker: 46.
   - id: "line_366"
     line_number: 366
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Git status is clean — no untracked source files, no uncommitted
     indent_level: 0

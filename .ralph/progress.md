@@ -710,3 +710,13 @@ This is how Ralph maintains continuity across iterations.
 - marked criterion 46 complete in `RALPH_TASK.md`
 - completed criterion 47 by untracking `rust/target/`, committing final ralph updates, and confirming clean git status
 - all criteria in `RALPH_TASK.md` are now marked complete
+
+### 2026-02-28 11:45:38
+**Session 25 ended** - ✅ TASK COMPLETE
+
+### 2026-02-28 14:10:00
+- reran phase 4 validation on rust against real OmniFocus and confirmed criterion 32 smoke test success (`cd rust && cargo run --example smoke_test` -> `0 failures`)
+- rebuilt `rust/tests/integration_test.rs` as a single `#![cfg(feature = "integration")]` suite with the required 5 lifecycle/read/search/bridge tests and panic-safe id-tracked cleanup in `Drop`
+- verified criterion 34 with `cd rust && cargo test --features integration` (`5 passed`) and criterion 35 with default `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` showing integration tests excluded by default (`tests/integration_test.rs` runs 0 tests)
+- confirmed criterion 36 teardown strategy by implementing cleanup for created task/project ids even on unwind and rerunning `cargo test --features integration --test integration_test` successfully
+- all success criteria in `RALPH_TASK.md` are checked
