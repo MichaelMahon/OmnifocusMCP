@@ -309,7 +309,7 @@ See individual phase criteria below.
 
 ### Success Criteria
 
-14. [ ] **`get_task_counts`** — all 3 implementations (NEW TOOL).
+14. [x] **`get_task_counts`** — all 3 implementations (NEW TOOL).
         - **Input:** same filter params as the enhanced `list_tasks`:
           `project`, `tag`, `tags`, `tagFilterMode`, `flagged`,
           `dueBefore`, `dueAfter`, `deferBefore`, `deferAfter`,

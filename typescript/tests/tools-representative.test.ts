@@ -64,6 +64,10 @@ function getTool(name: string): (args: Record<string, unknown>) => Promise<{ con
   return tool;
 }
 
+function parseToolResult(result: { content: [{ type: "text"; text: string }] }): unknown {
+  return JSON.parse(result.content[0].text);
+}
+
 describe("representative read and write tool handlers", () => {
   beforeAll(async () => {
     await import("../src/index.js");

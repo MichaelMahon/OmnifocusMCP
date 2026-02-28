@@ -45,7 +45,7 @@ return tasks.map(task => {{
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn get_task_counts_legacy_duplicate<R: JxaRunner>(
+pub async fn get_task_counts<R: JxaRunner>(
     runner: &R,
     project: Option<&str>,
     tag: Option<&str>,
