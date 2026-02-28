@@ -67,19 +67,29 @@ registerPerspectives(server as never);
 
 afterEach(async () => {
   try {
-    const taskIds = JSON.stringify(cleanupTaskIds);
+    const deleteTask = getHandler("delete_task");
+    while (cleanupTaskIds.length > 0) {
+      const taskId = cleanupTaskIds.pop();
+      if (!taskId) {
+        continue;
+      }
+      try {
+        await deleteTask({ task_id: taskId });
+      } catch {
+        continue;
+      }
+    }
+
     const projectIds = JSON.stringify(cleanupProjectIds);
     const prefix = JSON.stringify(TEST_PREFIX);
     await runOmniJs(
       `
-const taskIds = ${taskIds};
 const projectIds = ${projectIds};
 const prefix = ${prefix};
-const taskIdSet = new Set(taskIds);
 const projectIdSet = new Set(projectIds);
 
 document.flattenedTasks
-  .filter(task => taskIdSet.has(task.id.primaryKey) || (task.name || "").startsWith(prefix))
+  .filter(task => (task.name || "").startsWith(prefix))
   .forEach(task => {
     try {
       task.drop(false);
@@ -92,13 +102,11 @@ document.flattenedProjects
   .filter(project => projectIdSet.has(project.id.primaryKey) || (project.name || "").startsWith(prefix))
   .forEach(project => {
     try {
-      project.status = Project.Status.Dropped;
-    } catch {
-      try {
-        project.markComplete();
-      } catch {
-        return;
+      if (project.task) {
+        project.task.drop(false);
       }
+    } catch {
+      return;
     }
   });
 
@@ -108,7 +116,6 @@ return true;
   } catch {
     return;
   } finally {
-    cleanupTaskIds.length = 0;
     cleanupProjectIds.length = 0;
   }
 });
