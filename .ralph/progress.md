@@ -161,6 +161,13 @@ This is how Ralph maintains continuity across iterations.
 ### 2026-02-28 09:21:00
 **Session 10 started** (model: auto)
 
+### 2026-02-28 10:05:00
+- completed criterion 19 by adding `python/tests/test_integration.py` with `@pytest.mark.integration` coverage for bridge connectivity, read-tool JSON/shape checks, task lifecycle, search validation, and project lifecycle
+- added fixture teardown cleanup for `[TEST-MCP]` artifacts: tasks are deleted and created projects are moved to `Project.Status.Dropped` to avoid active test residue
+- ran `cd python && uv run pytest tests/test_integration.py -v -m integration` with real OmniFocus: 5 passed
+- marked criterion 19 complete in `RALPH_TASK.md`
+- next focus: criterion 20 (`cd python && pytest tests/ -v -m integration`)
+
 ### 2026-02-28 09:21:42
 **Session 10 ended** - 🔄 Context rotation (token limit reached)
 

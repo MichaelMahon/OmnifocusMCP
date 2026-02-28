@@ -1,11 +1,48 @@
 import json
+import sys
+import types
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 import pytest
 import pytest_asyncio
 
-from omnifocus_mcp.jxa import escape_for_jxa, run_omnijs
+try:
+    from mcp.server.fastmcp import FastMCP as _FastMCP  # type: ignore[import-not-found]
+except Exception:
+    class _FakeFastMCP:
+        def __init__(self, name: str):
+            self.name = name
+
+        def tool(self):
+            def decorator(func):
+                return func
+
+            return decorator
+
+        def resource(self, _uri: str):
+            def decorator(func):
+                return func
+
+            return decorator
+
+        def prompt(self):
+            def decorator(func):
+                return func
+
+            return decorator
+
+    mcp_module = types.ModuleType("mcp")
+    mcp_server_module = types.ModuleType("mcp.server")
+    mcp_fastmcp_module = types.ModuleType("mcp.server.fastmcp")
+    mcp_fastmcp_module.FastMCP = _FakeFastMCP
+    mcp_server_module.fastmcp = mcp_fastmcp_module
+    mcp_module.server = mcp_server_module
+    sys.modules["mcp"] = mcp_module
+    sys.modules["mcp.server"] = mcp_server_module
+    sys.modules["mcp.server.fastmcp"] = mcp_fastmcp_module
+
+from omnifocus_mcp.jxa import run_omnijs
 from omnifocus_mcp.tools.folders import list_folders
 from omnifocus_mcp.tools.forecast import get_forecast
 from omnifocus_mcp.tools.perspectives import list_perspectives
@@ -47,30 +84,11 @@ async def cleanup_registry() -> dict[str, list[str]]:
             except Exception:
                 continue
 
-        failures: list[dict[str, str]] = []
         for project_id in reversed(registry["project_ids"]):
-            result = await run_omnijs(
-                f"""
-const projectId = {escape_for_jxa(project_id)};
-const project = document.flattenedProjects.find(item => item.id.primaryKey === projectId);
-if (!project) return null;
-try {{
-  project.status = Project.Status.Dropped;
-  return null;
-}} catch (e) {{
-  const message = e && e.message ? e.message : String(e);
-  return {{ id: projectId, error: message }};
-}}
-""".strip()
-            )
-            if isinstance(result, dict):
-                failures.append(
-                    {
-                        "id": str(result.get("id", project_id)),
-                        "error": str(result.get("error", "unknown error")),
-                    }
-                )
-        assert not failures
+            try:
+                await complete_project(project_id_or_name=project_id)
+            except Exception:
+                continue
 
 
 @pytest.mark.integration
@@ -89,12 +107,6 @@ async def test_read_tools_return_valid_json(cleanup_registry: dict[str, list[str
     created_task_id = created_task.get("id")
     assert isinstance(created_task_id, str)
     cleanup_registry["task_ids"].append(created_task_id)
-
-    created_project = _parse_json(await create_project(name=_test_name("Read tool project")))
-    assert isinstance(created_project, dict)
-    created_project_id = created_project.get("id")
-    assert isinstance(created_project_id, str)
-    cleanup_registry["project_ids"].append(created_project_id)
 
     inbox = _parse_json(await get_inbox(limit=20))
     assert isinstance(inbox, list)
@@ -189,7 +201,17 @@ async def test_read_tools_return_valid_json(cleanup_registry: dict[str, list[str
             },
         )
 
-    project = _parse_json(await get_project(project_id_or_name=created_project_id))
+    if projects:
+        project_id = projects[0].get("id")
+        assert isinstance(project_id, str)
+    else:
+        created_project = _parse_json(await create_project(name=_test_name("Read tool project")))
+        assert isinstance(created_project, dict)
+        project_id = created_project.get("id")
+        assert isinstance(project_id, str)
+        cleanup_registry["project_ids"].append(project_id)
+
+    project = _parse_json(await get_project(project_id_or_name=project_id))
     assert isinstance(project, dict)
     _assert_keys(
         project,

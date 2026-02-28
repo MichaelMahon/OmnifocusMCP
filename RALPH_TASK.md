@@ -153,7 +153,7 @@ default and only run when explicitly requested.
         `markers = ["integration: requires running OmniFocus"]`.
         `python/tests/conftest.py` updated with skip logic for
         `integration` marker when OmniFocus is not available.
-19. [ ] `python/tests/test_integration.py` created with
+19. [x] `python/tests/test_integration.py` created with
         `@pytest.mark.integration` on every test. Tests:
         - `test_jxa_bridge_connectivity` — basic `run_omnijs` call
         - `test_read_tools_return_valid_json` — calls each read tool,
