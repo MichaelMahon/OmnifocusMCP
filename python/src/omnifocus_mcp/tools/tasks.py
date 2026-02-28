@@ -310,9 +310,6 @@ return tasks.map(task => {{
     flagged: task.flagged,
     dueDate: task.dueDate ? task.dueDate.toISOString() : null,
     deferDate: task.deferDate ? task.deferDate.toISOString() : null,
-  effectiveDueDate: task.effectiveDueDate ? task.effectiveDueDate.toISOString() : null,
-  effectiveDeferDate: task.effectiveDeferDate ? task.effectiveDeferDate.toISOString() : null,
-  effectiveFlagged: task.effectiveFlagged,
     completed: task.completed,
     completionDate: task.completionDate ? task.completionDate.toISOString() : null,
     projectName: task.containingProject ? task.containingProject.name : null,
@@ -813,7 +810,6 @@ return {{
   effectiveFlagged: task.effectiveFlagged,
   completed: task.completed,
   completionDate: task.completionDate ? task.completionDate.toISOString() : null,
-  modified: task.modified ? task.modified.toISOString() : null,
   taskStatus: (() => {{
     const s = String(task.taskStatus);
     if (s.includes("Available")) return "available";

@@ -537,6 +537,7 @@ describe("representative read and write tool handlers", () => {
       effectiveDueDate: null,
       effectiveDeferDate: null,
       effectiveFlagged: false,
+      modified: null,
     });
     const result = await getTool("get_task")({ task_id: "task-9" });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
@@ -544,6 +545,7 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain("effectiveDueDate: task.effectiveDueDate ? task.effectiveDueDate.toISOString() : null,");
     expect(script).toContain("effectiveDeferDate: task.effectiveDeferDate ? task.effectiveDeferDate.toISOString() : null,");
     expect(script).toContain("effectiveFlagged: task.effectiveFlagged,");
+    expect(script).toContain("modified: task.modified ? task.modified.toISOString() : null,");
     expect(script).toContain("taskStatus: (() => {");
     expect(script).toContain('if (s.includes("Overdue")) return "overdue";');
     const parsed = JSON.parse(result.content[0].text);
@@ -554,6 +556,7 @@ describe("representative read and write tool handlers", () => {
       effectiveDueDate: null,
       effectiveDeferDate: null,
       effectiveFlagged: false,
+      modified: null,
     });
     expect([
       "available",
@@ -649,7 +652,7 @@ describe("representative read and write tool handlers", () => {
   });
 
   test("get_project generates id/name lookup script", async () => {
-    runOmniJsMock.mockResolvedValueOnce({ id: "proj-1", name: "Project" });
+    runOmniJsMock.mockResolvedValueOnce({ id: "proj-1", name: "Project", modified: null });
     const result = await getTool("get_project")({ project_id_or_name: "Project" });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain('const projectFilter = "Project";');
@@ -660,7 +663,8 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain(
       "availableTaskCount: allProjectTasks.filter(task => !task.completed && (task.deferDate === null || task.deferDate <= new Date())).length,"
     );
-    expect(JSON.parse(result.content[0].text)).toEqual({ id: "proj-1", name: "Project" });
+    expect(script).toContain("modified: project.modified ? project.modified.toISOString() : null,");
+    expect(JSON.parse(result.content[0].text)).toEqual({ id: "proj-1", name: "Project", modified: null });
   });
 
   test("list_projects includes stalled and next task projection fields", async () => {
