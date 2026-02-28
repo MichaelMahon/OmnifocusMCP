@@ -5,51 +5,35 @@
 
 ## Summary
 
-- Current task: OmniFocus MCP — Superior read-side filtering, sorting, and aggregation
-- Current status: all phases complete (36/36 criteria done).
-- Next criterion: none
-- Remaining: none
+- Current task: OmniFocus MCP — Open source preparation and distribution readiness
+- Current status: Criteria 1-3 already complete. Starting at criterion 4.
+- Next criterion: **4** — delete root package.json
+- Remaining: criteria 4-19 (16 criteria)
 
 ## Phase Overview
 
-| Phase | Description                        | Criteria | Done |
-|-------|------------------------------------|----------|------|
-| 1     | Enhanced list_tasks                | 1–6      | 6/6  |
-| 2     | Enhanced list_projects/get_project | 7–9      | 3/3  |
-| 3     | Enhanced get_inbox/list_tags/search| 10–13    | 4/4  |
-| 4     | Aggregate Count Tools              | 14–16    | 3/3  |
-| 5     | Enhanced get_forecast              | 17–18    | 2/2  |
-| 6     | Tests and Parity Verification      | 19–20    | 2/2  |
-| 7     | Documentation                      | 21–22    | 2/2  |
-| 8     | Native Properties & Effective Vals | 23–27    | 5/5  |
-| 9     | Notifications                      | 28–31    | 4/4  |
-| 10    | Duplicate Task                     | 32–33    | 2/2  |
-| 11    | Final Parity & Docs                | 34–36    | 3/3  |
+| Phase | Description              | Criteria | Done |
+|-------|--------------------------|----------|------|
+| 1     | License and Legal        | 1–4      | 3/4  |
+| 2     | Gitignore Cleanup        | 5–6      | 0/2  |
+| 3     | Fix Placeholder URLs     | 7        | 0/1  |
+| 4     | README Overhaul          | 8        | 0/1  |
+| 5     | Contributing Guide       | 9        | 0/1  |
+| 6     | Sub-README Consistency   | 10–13    | 0/4  |
+| 7     | CI Workflow              | 14–15    | 0/2  |
+| 8     | Final Verification       | 16–19    | 0/4  |
 
-**Total: 36 / 36 criteria complete**
+**Total: 3 / 19 criteria complete**
 
 ## Key Context
 
-- Python tools: `python/src/omnifocus_mcp/tools/*.py`
-- TypeScript tools: `typescript/src/tools/*.ts`
-- Rust tools: `rust/src/tools/*.rs`
-- Criteria 23-36 complete: parity verified for taskStatus/effective fields/modified/plannedDate, notification tools, duplicate_task, and final full-suite gates
-- Next: `<ralph>COMPLETE</ralph>`
+- This task is docs/config/CI only — NO tool implementation code changes
+- License: MIT, already in place
+- Disclaimer: already in README.md
+- Placeholder URLs (`<your-org>`, `<user>`) found in: rust/README.md, docs/install-typescript.md, docs/install-python.md
+- CONTRIBUTING.md and .github/workflows/ci.yml do not exist yet
+- Root package.json is a junk placeholder that needs deletion
 
 ## Session History (keep only last 3 substantive entries)
 
-### 2026-02-28 16:26
-- reconciled state tracking drift by re-running the full gate and aligning duplicate_task script assertions across TypeScript and Rust representative tests
-- confirmed criterion 34 parity signals for tool registration and required read-surface fields
-- next: criterion 36 (final full gate)
-
-### 2026-02-28 16:27
-- completed criterion 36 by running the full command:
-  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test && cd ../rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
-- result: all Python, TypeScript, and Rust checks passed with zero failures
-- next: `<ralph>COMPLETE</ralph>`
-
-### 2026-02-28 16:28
-- marked criterion 36 complete in `RALPH_TASK.md` and finalized progress tracking for all phases
-- all criteria are now complete (36/36)
-- next: `<ralph>COMPLETE</ralph>`
+(fresh task — no history yet)
