@@ -4,8 +4,8 @@
 
 ## Summary
 
-- Iterations completed: 20
-- Current status: Phase 6 in progress (criterion 54 complete; next 55).
+- Iterations completed: 24
+- Current status: Phase 6 in progress (criteria 54-56 complete; next 57).
 
 ## How This Works
 
@@ -22,11 +22,11 @@ This is how Ralph maintains continuity across iterations.
 | 3     | Python: Read Tools + Tests        | 16–28     | 13/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 15/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 10/10 |
-| 6     | Python: Polish                    | 54–59     | 1/6  |
+| 6     | Python: Polish                    | 54–59     | 3/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 54 / 75 criteria complete**
+**Total: 56 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -706,6 +706,36 @@ This is how Ralph maintains continuity across iterations.
   - usage examples for core tools
 - updated `RALPH_TASK.md` to mark criterion 55 complete
 - next up: phase 6 criterion 56 (client config examples documented and tested)
+
+### 2026-02-27 23:17:22
+**Session 24 update**
+- completed phase 6 criterion 56 (client config examples documented and tested)
+- updated `python/README.md` client config snippets to required forms:
+  - Claude Desktop: `"command": "uv", "args": ["run", "omnifocus-mcp"]`
+  - Cursor: `"command": "python", "args": ["-m", "omnifocus_mcp"]`
+  - Generic stdio: `omnifocus-mcp`
+- added `python/tests/test_docs.py` to assert these required snippets remain documented
+- ran full test command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 6 criterion 57 (rapid sequential tool-call stability)
+
+### 2026-02-27 23:17:19
+**Session 24 update**
+- completed phase 6 criterion 56 by validating documented client configs and test coverage:
+  - verified `python/README.md` includes required examples:
+    - Claude Desktop: `"command": "uv", "args": ["run", "omnifocus-mcp"]`
+    - Cursor: `"command": "python", "args": ["-m", "omnifocus_mcp"]`
+    - generic stdio: `omnifocus-mcp`
+  - verified docs test coverage in `python/tests/test_docs.py` (`test_readme_contains_required_client_config_examples`)
+- additionally hardened criterion 54 behavior in code:
+  - expanded automation-permission normalization in `python/src/omnifocus_mcp/jxa.py` for common Apple Events denial signatures
+  - added invalid-input validation for empty optional filters/targets in `list_tasks`, `list_projects`, `create_task`, and `move_task`
+  - added targeted tests in `python/tests/test_errors.py`, `python/tests/test_parsing.py`, `python/tests/test_tools_read.py`, and `python/tests/test_tools_write.py`
+- validation passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 6 criterion 57 (rapid sequential tool-call stability)
 
 ### 2026-02-27 23:17:27
 **Session 24 ended** - 🔄 Context rotation (token limit reached)
