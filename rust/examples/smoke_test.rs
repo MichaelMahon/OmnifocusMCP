@@ -4,15 +4,20 @@ use omnifocus_mcp::{
     error::{OmniFocusError, Result},
     jxa::{JxaRunner, RealJxaRunner},
     tools::{
-        folders::list_folders,
+        folders::{create_folder, delete_folder, get_folder, list_folders, update_folder},
         forecast::get_forecast,
         perspectives::list_perspectives,
-        projects::{complete_project, create_project, get_project, list_projects},
-        tags::{create_tag, list_tags},
-        tasks::{
-            complete_task, create_task, create_tasks_batch, delete_task, delete_tasks_batch,
-            get_inbox, get_task, list_tasks, move_task, search_tasks, update_task, CreateTaskInput,
+        projects::{
+            complete_project, create_project, delete_project, get_project, list_projects,
+            move_project, search_projects, set_project_status, uncomplete_project, update_project,
         },
+        tags::{create_tag, delete_tag, list_tags, search_tags, update_tag},
+        tasks::{
+            complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
+            delete_tasks_batch, get_inbox, get_task, list_subtasks, list_tasks, move_task,
+            search_tasks, set_task_repetition, uncomplete_task, update_task, CreateTaskInput,
+        },
+        utility::append_to_note,
     },
 };
 use serde_json::Value;
