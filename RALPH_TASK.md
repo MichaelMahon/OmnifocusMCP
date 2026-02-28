@@ -195,7 +195,7 @@ files. Do NOT modify `RALPH_TASK.md`. This task is docs/config only.
         - Replace `<user>` in Homebrew tap command with
           `vitalyrodnenko`.
 
-13. [ ] Fix `docs/install-rust.md`:
+13. [x] Fix `docs/install-rust.md`:
         - Replace all `user/` in homebrew and git clone URLs with
           `vitalyrodnenko`.
 
