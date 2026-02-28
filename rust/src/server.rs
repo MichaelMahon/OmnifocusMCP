@@ -29,7 +29,9 @@ use crate::{
         folders::list_folders,
         forecast::get_forecast,
         perspectives::list_perspectives,
-        projects::{complete_project, create_project, get_project, list_projects},
+        projects::{
+            complete_project, create_project, get_project, list_projects, uncomplete_project,
+        },
         tags::{create_tag, list_tags},
         tasks::{
             complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
@@ -500,6 +502,17 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         Parameters(params): Parameters<ProjectIdOrNameParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = complete_project(self.runner.as_ref(), &params.project_id_or_name)
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "mark a completed project incomplete by id or name.")]
+    async fn uncomplete_project(
+        &self,
+        Parameters(params): Parameters<ProjectIdOrNameParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = uncomplete_project(self.runner.as_ref(), &params.project_id_or_name)
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)

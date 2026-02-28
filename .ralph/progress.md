@@ -1045,3 +1045,15 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 12:32:36
 **Session 22 started** (model: auto)
+
+### 2026-02-28 12:36:00
+- revalidated criterion 5 implementation status and cleaned duplicate tool definitions where present:
+  - Python: reduced `set_task_repetition` in `python/src/omnifocus_mcp/tools/tasks.py` to one canonical definition
+  - TypeScript: verified a single `set_task_repetition` registration remains in `typescript/src/tools/tasks.ts` with schedule mapping for `regularly`, `from_completion`, and `none`
+  - Rust: ensured `set_task_repetition` exists in `rust/src/tools/tasks.rs` and is wired through `rust/src/server.rs` params/handler
+- validation results this session:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` failed due pre-existing duplicate `uncomplete_project` definitions in `python/src/omnifocus_mcp/tools/projects.py` (not in current criterion scope)
+  - focused Python criterion-5 tests passed: `cd python && pytest tests/test_tools_write.py -k set_task_repetition -v` (`4 passed`)
+  - `cd typescript && npx tsc --noEmit && npm test` passed (`36 passed, 5 skipped`)
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` passed
+- next focus: criterion 6 full phase-1 gates, starting with resolving the Python `uncomplete_project` duplicate-definition blocker
