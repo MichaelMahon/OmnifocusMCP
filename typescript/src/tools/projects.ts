@@ -13,15 +13,69 @@ export function register(server: Server): void {
         .enum(["active", "on_hold", "completed", "dropped"])
         .default("active")
         .describe("project status filter"),
+      completedBefore: z.string().optional().describe("optional completion-date upper bound in iso 8601"),
+      completedAfter: z.string().optional().describe("optional completion-date lower bound in iso 8601"),
+      stalledOnly: z.boolean().default(false).describe("when true, include only stalled active projects"),
+      sortBy: z
+        .enum(["name", "dueDate", "completionDate", "taskCount"])
+        .optional()
+        .describe("optional sort field"),
+      sortOrder: z.enum(["asc", "desc"]).default("asc").describe("sort direction"),
       limit: z.number().int().min(1).default(100).describe("max number of projects to return"),
     },
-    async ({ folder, status, limit }) => {
+    async ({
+      folder,
+      status,
+      completedBefore,
+      completedAfter,
+      stalledOnly,
+      sortBy,
+      sortOrder,
+      limit,
+    }) => {
       try {
+        let effectiveStatus = status;
+        if (completedBefore !== undefined || completedAfter !== undefined) {
+          effectiveStatus = "completed";
+        }
+        if (stalledOnly) {
+          effectiveStatus = "active";
+        }
+
+        let effectiveSortBy = sortBy;
+        let effectiveSortOrder = sortOrder;
+        if ((completedBefore !== undefined || completedAfter !== undefined) && effectiveSortBy === undefined) {
+          effectiveSortBy = "completionDate";
+          effectiveSortOrder = "desc";
+        }
+
         const folderFilter = folder === undefined ? "null" : escapeForJxa(folder);
-        const statusFilter = escapeForJxa(status);
+        const statusFilter = escapeForJxa(effectiveStatus);
+        const completedBeforeFilter = completedBefore === undefined ? "null" : escapeForJxa(completedBefore);
+        const completedAfterFilter = completedAfter === undefined ? "null" : escapeForJxa(completedAfter);
+        const stalledOnlyFilter = stalledOnly ? "true" : "false";
+        const sortByFilter = effectiveSortBy === undefined ? "null" : escapeForJxa(effectiveSortBy);
+        const sortOrderFilter = escapeForJxa(effectiveSortOrder);
         const script = `
 const folderFilter = ${folderFilter};
 const statusFilter = ${statusFilter};
+const completedBeforeRaw = ${completedBeforeFilter};
+const completedAfterRaw = ${completedAfterFilter};
+const stalledOnly = ${stalledOnlyFilter};
+const sortBy = ${sortByFilter};
+const sortOrder = ${sortOrderFilter};
+
+const parseOptionalDate = (rawValue, fieldName) => {
+  if (rawValue === null) return null;
+  const parsed = new Date(rawValue);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(\`\${fieldName} must be a valid ISO 8601 date string.\`);
+  }
+  return parsed;
+};
+
+const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
+const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
 
 const projectCounts = new Map();
 document.flattenedTasks.forEach(task => {
@@ -46,15 +100,22 @@ const normalizeProjectStatus = (project) => {
 
 const projects = document.flattenedProjects
   .filter(project => {
+    const nextTask = project.nextTask;
+    const isStalled = normalizeProjectStatus(project) === "active"
+      && project.flattenedTasks.some(t => !t.completed)
+      && nextTask === null;
     if (folderFilter !== null) {
       const folderName = project.folder ? project.folder.name : null;
       if (folderName !== folderFilter) return false;
     }
-    return normalizeProjectStatus(project) === statusFilter;
-  })
-  .slice(0, ${limit});
+    if (normalizeProjectStatus(project) !== statusFilter) return false;
+    if (completedBefore !== null && !(project.completionDate !== null && project.completionDate < completedBefore)) return false;
+    if (completedAfter !== null && !(project.completionDate !== null && project.completionDate > completedAfter)) return false;
+    if (stalledOnly && !isStalled) return false;
+    return true;
+  });
 
-return projects.map(project => {
+const mappedProjects = projects.map(project => {
   const projectId = project.id.primaryKey;
   const counts = projectCounts.get(projectId) || { taskCount: 0, remainingTaskCount: 0 };
   const nextTask = project.nextTask;
@@ -80,6 +141,40 @@ return projects.map(project => {
     reviewInterval: reviewInterval === null || reviewInterval === undefined ? null : String(reviewInterval)
   };
 });
+
+const compareValues = (left, right) => {
+  if (left < right) return sortOrder === "asc" ? -1 : 1;
+  if (left > right) return sortOrder === "asc" ? 1 : -1;
+  return 0;
+};
+
+const sortedProjects = sortBy === null ? mappedProjects : mappedProjects.slice().sort((a, b) => {
+  let aValue = null;
+  let bValue = null;
+  if (sortBy === "name") {
+    aValue = a.name;
+    bValue = b.name;
+  } else if (sortBy === "dueDate") {
+    aValue = a.dueDate;
+    bValue = b.dueDate;
+  } else if (sortBy === "completionDate") {
+    aValue = a.completionDate;
+    bValue = b.completionDate;
+  } else if (sortBy === "taskCount") {
+    aValue = a.taskCount;
+    bValue = b.taskCount;
+  }
+
+  if (aValue === null) return 1;
+  if (bValue === null) return -1;
+
+  if (sortBy === "name") {
+    return compareValues(String(aValue).toLowerCase(), String(bValue).toLowerCase());
+  }
+  return compareValues(aValue, bValue);
+});
+
+return sortedProjects.slice(0, ${limit});
 `.trim();
         const result = await runOmniJs(script);
         return textResult(result);
