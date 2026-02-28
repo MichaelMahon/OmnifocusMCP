@@ -1307,16 +1307,22 @@ return task.notifications.map(n => ({{
 
 @typed_tool(mcp)
 async def add_notification(
-    task_id: str, absoluteDate: str | None = None, relativeOffset: float | None = None
+    task_id: str,
+    absoluteDate: str | None = None,
+    relativeOffset: float | None = None,
 ) -> str:
-    """add a task notification using an absolute date or due-relative offset."""
+    """add one notification to a task by id.
+
+    exactly one of absoluteDate or relativeOffset must be provided.
+    relativeOffset requires the task to have an effective due date.
+    returns the created notification summary.
+    """
     if task_id.strip() == "":
         raise ValueError("task_id must not be empty.")
-    if absoluteDate is None and relativeOffset is None:
-        raise ValueError(
-            "exactly one of absoluteDate or relativeOffset must be provided."
-        )
-    if absoluteDate is not None and relativeOffset is not None:
+
+    has_absolute = absoluteDate is not None
+    has_relative = relativeOffset is not None
+    if has_absolute == has_relative:
         raise ValueError(
             "exactly one of absoluteDate or relativeOffset must be provided."
         )
@@ -1324,31 +1330,26 @@ async def add_notification(
         raise ValueError("absoluteDate must not be empty when provided.")
 
     task_id_filter = escape_for_jxa(task_id.strip())
-    absolute_date_value = (
+    absolute_date_filter = (
         "null" if absoluteDate is None else escape_for_jxa(absoluteDate.strip())
     )
-    relative_offset_value = "null" if relativeOffset is None else str(relativeOffset)
+    relative_offset_filter = (
+        "null" if relativeOffset is None else repr(float(relativeOffset))
+    )
     script = f"""
 const taskId = {task_id_filter};
-const absoluteDate = {absolute_date_value};
-const relativeOffset = {relative_offset_value};
+const absoluteDateValue = {absolute_date_filter};
+const relativeOffsetValue = {relative_offset_filter};
 const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
 if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
-let notification = null;
-if (absoluteDate !== null) {{
-  const parsedAbsoluteDate = new Date(absoluteDate);
-  if (Number.isNaN(parsedAbsoluteDate.getTime())) {{
-    throw new Error("absoluteDate must be a valid ISO 8601 date string.");
-  }}
-  notification = task.addNotification(parsedAbsoluteDate);
-}} else {{
-  if (task.effectiveDueDate === null) {{
-    throw new Error("relativeOffset requires a task with an effective due date.");
-  }}
-  notification = task.addNotification(relativeOffset);
+if (relativeOffsetValue !== null && !task.effectiveDueDate) {{
+  throw new Error(`Task ${{taskId}} must have an effective due date when using relativeOffset.`);
 }}
+const notification = absoluteDateValue !== null
+  ? task.addNotification(new Date(absoluteDateValue))
+  : task.addNotification(relativeOffsetValue);
 if (!notification) {{
   throw new Error("Failed to create notification.");
 }}
@@ -1359,6 +1360,38 @@ return {{
   relativeFireOffset: notification.initialFireDate ? null : notification.relativeFireOffset,
   nextFireDate: notification.nextFireDate ? notification.nextFireDate.toISOString() : null,
   isSnoozed: notification.isSnoozed
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
+async def remove_notification(task_id: str, notification_id: str) -> str:
+    """remove one notification from a task by id."""
+    if task_id.strip() == "":
+        raise ValueError("task_id must not be empty.")
+    if notification_id.strip() == "":
+        raise ValueError("notification_id must not be empty.")
+
+    task_id_filter = escape_for_jxa(task_id.strip())
+    notification_id_filter = escape_for_jxa(notification_id.strip())
+    script = f"""
+const taskId = {task_id_filter};
+const notificationId = {notification_id_filter};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+const notification = task.notifications.find(item => item.id.primaryKey === notificationId);
+if (!notification) {{
+  throw new Error(`Notification not found: ${{notificationId}}`);
+}}
+task.removeNotification(notification);
+return {{
+  taskId: task.id.primaryKey,
+  notificationId: notification.id.primaryKey,
+  removed: true
 }};
 """.strip()
     result = await run_omnijs(script)

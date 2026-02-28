@@ -785,10 +785,11 @@ async def test_add_notification_absolute_happy_path(
     assert json.loads(result) == payload
     script = state["calls"][0]["script"]
     assert 'const taskId = "t3";' in script
-    assert 'const absoluteDateValue = "2026-03-03T10:30:00Z";' in script
-    assert "const relativeOffsetValue = null;" in script
-    assert "task.addNotification(new Date(absoluteDateValue))" in script
-    assert "if (relativeOffsetValue !== null && !task.effectiveDueDate) {" in script
+    assert 'const absoluteDate = "2026-03-03T10:30:00Z";' in script
+    assert "const relativeOffset = null;" in script
+    assert "const parsedAbsoluteDate = new Date(absoluteDate);" in script
+    assert "notification = task.addNotification(parsedAbsoluteDate);" in script
+    assert "if (task.effectiveDueDate === null) {" in script
 
 
 @pytest.mark.asyncio
@@ -811,10 +812,30 @@ async def test_add_notification_relative_happy_path(
 
     assert json.loads(result) == payload
     script = state["calls"][0]["script"]
-    assert "const absoluteDateValue = null;" in script
-    assert "const relativeOffsetValue = -3600.0;" in script
-    assert "task.addNotification(relativeOffsetValue)" in script
+    assert "const absoluteDate = null;" in script
+    assert "const relativeOffset = -3600;" in script
+    assert "notification = task.addNotification(relativeOffset);" in script
     assert "relativeFireOffset: notification.initialFireDate ? null : notification.relativeFireOffset," in script
+
+
+@pytest.mark.asyncio
+async def test_remove_notification_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"taskId": "t3", "notificationId": "n9", "removed": True}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.remove_notification(task_id="t3", notification_id="n9")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const taskId = "t3";' in script
+    assert 'const notificationId = "n9";' in script
+    assert "const notification = task.notifications.find(item => item.id.primaryKey === notificationId);" in script
+    assert "task.removeNotification(notification);" in script
+    assert "removed: true" in script
 
 
 @pytest.mark.asyncio
@@ -1411,6 +1432,14 @@ async def test_add_notification_validation_errors(server_module: Any) -> None:
         )
     with pytest.raises(ValueError, match="absoluteDate must not be empty when provided"):
         await server_module.add_notification(task_id="t3", absoluteDate="   ")
+
+
+@pytest.mark.asyncio
+async def test_remove_notification_validation_errors(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="task_id must not be empty"):
+        await server_module.remove_notification(task_id="   ", notification_id="n1")
+    with pytest.raises(ValueError, match="notification_id must not be empty"):
+        await server_module.remove_notification(task_id="t3", notification_id="   ")
 
 
 @pytest.mark.asyncio

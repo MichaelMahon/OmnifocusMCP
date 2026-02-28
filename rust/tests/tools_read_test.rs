@@ -883,11 +883,11 @@ async fn add_notification_script_handles_absolute_and_relative_modes() {
         .expect("script capture lock should succeed")
         .clone();
     assert!(absolute_script_text.contains(r#"const taskId = "t3";"#));
-    assert!(absolute_script_text.contains(r#"const absoluteDateRaw = "2026-03-03T10:30:00Z";"#));
+    assert!(absolute_script_text.contains(r#"const absoluteDate = "2026-03-03T10:30:00Z";"#));
     assert!(absolute_script_text.contains("const relativeOffset = null;"));
-    assert!(absolute_script_text.contains("const absoluteDate = (() => {"));
-    assert!(absolute_script_text.contains("return task.addNotification(absoluteDate);"));
-    assert!(absolute_script_text.contains("task.effectiveDueDate"));
+    assert!(absolute_script_text.contains("const parsedAbsoluteDate = new Date(absoluteDate);"));
+    assert!(absolute_script_text.contains("notification = task.addNotification(parsedAbsoluteDate);"));
+    assert!(absolute_script_text.contains("if (task.effectiveDueDate === null) {"));
 
     let relative_script = Arc::new(Mutex::new(String::new()));
     let relative_runner = CapturingRunner {
@@ -909,9 +909,9 @@ async fn add_notification_script_handles_absolute_and_relative_modes() {
         .lock()
         .expect("script capture lock should succeed")
         .clone();
-    assert!(relative_script_text.contains("const absoluteDateRaw = null;"));
+    assert!(relative_script_text.contains("const absoluteDate = null;"));
     assert!(relative_script_text.contains("const relativeOffset = -3600;"));
-    assert!(relative_script_text.contains("return task.addNotification(relativeOffset);"));
+    assert!(relative_script_text.contains("notification = task.addNotification(relativeOffset);"));
     assert!(relative_script_text.contains(
         "relativeFireOffset: notification.initialFireDate ? null : notification.relativeFireOffset,"
     ));

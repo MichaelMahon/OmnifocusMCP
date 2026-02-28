@@ -369,6 +369,47 @@ return {
   );
 
   server.tool(
+    "remove_notification",
+    "remove one notification from a task by id.",
+    { task_id: z.string().min(1), notification_id: z.string().min(1) },
+    async ({ task_id, notification_id }) => {
+      try {
+        const normalizedTaskId = task_id.trim();
+        if (normalizedTaskId === "") {
+          throw new Error("task_id must not be empty.");
+        }
+        const normalizedNotificationId = notification_id.trim();
+        if (normalizedNotificationId === "") {
+          throw new Error("notification_id must not be empty.");
+        }
+        const taskId = escapeForJxa(normalizedTaskId);
+        const notificationId = escapeForJxa(normalizedNotificationId);
+        const script = `
+const taskId = ${taskId};
+const notificationId = ${notificationId};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {
+  throw new Error(\`Task not found: \${taskId}\`);
+}
+const notification = task.notifications.find(item => item.id.primaryKey === notificationId);
+if (!notification) {
+  throw new Error(\`Notification not found: \${notificationId}\`);
+}
+task.removeNotification(notification);
+return {
+  taskId: task.id.primaryKey,
+  notificationId: notification.id.primaryKey,
+  removed: true
+};
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
     "search_tasks",
     "search tasks by case-insensitive query across name and note.",
     {
