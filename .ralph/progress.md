@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 0
-- Current status: All phases complete. Final cleanup criteria 25-28 are done.
+- Current status: Phases 1–4 complete (24/24). Phase 5 (installation guides) and Phase 6 (final cleanup) are pending (0/10).
 - Previous task: v1 completed (75/75), archived at `.ralph/RALPH_TASK_v1_complete.md`.
 
 ## How This Works
@@ -22,9 +22,10 @@ This is how Ralph maintains continuity across iterations.
 | 2     | Fix JXA Bugs                   | 6–9       | 4/4  |
 | 3     | Split Monolith Files           | 10–17     | 8/8  |
 | 4     | Integration Tests              | 18–24     | 7/7  |
-| 5     | Final Cleanup                  | 25–28     | 4/4  |
+| 5     | Installation Guides            | 25–30     | 0/6  |
+| 6     | Final Cleanup                  | 31–34     | 0/4  |
 
-**Total: 28 / 28 criteria complete**
+**Total: 24 / 34 criteria complete**
 
 ## Key Context
 

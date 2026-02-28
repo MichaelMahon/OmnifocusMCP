@@ -637,10 +637,11 @@ async def test_complete_task_nonexistent_id_error(
     async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
         raise RuntimeError("Task not found: missing-id")
 
-    monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
+    tasks_mod = importlib.import_module("omnifocus_mcp.tools.tasks")
+    monkeypatch.setattr(tasks_mod, "run_omnijs", fake_run_omnijs)
 
     with pytest.raises(RuntimeError, match="Task not found: missing-id"):
-        await server_module.complete_task("missing-id")
+        await tasks_mod.complete_task("missing-id")
 
 
 @pytest.mark.asyncio

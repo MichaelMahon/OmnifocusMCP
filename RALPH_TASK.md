@@ -1,5 +1,5 @@
 ---
-task: OmniFocus MCP — real-world validation, refactor, integration tests
+task: OmniFocus MCP — installation guides and final cleanup
 test_command: "cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test"
 ---
 
@@ -7,12 +7,10 @@ test_command: "cd python && ruff check src/ && mypy src/ --strict && pytest test
 
 The initial build (v1) created both Python and TypeScript MCP server
 implementations with 19 tools, 3 resources, 4 prompts, and 89 passing
-unit tests. However, **everything was tested against mocks — no real
-OmniFocus validation has been done.** Additionally, both implementations
-are monolith files that need splitting per the project's architecture rules.
+unit tests. v2 validated against real OmniFocus, fixed JXA bugs, split
+monoliths into modular files, and added integration tests.
 
-This task addresses: real-world JXA validation, bug fixes, code
-organization, and integration tests.
+**Remaining work:** installation guides and final cleanup.
 
 Previous task archived at: `.ralph/RALPH_TASK_v1_complete.md`
 
@@ -175,22 +173,81 @@ default and only run when explicitly requested.
 
 ---
 
-## Phase 5 — Final Cleanup
+## Phase 5 — Installation Guides
+
+Create clear, standalone installation guides for each way to run the
+OmniFocus MCP server. Each guide must be self-contained and tested
+end-to-end by following the steps on this machine.
+
+**Important context:** The server requires macOS `osascript` to
+communicate with OmniFocus. Docker **cannot** run the server itself,
+but it is useful for development and CI (linting, type-checking,
+running mocked tests). The Docker guide must explain this clearly.
+
+### Success Criteria
+
+25. [ ] Create `docs/install-python.md` with:
+        - Prerequisites (macOS, Python 3.11+, `uv`)
+        - Step-by-step install from source (`git clone`, `cd python`,
+          `uv sync`)
+        - How to verify: `uv run python -m omnifocus_mcp` (should start
+          and wait for JSON-RPC on stdin)
+        - MCP client configuration snippet showing how to add the server
+          to Claude Desktop, Cursor, and a generic `stdio` config.
+          Use the real command: `uv run --directory /absolute/path/to/python python -m omnifocus_mcp`
+        - Troubleshooting section: OmniFocus not running, permission
+          denied, Python version mismatch
+26. [ ] Create `docs/install-typescript.md` with:
+        - Prerequisites (macOS, Node.js 20+, npm)
+        - Step-by-step install (`git clone`, `cd typescript`,
+          `npm install`, `npm run build`)
+        - How to verify: `node dist/index.js` (should start and wait
+          for JSON-RPC on stdin)
+        - MCP client configuration snippet for Claude Desktop, Cursor,
+          and generic `stdio`. Use: `node /absolute/path/to/typescript/dist/index.js`
+        - Troubleshooting section: OmniFocus not running, permission
+          denied, Node version mismatch, build errors
+27. [ ] Create `docs/development-docker.md` with:
+        - Clear upfront note: Docker is for **development and CI only**,
+          not for running the server (explain why: `osascript` requires
+          macOS host access)
+        - `Dockerfile` (or `docker-compose.yml`) at repo root that
+          installs both Python and TypeScript toolchains
+        - Commands to run linting, type-checking, and mocked tests
+          inside the container for both implementations
+        - Example CI usage (GitHub Actions snippet or similar)
+28. [ ] Update the top-level `README.md`:
+        - Add a "Quick Start" section linking to the three guides
+        - List all 19 tools, 3 resources, and 4 prompts with one-line
+          descriptions in a features table
+        - Add badges or status indicators if appropriate
+29. [ ] Verify each guide by following its steps on this machine:
+        - Python: clone-fresh install → server starts → Ctrl-C clean exit
+        - TypeScript: clone-fresh install → build → server starts → clean exit
+        - Docker: `docker build` → `docker run <lint+test command>` →
+          all tests pass inside container
+30. [ ] All existing tests still pass after guide changes:
+        `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+        `cd typescript && npx tsc --noEmit && npm test`
+
+---
+
+## Phase 6 — Final Cleanup
 
 Verify everything is production-ready.
 
 ### Success Criteria
 
-25. [x] Both servers start and stop cleanly:
+31. [ ] Both servers start and stop cleanly:
         - `echo '{}' | python -m omnifocus_mcp` exits without crash
         - `echo '{}' | node typescript/dist/index.js` exits without crash
-26. [x] Full test commands pass for both implementations (mocked tests):
+32. [ ] Full test commands pass for both implementations (mocked tests):
         - `cd python && ruff check src/ && ruff format --check src/ &&
           mypy src/ --strict && pytest tests/ -v`
         - `cd typescript && npx tsc --noEmit && npm test`
-27. [x] Git status is clean — no untracked source files, no uncommitted
+33. [ ] Git status is clean — no untracked source files, no uncommitted
         changes. Commit all work with a descriptive message.
-28. [x] Tag the repo as `v1.0.0` (if not already tagged).
+34. [ ] Tag the repo as `v1.1.0`.
 
 ---
 
@@ -199,9 +256,8 @@ Verify everything is production-ready.
 1. Work on the next incomplete criterion (marked `[ ]`)
 2. Check off completed criteria (change `[ ]` to `[x]`)
 3. Run tests after every code change — all tests must pass before proceeding
-4. **Phase 1 requires real OmniFocus** — if OmniFocus is not running or
-   permission is denied, output: `<ralph>GUTTER</ralph>` with an
-   explanation of what failed
+4. **Phase 5 criterion 29 requires Docker** — if `docker` is not
+   available, output: `<ralph>GUTTER</ralph>` with an explanation
 5. Commit your changes frequently
 6. When ALL criteria are `[x]`, output: `<ralph>COMPLETE</ralph>`
 7. If stuck on the same issue 3+ times, output: `<ralph>GUTTER</ralph>`
