@@ -93,7 +93,9 @@ async def list_tasks(
             if normalized_tag not in seen_tag_names:
                 merged_tag_names.append(normalized_tag)
                 seen_tag_names.add(normalized_tag)
-    tag_names_filter = "null" if len(merged_tag_names) == 0 else json.dumps(merged_tag_names)
+    tag_names_filter = (
+        "null" if len(merged_tag_names) == 0 else json.dumps(merged_tag_names)
+    )
     tag_filter_mode_filter = escape_for_jxa(tagFilterMode)
     flagged_filter = "null" if flagged is None else ("true" if flagged else "false")
     status_filter = escape_for_jxa(status)

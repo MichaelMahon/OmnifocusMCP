@@ -112,6 +112,19 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain("tagNames.every(tn => task.tags.some(t => t.name === tn))");
   });
 
+  test("list_tasks supports multiple tags in any mode", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-any", name: "any mode" }]);
+    await getTool("list_tasks")({
+      tags: ["Home", "Errands"],
+      tagFilterMode: "any",
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const tagNames = ["Home","Errands"];');
+    expect(script).toContain('const tagFilterMode = "any";');
+    expect(script).toContain("task.tags.some(t => tagNames.includes(t.name))");
+  });
+
   test("list_tasks ignores empty tags array", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "task-empty-tags", name: "empty tags" }]);
     await getTool("list_tasks")({
@@ -120,6 +133,7 @@ describe("representative read and write tool handlers", () => {
     });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain("const tagNames = null;");
+    expect(script).toContain("if (tagNames !== null && tagNames.length > 0) {");
   });
 
   test("list_tasks includes date filters and completed-date status override logic", async () => {

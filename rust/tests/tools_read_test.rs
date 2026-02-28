@@ -320,6 +320,26 @@ async fn validation_errors_for_read_tools() {
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
+        list_tasks(
+            &runner,
+            None,
+            None,
+            None,
+            "invalid",
+            None,
+            "available",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            10,
+        )
+        .await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
         get_task(&runner, "   ").await,
         Err(OmniFocusError::Validation(_))
     ));
@@ -427,6 +447,144 @@ async fn list_tasks_date_filter_script_contains_expected_logic() {
 }
 
 #[tokio::test]
+async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-tags", "tagged task")]),
+        last_script: last_script.clone(),
+    };
+
+    let listed_single = list_tasks(
+        &runner,
+        None,
+        None,
+        Some(vec!["Home".to_string()]),
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        5,
+    )
+    .await
+    .expect("single tags filter should parse");
+    assert_eq!(listed_single.len(), 1);
+    let script_single = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script_single.contains(r#"const tagNames = ["Home"];"#));
+    assert!(script_single.contains(r#"const tagFilterMode = "any";"#));
+    assert!(script_single.contains("task.tags.some(t => tagNames.includes(t.name))"));
+
+    let listed_any = list_tasks(
+        &runner,
+        None,
+        None,
+        Some(vec!["Home".to_string(), "Deep".to_string()]),
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        5,
+    )
+    .await
+    .expect("any tags filter should parse");
+    assert_eq!(listed_any.len(), 1);
+    let script_any = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script_any.contains(r#"const tagNames = ["Home","Deep"];"#));
+    assert!(script_any.contains("task.tags.some(t => tagNames.includes(t.name))"));
+
+    let listed_all = list_tasks(
+        &runner,
+        None,
+        None,
+        Some(vec!["Home".to_string(), "Deep".to_string()]),
+        "all",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        5,
+    )
+    .await
+    .expect("all tags filter should parse");
+    assert_eq!(listed_all.len(), 1);
+    let script_all = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script_all.contains(r#"const tagFilterMode = "all";"#));
+    assert!(script_all.contains("tagNames.every(tn => task.tags.some(t => t.name === tn))"));
+
+    let listed_merged = list_tasks(
+        &runner,
+        None,
+        Some("Home"),
+        Some(vec!["Errands".to_string(), "Home".to_string()]),
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        5,
+    )
+    .await
+    .expect("merged tag and tags filter should parse");
+    assert_eq!(listed_merged.len(), 1);
+    let script_merged = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script_merged.contains(r#"const tagNames = ["Home","Errands"];"#));
+
+    let listed_empty = list_tasks(
+        &runner,
+        None,
+        None,
+        Some(Vec::new()),
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        5,
+    )
+    .await
+    .expect("empty tags filter should parse");
+    assert_eq!(listed_empty.len(), 1);
+    let script_empty = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script_empty.contains("const tagNames = null;"));
+}
+
+#[tokio::test]
 async fn list_tasks_invalid_date_error_bubbles_up() {
     let runner = ErrorRunner {
         message: "dueBefore must be a valid ISO 8601 date string.".to_string(),
@@ -456,4 +614,76 @@ async fn list_tasks_invalid_date_error_bubbles_up() {
         error.to_string(),
         "dueBefore must be a valid ISO 8601 date string."
     );
+}
+
+#[tokio::test]
+async fn list_tasks_tags_filter_modes_and_merging_are_in_script() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-tags", "tagged task")]),
+        last_script: last_script.clone(),
+    };
+
+    let listed = list_tasks(
+        &runner,
+        Some("Errands"),
+        Some("Home"),
+        Some(vec!["Errands".to_string(), "Home".to_string()]),
+        "all",
+        Some(true),
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        5,
+    )
+    .await
+    .expect("list tasks with merged tags should parse");
+
+    assert_eq!(listed.len(), 1);
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains("const tagNames = [\"Home\",\"Errands\"];"));
+    assert!(script.contains("const tagFilterMode = \"all\";"));
+    assert!(script.contains("tagNames.every(tn => task.tags.some(t => t.name === tn))"));
+}
+
+#[tokio::test]
+async fn list_tasks_empty_tags_array_is_ignored() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-empty-tags", "empty tags task")]),
+        last_script: last_script.clone(),
+    };
+
+    let listed = list_tasks(
+        &runner,
+        None,
+        None,
+        Some(vec![]),
+        "any",
+        None,
+        "all",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        5,
+    )
+    .await
+    .expect("list tasks with empty tags should parse");
+
+    assert_eq!(listed.len(), 1);
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains("const tagNames = null;"));
 }
