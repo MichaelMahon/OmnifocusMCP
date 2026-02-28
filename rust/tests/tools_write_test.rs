@@ -16,8 +16,8 @@ use omnifocus_mcp::{
         tags::{create_tag, delete_tag, update_tag},
         tasks::{
             complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
-            delete_tasks_batch, move_task, set_task_repetition, uncomplete_task, update_task,
-            CreateTaskInput,
+            delete_tasks_batch, duplicate_task, move_task, set_task_repetition, uncomplete_task,
+            update_task, CreateTaskInput,
         },
         utility::append_to_note,
     },
@@ -120,6 +120,11 @@ async fn write_task_tools_happy_path() {
     .await
     .expect("create_subtask should succeed");
     assert_eq!(subtask["id"], "t1");
+
+    let duplicated = duplicate_task(&runner, "t1", false)
+        .await
+        .expect("duplicate_task should succeed");
+    assert_eq!(duplicated["id"], "t1");
 
     let uncompleted = uncomplete_task(&runner, "t1")
         .await
@@ -278,6 +283,10 @@ async fn validation_errors_for_write_tools() {
     ));
     assert!(matches!(
         create_subtask(&runner, "name", "   ", None, None, None, None, None, None).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        duplicate_task(&runner, "   ", true).await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
@@ -622,6 +631,31 @@ async fn create_subtask_script_contains_parent_lookup_and_insert_position() {
         .expect("one script should be captured");
     assert!(captured.contains("const parentTask = document.flattenedTasks.find"));
     assert!(captured.contains("const task = new Task(taskName, parentTask.ending);"));
+}
+
+#[tokio::test]
+async fn duplicate_task_script_supports_child_toggle_and_summary_fields() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "dup-1"}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = duplicate_task(&runner, "task-1", false).await;
+    assert!(result.is_ok());
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains(r#"const taskId = "task-1";"#));
+    assert!(captured.contains("const includeChildren = false;"));
+    assert!(captured.contains("const duplicatedTasks = duplicateTasks([task], insertionLocation);"));
+    assert!(captured.contains("duplicatedTask = new Task(task.name, insertionLocation);"));
+    assert!(captured.contains("estimatedMinutes: duplicatedTask.estimatedMinutes"));
 }
 
 #[tokio::test]

@@ -40,7 +40,7 @@ use crate::{
         tags::{create_tag, delete_tag, list_tags, search_tags, update_tag},
         tasks::{
             add_notification, complete_task, create_subtask, create_task, create_tasks_batch,
-            delete_task, delete_tasks_batch, get_inbox, get_task, get_task_counts,
+            delete_task, delete_tasks_batch, duplicate_task, get_inbox, get_task, get_task_counts,
             list_notifications, list_subtasks, list_tasks_with_planned, move_task,
             remove_notification, search_tasks_with_planned, set_task_repetition, uncomplete_task,
             update_task, CreateTaskInput,
@@ -137,6 +137,13 @@ struct AddNotificationParams {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct DuplicateTaskParams {
+    task_id: String,
+    #[serde(rename = "includeChildren")]
+    include_children: Option<bool>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct RemoveNotificationParams {
     task_id: String,
     notification_id: String,
@@ -202,6 +209,13 @@ struct CreateSubtaskParams {
     tags: Option<Vec<String>>,
     #[serde(rename = "estimatedMinutes")]
     estimated_minutes: Option<i32>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct DuplicateTaskParams {
+    task_id: String,
+    #[serde(rename = "includeChildren")]
+    include_children: Option<bool>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -677,6 +691,23 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.flagged,
             params.tags,
             params.estimated_minutes,
+        )
+        .await
+        .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(
+        description = "duplicate a task with all its properties. if the task has subtasks, they are cloned too by default."
+    )]
+    async fn duplicate_task(
+        &self,
+        Parameters(params): Parameters<DuplicateTaskParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = duplicate_task(
+            self.runner.as_ref(),
+            &params.task_id,
+            params.include_children.unwrap_or(true),
         )
         .await
         .map_err(to_mcp_error)?;
