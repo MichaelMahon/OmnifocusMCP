@@ -273,7 +273,7 @@ encoding GTD workflows.
 
 ### Tests (Phase 5)
 
-51. [ ] Tests for each resource: verify correct JXA script is called and
+51. [x] Tests for each resource: verify correct JXA script is called and
         response is valid JSON.
 52. [ ] Tests for each prompt: verify template renders with expected
         structure (contains instructions, placeholder for data).
