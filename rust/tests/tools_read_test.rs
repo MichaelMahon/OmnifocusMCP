@@ -630,7 +630,7 @@ async fn get_inbox_script_includes_completion_and_children_fields() {
 }
 
 #[tokio::test]
-async fn get_forecast_script_includes_deferred_due_this_week_counts_and_enriched_fields() {
+async fn get_forecast_script_includes_deferred_due_this_week_counts_and_enriched_fields_variant() {
     let last_script = Arc::new(Mutex::new(String::new()));
     let runner = CapturingRunner {
         payload: json!({
@@ -1106,46 +1106,6 @@ async fn get_project_counts_script_includes_status_counters_and_stalled_logic() 
     assert!(script.contains("const counts = {"));
     assert!(script.contains(r#"if (status === "on_hold") counts.onHold += 1;"#));
     assert!(script.contains("if (isStalled) counts.stalled += 1;"));
-}
-
-#[tokio::test]
-async fn get_forecast_script_includes_deferred_due_this_week_counts_and_enriched_fields() {
-    let last_script = Arc::new(Mutex::new(String::new()));
-    let runner = CapturingRunner {
-        payload: json!({
-            "overdue": [{"id": "task-5", "name": "Overdue", "completionDate": null, "hasChildren": false}],
-            "dueToday": [{"id": "task-6", "name": "Today", "completionDate": null, "hasChildren": true}],
-            "flagged": [{"id": "task-7", "name": "Flagged", "completionDate": null, "hasChildren": false}],
-            "deferred": [{"id": "task-8", "name": "Deferred", "completionDate": null, "hasChildren": false}],
-            "dueThisWeek": [{"id": "task-9", "name": "This week", "completionDate": null, "hasChildren": false}],
-            "counts": {
-                "overdueCount": 2,
-                "dueTodayCount": 1,
-                "flaggedCount": 3,
-                "deferredCount": 4,
-                "dueThisWeekCount": 5
-            }
-        }),
-        last_script: last_script.clone(),
-    };
-
-    let forecast = get_forecast(&runner, 6)
-        .await
-        .expect("forecast should parse");
-    assert_eq!(forecast["counts"]["deferredCount"], 4);
-    assert!(forecast["dueThisWeek"].is_array());
-
-    let script = last_script
-        .lock()
-        .expect("script capture lock should succeed")
-        .clone();
-    assert!(script.contains("const deferred = [];"));
-    assert!(script.contains("const dueThisWeek = [];"));
-    assert!(script.contains("const counts = {"));
-    assert!(script.contains(
-        "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
-    ));
-    assert!(script.contains("hasChildren: task.hasChildren"));
 }
 
 #[tokio::test]

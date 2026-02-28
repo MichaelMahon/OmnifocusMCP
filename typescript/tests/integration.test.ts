@@ -229,9 +229,6 @@ integrationDescribe("typescript integration", () => {
       expect(forecast).toHaveProperty("deferred");
       expect(forecast).toHaveProperty("dueThisWeek");
       expect(forecast).toHaveProperty("counts");
-      expect(forecast).toHaveProperty("deferred");
-      expect(forecast).toHaveProperty("dueThisWeek");
-      expect(forecast).toHaveProperty("counts");
 
       const perspectives = parseToolResult(await listPerspectives({ limit: 20 })) as unknown[];
       expect(Array.isArray(perspectives)).toBe(true);
