@@ -95,6 +95,11 @@
 - **Instruction**: Run `rg` for both current and next folder tool symbols (`update_folder`, `delete_folder`) in Python/TypeScript/Rust tool modules to catch duplicate in-progress definitions before lint
 - **Added after**: full gate failed at Python lint with `F811` because `delete_folder` was defined twice while `update_folder` criterion work was being validated
 
+### Sign: Treat OmniJS Smoke Timeouts as Environment Blockers
+- **Trigger**: During Phase 5 smoke run when bridge, read, and write checks all time out at 30s
+- **Instruction**: Treat repeated timeout failures as OmniFocus automation availability issues (app not ready, permissions, or bridge stall), stop further criterion work, and emit `<ralph>GUTTER</ralph>`
+- **Added after**: `cargo run --example smoke_test` failed every phase with `JXA command timed out after 30s` on iteration 12
+
 ### Sign: Keep `noqa` On The First Deferred Import Line
 - **Trigger**: After adding a new symbol to deferred imports in `server.py` that sit below runtime code
 - **Instruction**: Keep `# noqa: E402,F401` on the opening `from ... import (` line (not only the closing parenthesis line) so ruff suppresses deferred-import and re-export warnings for each imported symbol

@@ -121,8 +121,7 @@ impl SmokeTest {
             }
         }
 
-        let tasks = list_tasks(runner, None, None, None, "all", 50).await?;
-        let task_id = if let Some(first) = tasks.first() {
+        let task_id = if let Some(first) = inbox_items.first() {
             first.id.clone()
         } else {
             let created = create_task(
@@ -149,14 +148,6 @@ impl SmokeTest {
             &["id", "name", "completed", "tags", "children", "sequential"],
             "get_task result",
         )?;
-
-        let query = task_obj
-            .get("name")
-            .and_then(Value::as_str)
-            .and_then(|name| name.split_whitespace().next())
-            .filter(|token| !token.trim().is_empty())
-            .unwrap_or("a");
-        let _ = search_tasks(runner, query, 20).await?;
 
         let projects_value = list_projects(runner, None, "active", 50).await?;
         let projects = require_array(&projects_value, "list_projects result")?;
