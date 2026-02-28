@@ -44,6 +44,50 @@ return tags.map(tag => ({
   );
 
   server.tool(
+    "search_tags",
+    "search tags by query using omnifocus tag matching.",
+    {
+      query: z.string().min(1).describe("search query"),
+      limit: z.number().int().min(1).default(100).describe("max number of tags to return"),
+    },
+    async ({ query, limit }) => {
+      try {
+        const normalizedQuery = query.trim();
+        if (normalizedQuery === "") {
+          throw new Error("query must not be empty.");
+        }
+        const queryValue = escapeForJxa(normalizedQuery);
+        const script = `
+const queryValue = ${queryValue};
+const normalizeTagStatus = (tag) => {
+  const rawStatus = String(tag.status || "").toLowerCase().trim();
+  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {
+    return "on_hold";
+  }
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+};
+
+return tagsMatching(queryValue)
+  .slice(0, ${limit})
+  .map(tag => {
+    return {
+      id: tag.id.primaryKey,
+      name: tag.name,
+      status: normalizeTagStatus(tag),
+      parent: tag.parent ? tag.parent.name : null
+    };
+  });
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+
+  server.tool(
     "create_tag",
     "create a tag with optional parent tag and return id/name.",
     {

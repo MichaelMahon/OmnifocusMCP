@@ -877,11 +877,11 @@ async def append_to_note(
 
     object_type_value = escape_for_jxa(object_type)
     object_id_value = escape_for_jxa(object_id.strip())
-    text_to_append = escape_for_jxa(text)
+    text_value = escape_for_jxa(text)
     script = f"""
 const objectType = {object_type_value};
 const objectId = {object_id_value};
-const textToAppend = {text_to_append};
+const textValue = {text_value};
 
 let obj;
 if (objectType === "task") {{
@@ -898,7 +898,7 @@ if (objectType === "task") {{
   throw new Error(`Invalid object_type: ${{objectType}}`);
 }}
 
-obj.appendStringToNote(textToAppend);
+obj.appendStringToNote(textValue);
 
 return {{
   id: obj.id.primaryKey,
