@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772298750
-generated_at: 2026-02-28T17:13:21Z
+source_mtime: 1772299225
+generated_at: 2026-02-28T17:20:41Z
 
 tasks:
   - id: "line_44"
@@ -177,28 +177,28 @@ tasks:
     raw_marker: 24.
   - id: "line_240"
     line_number: 240
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Create `rust/src/server.rs`:
     indent_level: 0
     raw_marker: 25.
   - id: "line_249"
     line_number: 249
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Create `rust/src/main.rs`:
     indent_level: 0
     raw_marker: 26.
   - id: "line_256"
     line_number: 256
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `echo '{}' | cargo run` starts the server and exits cleanly
     indent_level: 0
     raw_marker: 27.
   - id: "line_258"
     line_number: 258
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `cargo run -- --version` prints `omnifocus-mcp` followed by
     indent_level: 0
