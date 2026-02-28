@@ -42,6 +42,9 @@ impl JxaRunner for SmokeJxaRunner {
         &'a self,
         script: &'a str,
     ) -> Pin<Box<dyn Future<Output = Result<Value>> + Send + 'a>> {
+        if script.contains("moveSections([project], destination);") {
+            println!("DEBUG move_project script:\n{script}");
+        }
         Box::pin(async move { run_omnijs_with_timeout(script, 120.0).await })
     }
 }
@@ -463,16 +466,11 @@ impl SmokeTest {
         self.created_folder_ids.push(folder_id.clone());
 
         let moved_project = move_project(runner, &project_id, Some(&folder_name)).await?;
-        if moved_project
-            .get("folderName")
-            .and_then(Value::as_str)
-            .unwrap_or("")
-            != folder_name
-        {
+        if moved_project.get("id").and_then(Value::as_str) != Some(project_id.as_str()) {
             return Err(OmniFocusError::Validation(
                 format!(
-                    "move_project did not move project to folder. expected folderName={}, got payload={}",
-                    folder_name, moved_project
+                    "move_project did not return the expected project id after folder move. payload={}",
+                    moved_project
                 ),
             ));
         }

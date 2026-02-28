@@ -757,7 +757,7 @@ async fn delete_project_script_captures_task_count_before_deletion() {
 }
 
 #[tokio::test]
-async fn move_project_script_moves_to_folder_or_library() {
+async fn move_project_script_moves_to_folder_or_library_ending() {
     let scripts = Arc::new(Mutex::new(Vec::new()));
     let runner = RecordingRunner {
         payload: json!({"id": "p6", "name": "Project Six", "folderName": "Work"}),
@@ -786,7 +786,7 @@ async fn move_project_script_moves_to_folder_or_library() {
     assert!(folder_script.contains("moveSections([project], destination);"));
     assert!(folder_script.contains("folderName: folderName"));
     assert!(top_level_script.contains("const folderName = null;"));
-    assert!(top_level_script.contains("if (folderName === null) return library;"));
+    assert!(top_level_script.contains("if (folderName === null) return library.ending;"));
 }
 
 #[tokio::test]
