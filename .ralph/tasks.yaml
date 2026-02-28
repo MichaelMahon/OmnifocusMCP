@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772298682
-generated_at: 2026-02-28T17:11:30Z
+source_mtime: 1772298750
+generated_at: 2026-02-28T17:13:21Z
 
 tasks:
   - id: "line_44"
@@ -170,7 +170,7 @@ tasks:
     raw_marker: 23.
   - id: "line_223"
     line_number: 223
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Create `rust/src/prompts.rs` with 4 prompt handlers matching
     indent_level: 0
