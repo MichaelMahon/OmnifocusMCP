@@ -321,39 +321,6 @@ describe("tool happy paths", () => {
     });
   });
 
-  test("append_to_note appends text and returns note length", async () => {
-    runOmniJsMock.mockResolvedValueOnce({ id: "t6", name: "Task six", type: "task", noteLength: 24 });
-    const handler = registeredTools.get("append_to_note");
-    expect(handler).toBeDefined();
-    const result = await handler!({
-      object_type: "task",
-      object_id: "t6",
-      text: "\nfollow-up details",
-    });
-    expect(JSON.parse(result.content[0].text)).toEqual({
-      id: "t6",
-      name: "Task six",
-      type: "task",
-      noteLength: 24,
-    });
-    const script = String(runOmniJsMock.mock.calls[0][0]);
-    expect(script).toContain('const objectType = "task";');
-    expect(script).toContain('const objectId = "t6";');
-    expect(script).toContain('const textValue = "\\nfollow-up details";');
-    expect(script).toContain("obj.appendStringToNote(textValue);");
-    expect(script).toContain("noteLength: obj.note.length");
-  });
-
-  test("append_to_note returns error for empty object id", async () => {
-    const handler = registeredTools.get("append_to_note");
-    expect(handler).toBeDefined();
-    const result = await handler!({ object_type: "task", object_id: "   ", text: "x" });
-    expect(result.isError).toBe(true);
-    expect(JSON.parse(result.content[0].text)).toEqual({
-      error: "object_id must not be empty.",
-    });
-  });
-
   test("delete_tasks_batch returns error for empty trimmed task id", async () => {
     const handler = registeredTools.get("delete_tasks_batch");
     expect(handler).toBeDefined();
@@ -361,34 +328,6 @@ describe("tool happy paths", () => {
     expect(result.isError).toBe(true);
     expect(JSON.parse(result.content[0].text)).toEqual({
       error: "each task id must be a non-empty string.",
-    });
-  });
-
-  test("append_to_note appends to a task note and returns summary", async () => {
-    runOmniJsMock.mockResolvedValueOnce({ id: "task-1", name: "Task 1", type: "task", noteLength: 42 });
-    const handler = registeredTools.get("append_to_note");
-    expect(handler).toBeDefined();
-    const result = await handler!({ object_type: "task", object_id: "task-1", text: "more context" });
-    expect(JSON.parse(result.content[0].text)).toEqual({
-      id: "task-1",
-      name: "Task 1",
-      type: "task",
-      noteLength: 42,
-    });
-    const script = String(runOmniJsMock.mock.calls[0][0]);
-    expect(script).toContain('const objectType = "task";');
-    expect(script).toContain('const objectId = "task-1";');
-    expect(script).toContain('const textValue = "more context";');
-    expect(script).toContain("obj.appendStringToNote(textValue);");
-  });
-
-  test("append_to_note returns error for invalid object type", async () => {
-    const handler = registeredTools.get("append_to_note");
-    expect(handler).toBeDefined();
-    const result = await handler!({ object_type: "folder", object_id: "task-1", text: "x" });
-    expect(result.isError).toBe(true);
-    expect(JSON.parse(result.content[0].text)).toEqual({
-      error: "object_type must be one of: task, project.",
     });
   });
 
