@@ -4,8 +4,8 @@
 
 ## Summary
 
-- Iterations completed: 1
-- Current status: Phase 2 complete (criteria 4-15 done).
+- Iterations completed: 2
+- Current status: Phase 3 started (criterion 16 complete).
 
 ## How This Works
 
@@ -19,14 +19,14 @@ This is how Ralph maintains continuity across iterations.
 |-------|-----------------------------------|-----------|------|
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
-| 3     | Python: Read Tools + Tests        | 16–28     | 0/13 |
+| 3     | Python: Read Tools + Tests        | 16–28     | 1/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 0/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 15 / 75 criteria complete**
+**Total: 16 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -113,3 +113,17 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-27 22:47:17
 **Session 2 started** (model: auto)
+
+### 2026-02-27 22:48:14
+**Session 2 update**
+- completed phase 3 criterion 16 (`get_inbox`)
+- updated `python/src/omnifocus_mcp/server.py`:
+  - added FastMCP tool `get_inbox(limit=100)`
+  - validates `limit > 0`
+  - queries OmniFocus inbox via `run_omnijs` and maps required fields:
+    `id`, `name`, `note`, `flagged`, `dueDate`, `deferDate`, `tags`, `estimatedMinutes`
+  - returns JSON text payload for MCP
+- verified full command from `RALPH_TASK.md` passes:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 3 criterion 17 (`list_tasks`)

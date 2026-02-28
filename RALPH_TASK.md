@@ -166,7 +166,7 @@ parameter (default 100).
 
 ### Success Criteria
 
-16. [ ] Tool `get_inbox` — returns all inbox (unprocessed) tasks. Each task
+16. [x] Tool `get_inbox` — returns all inbox (unprocessed) tasks. Each task
         includes: `id`, `name`, `note`, `flagged`, `dueDate`, `deferDate`,
         `tags[]`, `estimatedMinutes`.
 17. [ ] Tool `list_tasks` — workhorse query tool. Optional filters: `project`
