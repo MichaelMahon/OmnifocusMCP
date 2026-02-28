@@ -340,14 +340,14 @@ Reference implementations:
 
 ### Success Criteria
 
-27. [ ] Update top-level `README.md`:
+27. [x] Update top-level `README.md`:
         - Update tool count (from 20 to ~39)
         - Add all new tools to the tool list table
         - Note API parity achievement
 
-28. [ ] Update `rust/README.md` if it has a separate tool listing.
+28. [x] Update `rust/README.md` if it has a separate tool listing.
 
-29. [ ] Update `docs/install-rust.md` if it references tool counts.
+29. [x] Update `docs/install-rust.md` if it references tool counts.
 
 ---
 

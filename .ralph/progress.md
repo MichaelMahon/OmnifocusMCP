@@ -5,9 +5,9 @@
 ## Summary
 
 - Current task: OmniFocus MCP — Full API parity (19 new tools across 3 implementations)
-- Current status: Phases 1-5 complete (criteria 1-26 of 29). Starting Phase 6 documentation updates.
-- Next criterion: **27** — Update top-level README.md tool count/list and parity note
-- Remaining: criteria 27-29
+- Current status: All phases complete (criteria 1-29 of 29).
+- Next criterion: none — task complete
+- Remaining: none
 
 ## How This Works
 
@@ -24,9 +24,9 @@ This is how Ralph maintains continuity across iterations.
 | 3     | Tag & Folder Tools             | 13–18     | 6/6  |
 | 4     | Utility Tools & Tests          | 19–24     | 6/6  |
 | 5     | Integration & Smoke Test       | 25–26     | 2/2  |
-| 6     | Documentation                  | 27–29     | 0/3  |
+| 6     | Documentation                  | 27–29     | 3/3  |
 
-**Total: 26 / 29 criteria complete**
+**Total: 29 / 29 criteria complete**
 
 ## Key Context
 

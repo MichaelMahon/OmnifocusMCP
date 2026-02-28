@@ -38,7 +38,9 @@ This project is not affiliated with, endorsed by, or associated with The Omni Gr
 
 ## Features
 
-### tools (20)
+### tools (38)
+
+API parity is complete across Python, TypeScript, and Rust for all tool names, input schemas, and response shapes.
 
 | Type | Name | Description |
 | --- | --- | --- |
@@ -49,17 +51,35 @@ This project is not affiliated with, endorsed by, or associated with The Omni Gr
 | tool | `create_task` | Create one task in inbox or a named project with optional metadata. |
 | tool | `create_tasks_batch` | Create multiple tasks in a single OmniJS call. |
 | tool | `complete_task` | Mark a task complete by id. |
+| tool | `uncomplete_task` | Reopen a completed task by id. |
+| tool | `create_subtask` | Create a child task under an existing parent task. |
+| tool | `list_subtasks` | List direct children of a task with standard task summaries. |
+| tool | `set_task_repetition` | Set or clear a task repetition rule (`RRULE`) and schedule type. |
 | tool | `update_task` | Apply partial updates to an existing task by id. |
 | tool | `delete_task` | Delete a task by id and return deletion status. |
 | tool | `delete_tasks_batch` | Delete multiple tasks in a single OmniJS call (confirm with the user first). |
 | tool | `move_task` | Move a task into a target project or back to inbox. |
+| tool | `append_to_note` | Append text to a task or project note by object id. |
 | tool | `list_projects` | List projects with optional folder and status filters. |
 | tool | `get_project` | Return full details for a project by id or exact name. |
 | tool | `create_project` | Create a project with optional folder, note, dates, and mode. |
 | tool | `complete_project` | Mark a project complete by id or exact name. |
+| tool | `uncomplete_project` | Reopen a completed project by id or exact name. |
+| tool | `update_project` | Apply partial updates to a project including tags and review interval. |
+| tool | `set_project_status` | Set organizational project status (`active`, `on_hold`, `dropped`). |
+| tool | `delete_project` | Permanently delete a project and report deleted task count. |
+| tool | `move_project` | Move a project into a folder or back to top level. |
+| tool | `search_projects` | Search projects by OmniFocus matching rules with limit support. |
 | tool | `list_tags` | List tags with active task counts and status filtering. |
 | tool | `create_tag` | Create a tag with an optional parent tag. |
+| tool | `update_tag` | Rename a tag and/or change tag status. |
+| tool | `delete_tag` | Permanently delete a tag and report affected task count. |
+| tool | `search_tags` | Search tags by OmniFocus matching rules with limit support. |
 | tool | `list_folders` | List folder hierarchy and project counts. |
+| tool | `create_folder` | Create a folder at top level or under a parent folder. |
+| tool | `get_folder` | Return folder details including direct projects and subfolders. |
+| tool | `update_folder` | Rename a folder and/or change folder status. |
+| tool | `delete_folder` | Permanently delete a folder and report contained counts. |
 | tool | `get_forecast` | Return forecast sections for overdue, due today, and flagged work. |
 | tool | `list_perspectives` | List available built-in and custom perspectives. |
 
