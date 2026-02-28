@@ -13,11 +13,10 @@ use omnifocus_mcp::{
         },
         tags::{create_tag, delete_tag, list_tags, search_tags, update_tag},
         tasks::{
-            complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
-            delete_tasks_batch, get_inbox, get_task, list_subtasks, list_tasks, move_task,
+            append_to_note, complete_task, create_subtask, create_task, create_tasks_batch,
+            delete_task, delete_tasks_batch, get_inbox, get_task, list_subtasks, list_tasks,
             search_tasks, set_task_repetition, uncomplete_task, update_task, CreateTaskInput,
         },
-        utility::append_to_note,
     },
 };
 use serde_json::Value;
