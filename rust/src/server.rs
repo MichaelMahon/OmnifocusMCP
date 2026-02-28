@@ -31,7 +31,7 @@ use crate::{
         perspectives::list_perspectives,
         projects::{
             complete_project, create_project, delete_project, get_project, list_projects,
-            set_project_status, uncomplete_project, update_project,
+            move_project, set_project_status, uncomplete_project, update_project,
         },
         tags::{create_tag, list_tags},
         tasks::{
@@ -157,6 +157,12 @@ struct ListProjectsParams {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct ProjectIdOrNameParams {
     project_id_or_name: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct MoveProjectParams {
+    project_id_or_name: String,
+    folder: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -555,6 +561,21 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         let result = delete_project(self.runner.as_ref(), &params.project_id_or_name)
             .await
             .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "move a project by id or name to a folder or top level.")]
+    async fn move_project(
+        &self,
+        Parameters(params): Parameters<MoveProjectParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = move_project(
+            self.runner.as_ref(),
+            &params.project_id_or_name,
+            params.folder.as_deref(),
+        )
+        .await
+        .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 

@@ -1225,6 +1225,19 @@ This is how Ralph maintains continuity across iterations.
 ### 2026-02-28 12:43:33
 **Session 14 ended** - 🔄 Context rotation (token limit reached)
 
+### 2026-02-28 12:47:00
+- completed criterion 10 (`delete_project`) across Python -> TypeScript -> Rust with matching input contract (`project_id_or_name`), canonical OmniJS deletion flow, and response shape (`id`, `name`, `deleted`, `taskCount`)
+- added required destructive-operation warning text to all three tool descriptions (python docstring, typescript tool description, rust `#[tool]` description)
+- added criterion-specific test coverage:
+  - `python/tests/test_tools_write.py` happy path + validation
+  - `typescript/tests/tools-happy.test.ts` happy path + validation
+  - `rust/tests/tools_write_test.rs` happy path, validation, and script assertions
+- ran full cross-implementation verification command from `RALPH_TASK.md`:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` (`83 passed, 5 skipped`)
+  - `cd typescript && npx tsc --noEmit && npm test` (`42 passed, 5 skipped`)
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- next focus: criterion 11 (`move_project` in Python -> TypeScript -> Rust)
+
 ### 2026-02-28 12:43:35
 **Session 15 started** (model: auto)
 
@@ -1302,3 +1315,9 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 12:46:30
 **Session 21 started** (model: auto)
+
+### 2026-02-28 12:46:57
+**Session 21 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 12:46:59
+**Session 22 started** (model: auto)

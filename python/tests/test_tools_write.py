@@ -984,3 +984,47 @@ async def test_delete_project_validation_error_criterion10(server_module: Any) -
         await server_module.delete_project(project_id_or_name="   ")
 
 
+@pytest.mark.asyncio
+async def test_move_project_happy_path_criterion11(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "p6", "name": "Project Six", "folderName": "Work"}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.move_project(project_id_or_name="p6", folder="Work")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const projectFilter = "p6";' in script
+    assert 'const folderName = "Work";' in script
+    assert "moveSections([project], destination);" in script
+    assert "return targetFolder.ending;" in script
+
+
+@pytest.mark.asyncio
+async def test_move_project_to_top_level_happy_path_criterion11(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "p6", "name": "Project Six", "folderName": None}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.move_project(project_id_or_name="p6", folder=None)
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert "const folderName = null;" in script
+    assert "if (folderName === null) return library.ending;" in script
+
+
+@pytest.mark.asyncio
+async def test_move_project_validation_error_criterion11(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="project_id_or_name must not be empty."):
+        await server_module.move_project(project_id_or_name="   ", folder="Work")
+    with pytest.raises(ValueError, match="folder must not be empty when provided."):
+        await server_module.move_project(project_id_or_name="p6", folder="   ")
+
+
