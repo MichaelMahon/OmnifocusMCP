@@ -744,6 +744,63 @@ return {{
 
 
 @typed_tool(mcp)
+async def set_task_repetition(
+    task_id: str,
+    rule_string: str | None = None,
+    schedule_type: Literal["regularly", "from_completion", "none"] = "regularly",
+) -> str:
+    """set or clear a task repetition rule by id.
+
+    accepts an ics rrule string to set repetition, or null to clear. schedule
+    type controls whether repetition is regular or from completion.
+    """
+    if task_id.strip() == "":
+        raise ValueError("task_id must not be empty.")
+    if rule_string is not None and rule_string.strip() == "":
+        raise ValueError("rule_string must not be empty when provided.")
+    if schedule_type not in ("regularly", "from_completion", "none"):
+        raise ValueError("schedule_type must be one of: regularly, from_completion, none.")
+    if rule_string is not None and schedule_type == "none":
+        raise ValueError(
+            "schedule_type must be regularly or from_completion when rule_string is provided."
+        )
+
+    task_id_value = escape_for_jxa(task_id.strip())
+    rule_string_value = (
+        "null" if rule_string is None else escape_for_jxa(rule_string.strip())
+    )
+    schedule_type_value = escape_for_jxa(schedule_type)
+
+    script = f"""
+const taskId = {task_id_value};
+const ruleString = {rule_string_value};
+const scheduleType = {schedule_type_value};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+if (ruleString === null) {{
+  task.repetitionRule = null;
+}} else {{
+  const repetitionScheduleType = (() => {{
+    if (scheduleType === "regularly") return Task.RepetitionScheduleType.Regularly;
+    if (scheduleType === "from_completion") return Task.RepetitionScheduleType.FromCompletion;
+    throw new Error(`Invalid schedule_type: ${{scheduleType}}`);
+  }})();
+  task.repetitionRule = new Task.RepetitionRule(ruleString, null, repetitionScheduleType, null, false);
+}}
+
+return {{
+  id: task.id.primaryKey,
+  name: task.name,
+  repetitionRule: task.repetitionRule ? task.repetitionRule.ruleString : null
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
 async def update_task(
     task_id: str,
     name: str | None = None,
