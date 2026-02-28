@@ -2081,6 +2081,17 @@ This is how Ralph maintains continuity across iterations.
 - marked criterion 22 complete in `RALPH_TASK.md`
 - next focus: criterion 23 (run full phase-4 quality gate across python/typescript/rust and check off if clean)
 
+### 2026-02-28 13:33:30
+- cleaned criterion 22 implementation drift before full gate:
+  - python: removed duplicate `search_tags` definition in `python/src/omnifocus_mcp/tools/tags.py` and kept single canonical implementation
+  - python: added `search_tags` to compatibility exports in `python/src/omnifocus_mcp/server.py`
+  - typescript: removed duplicated `search_tags` tests in `typescript/tests/tools-happy.test.ts`
+- ran full criterion 23 command from `RALPH_TASK.md` and resolved one lint blocker (`server.py` deferred-import `noqa` placement), then reran successfully:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test && cd ../rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+  - result: passing across all implementations (python 116 passed/5 skipped, typescript 63 passed/5 skipped, rust fmt+clippy+tests all green)
+- criterion 23 is complete in `RALPH_TASK.md`
+- next focus: criterion 24 (`rust/examples/smoke_test.rs` coverage for all newly added tools)
+
 ### 2026-02-28 13:33:40
 - completed criterion 23 by running the full Phase 4 validation gate from `RALPH_TASK.md`:
   - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
