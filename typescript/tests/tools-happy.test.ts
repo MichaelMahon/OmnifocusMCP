@@ -82,6 +82,33 @@ describe("tool happy paths", () => {
     expect(String(runOmniJsMock.mock.calls[0][0])).toContain("Project not found");
   });
 
+  test("search_projects returns matched project summaries", async () => {
+    runOmniJsMock.mockResolvedValueOnce([
+      { id: "p8", name: "Personal Admin", status: "active", folderName: "Personal" },
+    ]);
+    const handler = registeredTools.get("search_projects");
+    expect(handler).toBeDefined();
+    const result = await handler!({ query: "admin", limit: 7 });
+    expect(JSON.parse(result.content[0].text)).toEqual([
+      { id: "p8", name: "Personal Admin", status: "active", folderName: "Personal" },
+    ]);
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const queryValue = "admin";');
+    expect(script).toContain("return projectsMatching(queryValue)");
+    expect(script).toContain(".slice(0, 7)");
+    expect(script).toContain("folderName: project.folder ? project.folder.name : null");
+  });
+
+  test("search_projects returns error for empty query", async () => {
+    const handler = registeredTools.get("search_projects");
+    expect(handler).toBeDefined();
+    const result = await handler!({ query: "   ", limit: 7 });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "query must not be empty.",
+    });
+  });
+
   test("create_task returns created task summary", async () => {
     runOmniJsMock.mockResolvedValueOnce({ id: "n1", name: "New task" });
     const handler = registeredTools.get("create_task");

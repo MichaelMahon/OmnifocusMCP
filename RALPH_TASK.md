@@ -281,7 +281,7 @@ Reference implementations:
           `{ id, name, type, noteLength: obj.note.length }`.
         - Implement and test in all 3 implementations.
 
-21. [ ] **`search_projects`** — all 3 implementations.
+21. [x] **`search_projects`** — all 3 implementations.
         - **Input:** `query: str` (non-empty), `limit: int = 100`
         - **JXA:** call `projectsMatching(query).slice(0, limit)`.
           Map results to project summaries (id, name, status,

@@ -82,6 +82,51 @@ return projects.map(project => {
   );
 
   server.tool(
+    "search_projects",
+    "search projects by query using omnifocus project matching.",
+    {
+      query: z.string().min(1).describe("search query"),
+      limit: z.number().int().min(1).default(100).describe("max number of projects to return"),
+    },
+    async ({ query, limit }) => {
+      try {
+        const normalizedQuery = query.trim();
+        if (normalizedQuery === "") {
+          throw new Error("query must not be empty.");
+        }
+        const queryValue = escapeForJxa(normalizedQuery);
+        const script = `
+const queryValue = ${queryValue};
+const normalizeProjectStatus = (project) => {
+  const rawStatus = String(project.status || "").toLowerCase();
+  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {
+    return "on_hold";
+  }
+  if (rawStatus.includes("completed")) return "completed";
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+};
+
+return projectsMatching(queryValue)
+  .slice(0, ${limit})
+  .map(project => {
+    return {
+      id: project.id.primaryKey,
+      name: project.name,
+      status: normalizeProjectStatus(project),
+      folderName: project.folder ? project.folder.name : null
+    };
+  });
+`.trim();
+        const result = await runOmniJs(script);
+        return textResult(result);
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
     "get_project",
     "get full details for one project by id or name.",
     { project_id_or_name: z.string().min(1).describe("project id primaryKey or exact name") },

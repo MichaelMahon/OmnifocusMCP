@@ -370,6 +370,27 @@ async def test_list_projects_happy_path(mock_server_run_omnijs: Callable[[Any], 
 
 
 @pytest.mark.asyncio
+async def test_search_projects_happy_path_criterion21(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = [
+        {"id": "p8", "name": "Personal Admin", "status": "active", "folderName": "Personal"},
+    ]
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.search_projects(query="admin", limit=7)
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const queryValue = "admin";' in script
+    assert "return projectsMatching(queryValue)" in script
+    assert ".slice(0, 7)" in script
+    assert "folderName: project.folder ? project.folder.name : null" in script
+
+
+@pytest.mark.asyncio
 async def test_get_project_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = {
         "id": "p2",
@@ -525,6 +546,14 @@ async def test_list_tasks_empty_project_validation_error(server_module: Any) -> 
 async def test_list_projects_empty_folder_validation_error(server_module: Any) -> None:
     with pytest.raises(ValueError, match="folder must not be empty when provided"):
         await server_module.list_projects(folder="   ")
+
+
+@pytest.mark.asyncio
+async def test_search_projects_validation_errors_criterion21(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="query must not be empty."):
+        await server_module.search_projects("   ")
+    with pytest.raises(ValueError, match="limit must be greater than 0."):
+        await server_module.search_projects("admin", limit=0)
 
 
 @pytest.mark.asyncio

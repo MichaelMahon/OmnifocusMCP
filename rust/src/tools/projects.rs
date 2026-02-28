@@ -91,6 +91,46 @@ return projects.map(project => {{
     runner.run_omnijs(&script).await
 }
 
+pub async fn search_projects<R: JxaRunner>(runner: &R, query: &str, limit: i32) -> Result<Value> {
+    if query.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "query must not be empty.".to_string(),
+        ));
+    }
+    if limit < 1 {
+        return Err(OmniFocusError::Validation(
+            "limit must be greater than 0.".to_string(),
+        ));
+    }
+
+    let query_value = escape_for_jxa(query.trim());
+    let script = format!(
+        r#"const queryValue = {query_value};
+const normalizeProjectStatus = (project) => {{
+  const rawStatus = String(project.status || "").toLowerCase();
+  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {{
+    return "on_hold";
+  }}
+  if (rawStatus.includes("completed")) return "completed";
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+}};
+
+return projectsMatching(queryValue)
+  .slice(0, {limit})
+  .map(project => {{
+    return {{
+      id: project.id.primaryKey,
+      name: project.name,
+      status: normalizeProjectStatus(project),
+      folderName: project.folder ? project.folder.name : null
+    }};
+  }});"#
+    );
+
+    runner.run_omnijs(&script).await
+}
+
 pub async fn get_project<R: JxaRunner>(runner: &R, project_id_or_name: &str) -> Result<Value> {
     if project_id_or_name.trim().is_empty() {
         return Err(OmniFocusError::Validation(

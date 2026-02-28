@@ -86,6 +86,42 @@ return projects.map(project => {{
 
 
 @typed_tool(mcp)
+async def search_projects(query: str, limit: int = 100) -> str:
+    """search projects using omnifocus matching and return project summaries."""
+    if query.strip() == "":
+        raise ValueError("query must not be empty.")
+    if limit < 1:
+        raise ValueError("limit must be greater than 0.")
+
+    query_value = escape_for_jxa(query.strip())
+    script = f"""
+const queryValue = {query_value};
+const normalizeProjectStatus = (project) => {{
+  const rawStatus = String(project.status || "").toLowerCase();
+  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {{
+    return "on_hold";
+  }}
+  if (rawStatus.includes("completed")) return "completed";
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+}};
+
+return projectsMatching(queryValue)
+  .slice(0, {limit})
+  .map(project => {{
+    return {{
+      id: project.id.primaryKey,
+      name: project.name,
+      status: normalizeProjectStatus(project),
+      folderName: project.folder ? project.folder.name : null
+    }};
+  }});
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
 async def get_project(project_id_or_name: str) -> str:
     """get full details for a single project by id or name.
 

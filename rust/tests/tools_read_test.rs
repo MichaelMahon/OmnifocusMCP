@@ -7,7 +7,7 @@ use omnifocus_mcp::{
         folders::{get_folder, list_folders},
         forecast::get_forecast,
         perspectives::list_perspectives,
-        projects::{get_project, list_projects},
+        projects::{get_project, list_projects, search_projects},
         tags::list_tags,
         tasks::{get_inbox, get_task, list_subtasks, list_tasks, search_tasks},
     },
@@ -109,6 +109,14 @@ async fn read_non_task_tools_happy_path() {
         .await
         .expect("project should load");
     assert_eq!(project["id"], "p1");
+
+    let search_projects_runner = MockRunner {
+        payload: json!([{"id": "p8", "name": "personal admin", "status": "active", "folderName": "personal"}]),
+    };
+    let searched_projects = search_projects(&search_projects_runner, "admin", 100)
+        .await
+        .expect("project search should load");
+    assert!(searched_projects.is_array());
 
     let tags_runner = MockRunner {
         payload: json!([{"id": "g1", "name": "home"}]),
@@ -231,6 +239,14 @@ async fn validation_errors_for_read_tools() {
     ));
     assert!(matches!(
         get_project(&runner, "").await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        search_projects(&runner, "   ", 100).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        search_projects(&runner, "admin", 0).await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
