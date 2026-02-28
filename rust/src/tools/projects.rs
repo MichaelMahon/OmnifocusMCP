@@ -248,7 +248,7 @@ return projectsMatching(queryValue)
     runner.run_omnijs(&script).await
 }
 
-pub async fn get_project_counts_typed<R: JxaRunner>(
+pub async fn get_project_counts<R: JxaRunner>(
     runner: &R,
     folder: Option<&str>,
 ) -> Result<ProjectCountsResult> {

@@ -381,3 +381,14 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 15:17:50
 **Session 44 started** (model: auto)
+
+### 2026-02-28 15:18:11
+- validated criterion 14 (`get_task_counts`) behavior with focused tests across all implementations:
+  - python: `pytest tests/test_tools_read.py -k get_task_counts -v` (4 passed)
+  - typescript: `npm test -- --run tests/tools-representative.test.ts -t get_task_counts` (3 passed)
+  - rust: `cargo test get_task_counts -- --nocapture` (3 passed)
+- also verified `typescript/src/tools/tasks.ts` has a single `get_task_counts` registration and rust compiles (`cargo check`)
+- next: criterion 15 (`get_project_counts` in all 3 implementations)
+
+### 2026-02-28 15:18:13
+**Session 44 ended** - 🔄 Context rotation (token limit reached)
