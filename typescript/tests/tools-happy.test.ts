@@ -294,4 +294,20 @@ describe("tool happy paths", () => {
     expect(JSON.parse(result.content[0].text)).toEqual({ id: "p1", name: "Project 1", completed: true });
     expect(String(runOmniJsMock.mock.calls[0][0])).toContain("project.markComplete()");
   });
+
+  test("uncomplete_project marks completed project active", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "p1", name: "Project 1", status: "active" });
+    const handler = registeredTools.get("uncomplete_project");
+    expect(handler).toBeDefined();
+    const result = await handler!({ project_id_or_name: "Project 1" });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "p1",
+      name: "Project 1",
+      status: "active",
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain("if (!project.completed) {");
+    expect(script).toContain("project.markIncomplete()");
+    expect(script).toContain('status: "active"');
+  });
 });

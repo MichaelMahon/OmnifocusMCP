@@ -313,6 +313,26 @@ async def test_complete_project_happy_path(
 
 
 @pytest.mark.asyncio
+async def test_uncomplete_project_happy_path_criterion7(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "p2", "name": "Project Two", "status": "active"}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.uncomplete_project("p2")
+
+    assert json.loads(result) == payload
+    assert len(state["calls"]) == 1
+    script = state["calls"][0]["script"]
+    assert 'const projectFilter = "p2";' in script
+    assert "if (!project.completed) {" in script
+    assert "project.markIncomplete();" in script
+    assert 'status: "active"' in script
+
+
+@pytest.mark.asyncio
 async def test_create_tag_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = {"id": "tag1"}
     configured = mock_server_run_omnijs(payload)
@@ -679,6 +699,25 @@ async def test_complete_project_happy_path(mock_server_run_omnijs: Callable[[Any
     script = state["calls"][0]["script"]
     assert 'const projectFilter = "p2";' in script
     assert "project.markComplete();" in script
+
+
+@pytest.mark.asyncio
+async def test_uncomplete_project_happy_path_criterion7(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "p2", "name": "Launch", "status": "active"}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.uncomplete_project("p2")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const projectFilter = "p2";' in script
+    assert "if (!project.completed) {" in script
+    assert "project.markIncomplete();" in script
+    assert 'status: "active"' in script
 
 
 @pytest.mark.asyncio

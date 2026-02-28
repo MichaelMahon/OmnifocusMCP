@@ -236,3 +236,34 @@ return {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@typed_tool(mcp)
+async def uncomplete_project(project_id_or_name: str) -> str:
+    """reopen a completed project by id or name and return active status."""
+    if project_id_or_name.strip() == "":
+        raise ValueError("project_id_or_name must not be empty.")
+
+    project_filter = escape_for_jxa(project_id_or_name.strip())
+    script = f"""
+const projectFilter = {project_filter};
+const project = document.flattenedProjects.find(item => {{
+  return item.id.primaryKey === projectFilter || item.name === projectFilter;
+}});
+if (!project) {{
+  throw new Error(`Project not found: ${{projectFilter}}`);
+}}
+if (!project.completed) {{
+  throw new Error(`Project is not completed: ${{projectFilter}}`);
+}}
+
+project.markIncomplete();
+
+return {{
+  id: project.id.primaryKey,
+  name: project.name,
+  status: "active"
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
