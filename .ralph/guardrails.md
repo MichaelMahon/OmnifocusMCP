@@ -80,6 +80,11 @@
 - **Instruction**: Add explicit runtime validation in handlers for constrained fields that tests can pass as raw values, and assert against the handler error message rather than schema-only errors
 - **Added after**: TypeScript `set_project_status` happy/invalid tests failed because mock tool invocation bypassed zod schema enforcement
 
+### Sign: Check Active Rust Module Path Before Editing Tool Files
+- **Trigger**: Before modifying Rust `tools` modules when compile errors mention duplicate definitions or missing modules
+- **Instruction**: Verify `rust/src/tools/mod.rs` uses `#[path = ...]` indirection and edit the active file (`tags_clean.rs` in this repo) instead of an unused mirror path
+- **Added after**: `cargo clippy` failed with repeated `E0428` duplicate symbol errors from `tags.rs` while the active module was redirected via `#[path = "tags_clean.rs"]`
+
 ### Sign: Scan For Duplicate Registrations Before Full Gates
 - **Trigger**: Before running full cross-implementation lint/typecheck/tests for a criterion
 - **Instruction**: Run `rg` for the target tool symbol in Python/TypeScript/Rust sources and tests, then remove duplicate definitions/registrations before validation

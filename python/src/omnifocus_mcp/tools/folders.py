@@ -68,3 +68,103 @@ return {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@typed_tool(mcp)
+async def get_folder(folder_name_or_id: str) -> str:
+    """get folder details by id or name, including direct projects and subfolders."""
+    if folder_name_or_id.strip() == "":
+        raise ValueError("folder_name_or_id must not be empty.")
+
+    folder_filter = escape_for_jxa(folder_name_or_id.strip())
+    script = f"""
+const folderFilter = {folder_filter};
+
+const folder = document.flattenedFolders.find(item => {{
+  return item.id.primaryKey === folderFilter || item.name === folderFilter;
+}});
+if (!folder) {{
+  throw new Error(`Folder not found: ${{folderFilter}}`);
+}}
+
+const normalizeFolderStatus = (item) => {{
+  const rawStatus = String(item.status || "").toLowerCase();
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+}};
+
+const normalizeProjectStatus = (item) => {{
+  const rawStatus = String(item.status || "").toLowerCase();
+  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {{
+    return "on_hold";
+  }}
+  if (rawStatus.includes("completed")) return "completed";
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+}};
+
+return {{
+  id: folder.id.primaryKey,
+  name: folder.name,
+  status: normalizeFolderStatus(folder),
+  parentName: folder.parent ? folder.parent.name : null,
+  projects: folder.projects.map(project => {{
+    return {{
+      id: project.id.primaryKey,
+      name: project.name,
+      status: normalizeProjectStatus(project)
+    }};
+  }}),
+  subfolders: folder.folders.map(subfolder => {{
+    return {{
+      id: subfolder.id.primaryKey,
+      name: subfolder.name
+    }};
+  }})
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
+async def get_folder(folder_name_or_id: str) -> str:
+    """get a folder by id or name with direct child projects and subfolders."""
+    if folder_name_or_id.strip() == "":
+        raise ValueError("folder_name_or_id must not be empty.")
+
+    folder_filter = escape_for_jxa(folder_name_or_id.strip())
+    script = f"""
+const folderFilter = {folder_filter};
+
+const folder = document.flattenedFolders.find(
+  f => f.id.primaryKey === folderFilter || f.name === folderFilter
+);
+if (!folder) {{
+  throw new Error(`Folder not found: ${{folderFilter}}`);
+}}
+
+const normalizeStatus = (value) => {{
+  const rawStatus = String(value || "").toLowerCase().trim();
+  if (rawStatus === "") return "active";
+  return rawStatus.replace(/\\s+/g, "_");
+}};
+
+return {{
+  id: folder.id.primaryKey,
+  name: folder.name,
+  status: normalizeStatus(folder.status),
+  parentName: folder.parent ? folder.parent.name : null,
+  projects: folder.projects.map(project => ({{
+    id: project.id.primaryKey,
+    name: project.name,
+    status: normalizeStatus(project.status)
+  }})),
+  subfolders: folder.folders.map(subfolder => ({{
+    id: subfolder.id.primaryKey,
+    name: subfolder.name
+  }}))
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
