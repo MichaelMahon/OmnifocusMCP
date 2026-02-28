@@ -480,3 +480,10 @@ This is how Ralph maintains continuity across iterations.
 - ran the Rust task test command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
 - marked criterion 25 complete in `RALPH_TASK.md`
 - next focus: criterion 26 (`rust/src/main.rs`)
+
+### 2026-02-28 11:18:40
+- completed criterion 26 by creating `rust/src/main.rs` with a `clap` parser for `--version`, `#[tokio::main]` async startup, and `rmcp` stdio serving (`serve(stdio())` + `waiting()`)
+- added clean shutdown handling via `tokio::select!` so the process exits on EOF or SIGINT without panic
+- ran the Rust task test command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 26 complete in `RALPH_TASK.md`
+- next focus: criterion 27 (`echo '{}' | cargo run`)

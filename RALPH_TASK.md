@@ -246,7 +246,7 @@ Connect everything into a working MCP server.
           (e.g. `get_inbox`, `list_tasks`, etc.)
         - Register 3 resources and 4 prompts
         - The server struct holds a `Box<dyn JxaRunner>` (or Arc)
-26. [ ] Create `rust/src/main.rs`:
+26. [x] Create `rust/src/main.rs`:
         - `clap` for `--version` flag (prints `omnifocus-mcp X.Y.Z`)
         - `#[tokio::main]` async entry point
         - Creates `RealJxaRunner`, creates server, connects stdio

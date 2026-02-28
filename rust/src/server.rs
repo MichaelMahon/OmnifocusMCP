@@ -146,14 +146,18 @@ struct ProjectPlanningPromptParams {
 #[derive(Clone)]
 pub struct OmniFocusServer<R: JxaRunner + Send + Sync + 'static> {
     runner: Arc<R>,
+    runner_dyn: Arc<dyn JxaRunner>,
     tool_router: ToolRouter<Self>,
     prompt_router: PromptRouter<Self>,
 }
 
 impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     pub fn new(runner: R) -> Self {
+        let runner = Arc::new(runner);
+        let runner_dyn: Arc<dyn JxaRunner> = runner.clone();
         Self {
-            runner: Arc::new(runner),
+            runner,
+            runner_dyn,
             tool_router: Self::tool_router(),
             prompt_router: Self::prompt_router(),
         }
@@ -220,9 +224,13 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<SearchTasksParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = search_tasks(self.runner.as_ref(), &params.query, params.limit.unwrap_or(100))
-            .await
-            .map_err(to_mcp_error)?;
+        let result = search_tasks(
+            self.runner.as_ref(),
+            &params.query,
+            params.limit.unwrap_or(100),
+        )
+        .await
+        .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 
@@ -320,9 +328,13 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<MoveTaskParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = move_task(self.runner.as_ref(), &params.task_id, params.project.as_deref())
-            .await
-            .map_err(to_mcp_error)?;
+        let result = move_task(
+            self.runner.as_ref(),
+            &params.task_id,
+            params.project.as_deref(),
+        )
+        .await
+        .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 
@@ -485,6 +497,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
 #[prompt_handler(router = self.prompt_router)]
 impl<R: JxaRunner + Send + Sync + 'static> ServerHandler for OmniFocusServer<R> {
     fn get_info(&self) -> ServerInfo {
+        let _ = &self.runner_dyn;
         ServerInfo {
             instructions: Some(
                 "OmniFocus MCP server exposing tools, resources, and prompts.".to_string(),
