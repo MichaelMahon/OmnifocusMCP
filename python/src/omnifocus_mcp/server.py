@@ -129,3 +129,53 @@ return tasks.map(task => {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@_typed_tool(mcp)
+async def get_task(task_id: str) -> str:
+    """get full details for a single task by id.
+
+    returns list_tasks fields plus children, parent name, sequential state,
+    repetition rule, and completion date.
+    """
+    if task_id.strip() == "":
+        raise ValueError("task_id must not be empty.")
+
+    task_id_filter = escape_for_jxa(task_id)
+    script = f"""
+const taskId = {task_id_filter};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+
+const children = task.children.map(child => {{
+  return {{
+    id: child.id.primaryKey,
+    name: child.name,
+    completed: child.completed
+  }};
+}});
+
+const repetitionRule = task.repetitionRule ? String(task.repetitionRule) : null;
+
+return {{
+  id: task.id.primaryKey,
+  name: task.name,
+  note: task.note,
+  flagged: task.flagged,
+  dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+  deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+  completed: task.completed,
+  completionDate: task.completionDate ? task.completionDate.toISOString() : null,
+  projectName: task.containingProject ? task.containingProject.name : null,
+  tags: task.tags.map(tag => tag.name),
+  estimatedMinutes: task.estimatedMinutes,
+  children: children,
+  parentName: task.parent ? task.parent.name : null,
+  sequential: task.sequential,
+  repetitionRule: repetitionRule
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)

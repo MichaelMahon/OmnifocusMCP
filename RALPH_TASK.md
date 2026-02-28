@@ -175,7 +175,7 @@ parameter (default 100).
         Returns task objects with: `id`, `name`, `note`, `flagged`,
         `dueDate`, `deferDate`, `completed`, `projectName`, `tags[]`,
         `estimatedMinutes`.
-18. [ ] Tool `get_task` — accepts task `id`, returns full detail including:
+18. [x] Tool `get_task` — accepts task `id`, returns full detail including:
         all list_tasks fields plus `children[]`, `parentName`, `sequential`,
         `repetitionRule`, `completionDate`.
 19. [ ] Tool `search_tasks` — accepts `query` string + optional `limit`.
