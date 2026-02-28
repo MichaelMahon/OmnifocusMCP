@@ -15,7 +15,8 @@ use omnifocus_mcp::{
         tasks::{
             append_to_note, complete_task, create_subtask, create_task, create_tasks_batch,
             delete_task, delete_tasks_batch, get_inbox, get_task, list_subtasks, list_tasks,
-            search_tasks, set_task_repetition, uncomplete_task, update_task, CreateTaskInput,
+            move_task, search_tasks, set_task_repetition, uncomplete_task, update_task,
+            CreateTaskInput,
         },
     },
 };
@@ -395,10 +396,9 @@ impl SmokeTest {
         self.created_task_ids.push(child_task_id.clone());
 
         let subtasks = list_subtasks(runner, &parent_task_id, 20).await?;
-        let subtasks_array = require_array(&subtasks, "list_subtasks result")?;
-        let subtask_found = subtasks_array
+        let subtask_found = subtasks
             .iter()
-            .any(|item| item.get("id").and_then(Value::as_str) == Some(child_task_id.as_str()));
+            .any(|item| item.id.as_str() == child_task_id.as_str());
         if !subtask_found {
             return Err(OmniFocusError::Validation(
                 "list_subtasks did not include the created subtask.".to_string(),

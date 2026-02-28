@@ -75,6 +75,23 @@ New response fields: `completionDate`, `isStalled`, `nextTaskId`, `nextTaskName`
 |------|-------------|
 | `get_task_counts` | aggregate counts for any task filter combo — no listing |
 | `get_project_counts` | aggregate counts for project statuses — no listing |
+| `duplicate_task` | clone a task with all properties and children |
+
+### Native OmniFocus property enhancements (all read tools)
+| New Response Field | Type | Description |
+|--------------------|------|-------------|
+| `taskStatus` | `str` | native OmniFocus computed status: `available`, `blocked`, `next`, `due_soon`, `overdue`, `completed`, `dropped` |
+| `effectiveDueDate` | `str \| null` (ISO 8601) | inherited due date from parent task or project |
+| `effectiveDeferDate` | `str \| null` (ISO 8601) | inherited defer date from parent task or project |
+| `effectiveFlagged` | `bool` | inherited flagged status from parent task or project |
+| `modified` | `str \| null` (ISO 8601) | last-modified timestamp on any database object |
+
+### Notifications support (new)
+| Tool | Description |
+|------|-------------|
+| `add_notification` | add a date-based or due-relative notification to a task |
+| `remove_notification` | remove a notification from a task |
+| `list_notifications` | list active notifications on a task |
 
 ### get_inbox, search_tasks, list_tags, get_forecast enhancements
 See individual phase criteria below.
