@@ -114,6 +114,12 @@ pub async fn get_task_counts<R: JxaRunner>(
     let completed_after_filter = completed_after
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
+    let planned_before_filter = planned_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let planned_after_filter = planned_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
     let max_estimated_minutes_filter = max_estimated_minutes
         .map(|value| value.to_string())
         .unwrap_or_else(|| "null".to_string());
@@ -344,6 +350,12 @@ pub async fn get_task_counts_legacy1<R: JxaRunner>(
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
     let completed_after_filter = completed_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let planned_before_filter = planned_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let planned_after_filter = planned_after
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
     let max_estimated_minutes_filter = max_estimated_minutes
@@ -1349,8 +1361,8 @@ pub async fn search_tasks_with_planned<R: JxaRunner>(
     defer_after: Option<&str>,
     completed_before: Option<&str>,
     completed_after: Option<&str>,
-    planned_before: Option<&str>,
-    planned_after: Option<&str>,
+    _planned_before: Option<&str>,
+    _planned_after: Option<&str>,
     max_estimated_minutes: Option<i32>,
     sort_by: Option<&str>,
     sort_order: &str,
@@ -1718,8 +1730,6 @@ pub async fn search_tasks<R: JxaRunner>(
     defer_after: Option<&str>,
     completed_before: Option<&str>,
     completed_after: Option<&str>,
-    planned_before: Option<&str>,
-    planned_after: Option<&str>,
     max_estimated_minutes: Option<i32>,
     sort_by: Option<&str>,
     sort_order: &str,
@@ -1740,8 +1750,8 @@ pub async fn search_tasks<R: JxaRunner>(
         defer_after,
         completed_before,
         completed_after,
-        None,
-        None,
+        planned_before,
+        planned_after,
         max_estimated_minutes,
         sort_by,
         sort_order,
