@@ -603,3 +603,8 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 11:33:35
 **Session 21 started** (model: auto)
+
+### 2026-02-28 11:40:00
+- completed criterion 32 by running `cd rust && cargo run --example smoke_test` against real OmniFocus; output reported `smoke test PASSED` with `0 failures`
+- marked criterion 32 complete in `RALPH_TASK.md`
+- next focus: implement criterion 33 (`rust/tests/integration_test.rs`)

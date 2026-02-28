@@ -277,7 +277,7 @@ patterns as `python/tests/test_integration.py`.
 31. [x] Create `rust/examples/smoke_test.rs` — standalone async binary
         that calls every tool function against real OmniFocus and prints
         pass/fail. Pattern: same as `python/scripts/smoke_test.py`.
-32. [ ] Smoke test passes against real OmniFocus with zero failures.
+32. [x] Smoke test passes against real OmniFocus with zero failures.
         Any bugs discovered are documented with `// BUG:` and fixed
         before proceeding.
 33. [ ] Create `rust/tests/integration_test.rs` gated by
