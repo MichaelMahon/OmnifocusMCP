@@ -26,6 +26,8 @@ pub struct TaskResult {
     pub in_inbox: bool,
     #[serde(rename = "hasChildren", alias = "has_children", default)]
     pub has_children: bool,
+    #[serde(rename = "taskStatus", alias = "task_status", default)]
+    pub task_status: String,
     #[serde(default)]
     pub sequential: bool,
 }
