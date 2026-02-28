@@ -748,7 +748,7 @@ const warning = childCount > 0
   ? `Deleted task had ${{childCount}} child task(s).`
   : null;
 
-task.drop(false);
+deleteObject(task);
 
 return {{
   id: taskId,
@@ -784,8 +784,15 @@ async def delete_tasks_batch(task_ids: list[str]) -> str:
     task_ids_value = json.dumps(normalized_task_ids)
     script = f"""
 const taskIds = {task_ids_value};
+const taskById = new Map();
+for (const task of document.flattenedTasks) {{
+  try {{
+    taskById.set(task.id.primaryKey, task);
+  }} catch (e) {{
+  }}
+}}
 const results = taskIds.map(taskId => {{
-  const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+  const task = taskById.get(taskId);
   if (!task) {{
     return {{
       id: taskId,
@@ -795,7 +802,7 @@ const results = taskIds.map(taskId => {{
   }}
 
   const taskName = task.name;
-  task.drop(false);
+  deleteObject(task);
   return {{
     id: taskId,
     name: taskName,

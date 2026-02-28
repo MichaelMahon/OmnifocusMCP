@@ -48,9 +48,7 @@ Reading even two full files will blow your budget and trigger rotation.
   - `PASS jxa bridge basics`
   - `PASS read tools validation`
   - `PASS write tools validation`
-- the previous `delete_tasks_batch` smoke assertion was corrected to verify
-  the tool result payload (`results[].deleted`) instead of expecting
-  `get_task` lookups to fail after `drop(false)`.
+- `delete_tasks_batch` now uses `deleteObject(task)` and pre-indexes task ids before deletion to avoid invalidated-task access during iterative deletes.
 
 ### Criterion 26 (parity verification):
 **Use grep/shell commands, NOT file reads.** Specifically:
@@ -106,3 +104,13 @@ Reading even two full files will blow your budget and trigger rotation.
 
 ### 2026-02-28 14:14:04
 **Session 5 started** (model: auto)
+
+### 2026-02-28 14:19:55
+**Session 5 ended** - ✅ TASK COMPLETE
+
+### 2026-02-28 14:20:30
+- re-ran criterion 25 smoke test and reproduced a real delete regression in `delete_tasks_batch`
+- fixed deletion semantics across Python/TypeScript/Rust (`deleteObject(task)` instead of `drop(false)`)
+- fixed iterative delete invalidation by pre-indexing tasks by id before delete loop
+- reran full `test_command` and confirmed all checks pass
+- reran `cargo run --example smoke_test` with zero failures

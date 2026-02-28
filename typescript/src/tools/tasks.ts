@@ -469,7 +469,7 @@ const taskId = ${taskId};
 const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
 if (!task) throw new Error(\`Task not found: \${taskId}\`);
 const taskName = task.name;
-task.drop(false);
+deleteObject(task);
 return { id: taskId, name: taskName, deleted: true };
 `.trim();
       return textResult(await runOmniJs(script));
@@ -497,8 +497,15 @@ return { id: taskId, name: taskName, deleted: true };
         const taskIdsValue = `[${normalizedTaskIds.map((taskId) => JSON.stringify(taskId)).join(", ")}]`;
         const script = `
 const taskIds = ${taskIdsValue};
+const taskById = new Map();
+for (const task of document.flattenedTasks) {
+  try {
+    taskById.set(task.id.primaryKey, task);
+  } catch (e) {
+  }
+}
 const results = taskIds.map(taskId => {
-  const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+  const task = taskById.get(taskId);
   if (!task) {
     return {
       id: taskId,
@@ -508,7 +515,7 @@ const results = taskIds.map(taskId => {
   }
 
   const taskName = task.name;
-  task.drop(false);
+  deleteObject(task);
   return {
     id: taskId,
     name: taskName,

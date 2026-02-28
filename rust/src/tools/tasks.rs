@@ -785,7 +785,7 @@ const warning = childCount > 0
   ? `Deleted task had ${{childCount}} child task(s).`
   : null;
 
-task.drop(false);
+deleteObject(task);
 
 return {{
   id: taskId,
@@ -818,8 +818,15 @@ pub async fn delete_tasks_batch<R: JxaRunner>(runner: &R, task_ids: Vec<String>)
     let task_ids_value = serde_json::to_string(&normalized_task_ids)?;
     let script = format!(
         r#"const taskIds = {task_ids_value};
+const taskById = new Map();
+for (const task of document.flattenedTasks) {{
+  try {{
+    taskById.set(task.id.primaryKey, task);
+  }} catch (e) {{
+  }}
+}}
 const results = taskIds.map(taskId => {{
-  const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+  const task = taskById.get(taskId);
   if (!task) {{
     return {{
       id: taskId,
@@ -829,7 +836,7 @@ const results = taskIds.map(taskId => {{
   }}
 
   const taskName = task.name;
-  task.drop(false);
+  deleteObject(task);
   return {{
     id: taskId,
     name: taskName,

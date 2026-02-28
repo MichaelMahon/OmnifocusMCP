@@ -115,3 +115,8 @@
 - **Instruction**: Check the token breakdown in activity.log or estimate: each 1KB of file content ≈ 250 tokens. With ~15k tokens used by state files, you have ~65k tokens left. A 500-line source file is ~50KB ≈ 12,500 tokens. Plan reads accordingly — never read more than ~250KB of source in one session.
 - **Added after**: Repeated rotation loops caused by reading multiple large files without considering cumulative token cost
 
+### Sign: Snapshot Task References Before Batch Deletion
+- **Trigger**: When deleting multiple tasks by id in one OmniJS script
+- **Instruction**: Build a task-id map before any delete calls and resolve ids from that snapshot; deleting while repeatedly scanning `document.flattenedTasks` can invalidate task objects mid-loop
+- **Added after**: smoke test failed with `Task is no longer valid` after switching to `deleteObject(task)` in `delete_tasks_batch`
+

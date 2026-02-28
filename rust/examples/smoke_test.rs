@@ -617,9 +617,7 @@ impl SmokeTest {
         let _ = delete_tag(runner, &tag_id).await?;
         self.created_tag_ids.retain(|id| id != &tag_id);
 
-        let _ = delete_task(runner, &subtask_id).await;
         self.created_task_ids.retain(|id| id != &subtask_id);
-        let _ = delete_task(runner, &task_id).await;
         self.created_task_ids.retain(|id| id != &task_id);
 
         let _ = delete_project(runner, &project_id).await?;
