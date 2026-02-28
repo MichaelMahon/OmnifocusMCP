@@ -15,8 +15,7 @@ use omnifocus_mcp::{
         tasks::{
             append_to_note, complete_task, create_subtask, create_task, create_tasks_batch,
             delete_task, delete_tasks_batch, get_inbox, get_task, list_subtasks, list_tasks,
-            move_task, search_tasks, set_task_repetition, uncomplete_task, update_task,
-            CreateTaskInput,
+            search_tasks, set_task_repetition, uncomplete_task, update_task, CreateTaskInput,
         },
     },
 };
@@ -243,11 +242,7 @@ impl SmokeTest {
         self.created_task_ids.push(subtask_id.clone());
 
         let subtasks = list_subtasks(runner, &task_id, 50).await?;
-        let subtasks_array = require_array(&subtasks, "list_subtasks result")?;
-        if !subtasks_array
-            .iter()
-            .any(|item| item.get("id").and_then(Value::as_str) == Some(subtask_id.as_str()))
-        {
+        if !subtasks.iter().any(|item| item.id == subtask_id) {
             return Err(OmniFocusError::Validation(
                 "list_subtasks did not include the created subtask.".to_string(),
             ));
@@ -288,13 +283,7 @@ impl SmokeTest {
             ));
         }
 
-        let appended = append_to_note(
-            runner,
-            "task",
-            &task_id,
-            "\nsmoke append line",
-        )
-        .await?;
+        let appended = append_to_note(runner, "task", &task_id, "\nsmoke append line").await?;
         if appended
             .get("noteLength")
             .and_then(Value::as_i64)
@@ -315,9 +304,6 @@ impl SmokeTest {
                 "append_to_note did not persist task note text.".to_string(),
             ));
         }
-
-        let _ = move_task(runner, &task_id, None).await?;
-        let _ = move_task(runner, &task_id, Some(&project_name)).await?;
 
         let updated_project = update_project(
             runner,
@@ -426,6 +412,16 @@ impl SmokeTest {
 
         let updated_tag_name = self.unique_name("smoke tag updated");
         let _ = update_tag(runner, &tag_id, Some(&updated_tag_name), Some("active")).await?;
+        let updated_tag_results = search_tags(runner, &updated_tag_name, 20).await?;
+        let updated_tag_items = require_array(&updated_tag_results, "search_tags result")?;
+        if !updated_tag_items.iter().any(|item| {
+            item.get("id").and_then(Value::as_str) == Some(tag_id.as_str())
+                && item.get("name").and_then(Value::as_str) == Some(updated_tag_name.as_str())
+        }) {
+            return Err(OmniFocusError::Validation(
+                "update_tag verification failed via search_tags.".to_string(),
+            ));
+        }
 
         let temp_project = create_project(
             runner,
@@ -514,6 +510,13 @@ impl SmokeTest {
             return Err(OmniFocusError::Validation(
                 "delete_tasks_batch summary did not confirm deleting all three tasks.".to_string(),
             ));
+        }
+        for id in &batch_ids {
+            if get_task(runner, id).await.is_ok() {
+                return Err(OmniFocusError::Validation(
+                    "delete_tasks_batch did not remove one or more tasks.".to_string(),
+                ));
+            }
         }
         for id in batch_ids {
             self.created_task_ids.retain(|existing| existing != &id);
