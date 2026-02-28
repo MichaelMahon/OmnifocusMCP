@@ -497,7 +497,7 @@ set reminders without the user opening OmniFocus.
 
 ### Success Criteria
 
-28. [ ] **`list_notifications`** — all 3 implementations (NEW TOOL).
+28. [x] **`list_notifications`** — all 3 implementations (NEW TOOL).
         - **Input:** `task_id: str` (required, non-empty)
         - **JXA:** find task by ID. Return `task.notifications.map(n => ({
           id: n.id.primaryKey,

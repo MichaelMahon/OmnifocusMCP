@@ -35,6 +35,7 @@ from omnifocus_mcp.tools.tasks import (  # noqa: E402,F401
     get_inbox,
     get_task_counts,
     get_task,
+    list_notifications,
     list_subtasks,
     list_tasks,
     move_task,

@@ -6,9 +6,9 @@
 ## Summary
 
 - Current task: OmniFocus MCP — Superior read-side filtering, sorting, and aggregation
-- Current status: Phases 1-8 partially complete (25/36 criteria done). Working on Phase 8.
-- Next criterion: **26** — add `plannedDate` support across all 3 implementations
-- Remaining: criteria 26-36 (11 criteria across Phases 8-11)
+- Current status: Phases 1-8 complete; Phase 9 started (28/36 criteria done)
+- Next criterion: **29** — implement `add_notification` across all 3 implementations
+- Remaining: criteria 29-36 (8 criteria across Phases 9-11)
 
 ## Phase Overview
 
@@ -21,28 +21,27 @@
 | 5     | Enhanced get_forecast              | 17–18    | 2/2  |
 | 6     | Tests and Parity Verification      | 19–20    | 2/2  |
 | 7     | Documentation                      | 21–22    | 2/2  |
-| 8     | Native Properties & Effective Vals | 23–27    | 3/5  |
-| 9     | Notifications                      | 28–31    | 0/4  |
+| 8     | Native Properties & Effective Vals | 23–27    | 5/5  |
+| 9     | Notifications                      | 28–31    | 1/4  |
 | 10    | Duplicate Task                     | 32–33    | 0/2  |
 | 11    | Final Parity & Docs                | 34–36    | 0/3  |
 
-**Total: 25 / 36 criteria complete**
+**Total: 28 / 36 criteria complete**
 
 ## Key Context
 
 - Python tools: `python/src/omnifocus_mcp/tools/*.py`
 - TypeScript tools: `typescript/src/tools/*.ts`
 - Rust tools: `rust/src/tools/*.rs`
-- All lint/test commands pass for all 3 implementations
-- Criteria 23-25 complete: taskStatus on all task objects, effective dates on get_task, modified timestamp on get_task/get_project
-- Next: criterion 26 (plannedDate support)
+- Criteria 23-27 complete: taskStatus, effective fields, modified timestamps, and plannedDate support are implemented
+- Criterion 28 complete: `list_notifications` added in Python/TypeScript/Rust with task-id validation and notification summary mapping
+- Focused validation run passed for criterion 28:
+  - `cd python && pytest tests/test_tools_read.py -k "list_notifications" -v`
+  - `cd typescript && npm test -- tools-representative.test.ts`
+  - `cd rust && cargo test list_notifications -- --nocapture`
+- Next: criterion 29 (`add_notification`)
 
 ## Session History (keep only last 3 substantive entries)
-
-### 2026-02-28 15:54
-- completed criterion 25 (modified timestamp on get_task/get_project)
-- all lint/test pass across all 3 implementations
-- next: criterion 26 (plannedDate support)
 
 ### 2026-02-28 15:55-15:58
 - sessions 96-100 entered rotation loop: agent reads full tasks.py (1934 lines / 189KB) or tasks.rs (2463 lines / 241KB), blowing the context budget
@@ -57,3 +56,10 @@
   - `cd typescript && npx tsc --noEmit && npm test`
   - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
 - next: criterion 28 (`list_notifications` new tool across python/typescript/rust)
+
+### 2026-02-28 16:08-16:10
+- completed criterion 28 by adding `list_notifications` in all 3 implementations with identical JXA notification mapping
+- wired Python and Rust server exports/registration for the new tool
+- added tests in `python/tests/test_tools_read.py`, `typescript/tests/tools-representative.test.ts`, and `rust/tests/tools_read_test.rs`
+- ran focused criterion tests; all passed
+- next: criterion 29 (`add_notification`)

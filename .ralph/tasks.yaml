@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772316213
-generated_at: 2026-02-28T22:06:02Z
+source_mtime: 1772316520
+generated_at: 2026-02-28T22:08:57Z
 
 tasks:
   - id: "line_108"
@@ -198,7 +198,7 @@ tasks:
     raw_marker: 27.
   - id: "line_500"
     line_number: 500
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **`list_notifications`** — all 3 implementations (NEW TOOL).
     indent_level: 0
