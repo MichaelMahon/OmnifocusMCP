@@ -1337,7 +1337,7 @@ return tasks.map(task => ({
 return runOmniJs(script);
 }
 
-async function getTaskCountsDataLegacy2(
+export async function getTaskCountsData(
   project: string | undefined,
   tag: string | undefined,
   tags: string[] | undefined,
@@ -1792,7 +1792,7 @@ return counts;
   return runOmniJs(script);
 }
 
-async function getTaskCountsDataLegacy2(
+async function getTaskCountsDataLegacy4(
   project: string | undefined,
   tag: string | undefined,
   tags: string[] | undefined,

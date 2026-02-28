@@ -1733,6 +1733,37 @@ async fn list_tasks_invalid_date_error_bubbles_up() {
 }
 
 #[tokio::test]
+async fn get_task_counts_invalid_date_error_bubbles_up() {
+    let runner = ErrorRunner {
+        message: "dueBefore must be a valid ISO 8601 date string.".to_string(),
+    };
+
+    let error = get_task_counts(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        Some("bad-date"),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+    .await
+    .expect_err("invalid date should return omni error");
+
+    assert!(matches!(error, OmniFocusError::OmniFocus(_)));
+    assert_eq!(
+        error.to_string(),
+        "dueBefore must be a valid ISO 8601 date string."
+    );
+}
+
+#[tokio::test]
 async fn list_tasks_tag_filters_support_any_all_merge_and_empty_array() {
     let last_script = Arc::new(Mutex::new(String::new()));
     let runner = CapturingRunner {

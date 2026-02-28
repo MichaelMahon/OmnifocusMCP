@@ -452,7 +452,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     }
 
     #[tool(
-        description = "get aggregate task counts for any filter combination without listing individual tasks."
+        description = "get aggregate task counts for any filter combination without listing individual tasks. much faster than list_tasks for answering 'how many' questions."
     )]
     async fn get_task_counts(
         &self,
