@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772290267
-generated_at: 2026-02-28T14:56:06Z
+source_mtime: 1772291086
+generated_at: 2026-02-28T15:07:29Z
 
 tasks:
   - id: "line_32"
@@ -72,28 +72,28 @@ tasks:
     raw_marker: 9.
   - id: "line_124"
     line_number: 124
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Python: `server.py` refactored to < 50 lines. Creates FastMCP
     indent_level: 0
     raw_marker: 10.
   - id: "line_127"
     line_number: 127
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Python: `tools/` directory created with separate files per entity.
     indent_level: 0
     raw_marker: 11.
   - id: "line_130"
     line_number: 130
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Python: `resources.py` and `prompts.py` created with their
     indent_level: 0
     raw_marker: 12.
   - id: "line_132"
     line_number: 132
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Python: `ruff check src/ && ruff format --check src/ && mypy src/
     indent_level: 0
