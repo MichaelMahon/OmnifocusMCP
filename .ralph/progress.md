@@ -219,3 +219,19 @@ Reading even two full files will blow your budget and trigger rotation.
 
 ### 2026-02-28 14:32:29
 **Session 14 started** (model: auto)
+
+### 2026-02-28 14:33:10
+- aligned TypeScript `list_tasks` tag/status JXA filtering block with Python/Rust shape for parity
+- completed Rust `list_tasks` multi-tag support wiring (`tags`, `tagFilterMode`) in `tools/tasks.rs` and `server.rs`
+- updated Rust call sites (`prompts.rs`, `tests/tools_read_test.rs`, `tests/integration_test.rs`) for new `list_tasks` signature
+- added/extended list_tasks tests:
+  - TypeScript: invalid-date error propagation in `tests/tools-representative.test.ts`
+  - Rust: invalid-date bubble-up, tag mode+merge behavior, empty-tags ignore behavior in `tests/tools_read_test.rs`
+- reran full cross-language gate command successfully (`python` + `typescript` + `rust`)
+- next criterion remains: 3 (`maxEstimatedMinutes` duration filter)
+
+### 2026-02-28 14:32:54
+**Session 14 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 14:32:56
+**Session 15 started** (model: auto)

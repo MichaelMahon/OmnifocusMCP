@@ -55,6 +55,7 @@ async def list_tasks(
     deferAfter: str | None = None,
     completedBefore: str | None = None,
     completedAfter: str | None = None,
+    maxEstimatedMinutes: int | None = None,
     limit: int = 100,
 ) -> str:
     """list tasks with optional project, tag filters, flagged, status, and date filters.
@@ -74,6 +75,8 @@ async def list_tasks(
                 raise ValueError("tags entries must not be empty when provided.")
     if tagFilterMode not in ("any", "all"):
         raise ValueError("tagFilterMode must be one of: any, all.")
+    if maxEstimatedMinutes is not None and maxEstimatedMinutes < 0:
+        raise ValueError("maxEstimatedMinutes must be greater than or equal to 0.")
     if status not in ("available", "due_soon", "overdue", "completed", "all"):
         raise ValueError(
             "status must be one of: available, due_soon, overdue, completed, all."
@@ -109,6 +112,9 @@ async def list_tasks(
     completed_after_filter = (
         "null" if completedAfter is None else escape_for_jxa(completedAfter)
     )
+    max_estimated_minutes_filter = (
+        "null" if maxEstimatedMinutes is None else str(maxEstimatedMinutes)
+    )
 
     script = f"""
 const projectFilter = {project_filter};
@@ -122,6 +128,7 @@ const deferBeforeRaw = {defer_before_filter};
 const deferAfterRaw = {defer_after_filter};
 const completedBeforeRaw = {completed_before_filter};
 const completedAfterRaw = {completed_after_filter};
+const maxEstimatedMinutes = {max_estimated_minutes_filter};
 const now = new Date();
 const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
 const parseOptionalDate = (value, fieldName) => {{
@@ -184,6 +191,7 @@ const tasks = document.flattenedTasks
     if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
     if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
     if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
+    if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;
 
     return true;
   }})

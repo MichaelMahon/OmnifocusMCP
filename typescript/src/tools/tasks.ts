@@ -33,6 +33,7 @@ export function register(server: Server): void {
       deferAfter: z.string().optional(),
       completedBefore: z.string().optional(),
       completedAfter: z.string().optional(),
+      maxEstimatedMinutes: z.number().int().min(0).optional(),
       limit: z.number().int().min(1).default(100),
     },
     async ({
@@ -48,6 +49,7 @@ export function register(server: Server): void {
       deferAfter,
       completedBefore,
       completedAfter,
+      maxEstimatedMinutes,
       limit,
     }) => {
       try {
@@ -65,6 +67,7 @@ export function register(server: Server): void {
             deferAfter,
             completedBefore,
             completedAfter,
+            maxEstimatedMinutes,
             limit
           )
         );
@@ -698,6 +701,7 @@ export async function listTasksData(
   deferAfter: string | undefined,
   completedBefore: string | undefined,
   completedAfter: string | undefined,
+  maxEstimatedMinutes: number | undefined,
   limit: number
 ): Promise<unknown> {
   const projectFilter = project === undefined ? "null" : escapeForJxa(project.trim());
@@ -726,6 +730,7 @@ export async function listTasksData(
   const deferAfterFilter = deferAfter === undefined ? "null" : escapeForJxa(deferAfter);
   const completedBeforeFilter = completedBefore === undefined ? "null" : escapeForJxa(completedBefore);
   const completedAfterFilter = completedAfter === undefined ? "null" : escapeForJxa(completedAfter);
+  const maxEstimatedMinutesFilter = maxEstimatedMinutes === undefined ? "null" : String(maxEstimatedMinutes);
   const script = `
 const projectFilter = ${projectFilter};
 const tagNames = ${tagNamesFilter};
@@ -738,6 +743,7 @@ const deferBeforeRaw = ${deferBeforeFilter};
 const deferAfterRaw = ${deferAfterFilter};
 const completedBeforeRaw = ${completedBeforeFilter};
 const completedAfterRaw = ${completedAfterFilter};
+const maxEstimatedMinutes = ${maxEstimatedMinutesFilter};
 const now = new Date();
 const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
 const parseOptionalDate = (value, fieldName) => {
@@ -795,6 +801,7 @@ const tasks = document.flattenedTasks
     if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
     if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
     if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
+    if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;
     return true;
   })
   .slice(0, ${limit});
