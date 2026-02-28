@@ -214,6 +214,57 @@ describe("representative read and write tool handlers", () => {
     expect(JSON.parse(result.content[0].text)).toEqual([{ id: "task-date", name: "dated filter" }]);
   });
 
+  test("list_tasks sort by dueDate asc is included in script", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-sort-due", name: "sorted task" }]);
+    await getTool("list_tasks")({
+      sortBy: "dueDate",
+      sortOrder: "asc",
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const sortBy = "dueDate";');
+    expect(script).toContain('const sortOrder = "asc";');
+    expect(script).toContain('if (sortBy === "dueDate") {');
+  });
+
+  test("list_tasks sort by name desc is included in script", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-sort-name", name: "sorted by name" }]);
+    await getTool("list_tasks")({
+      sortBy: "name",
+      sortOrder: "desc",
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const sortBy = "name";');
+    expect(script).toContain('const sortOrder = "desc";');
+    expect(script).toContain("left = String(aValue).toLowerCase();");
+    expect(script).toContain('if (left < right) return sortOrder === "asc" ? -1 : 1;');
+  });
+
+  test("list_tasks auto-sorts by completionDate desc when completion filters are provided", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-sort-auto", name: "auto sorted" }]);
+    await getTool("list_tasks")({
+      status: "available",
+      completedAfter: "2026-03-01T00:00:00Z",
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const sortBy = "completionDate";');
+    expect(script).toContain('const sortOrder = "desc";');
+  });
+
+  test("list_tasks sorting keeps null values at the end", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-sort-null", name: "null ordering" }]);
+    await getTool("list_tasks")({
+      sortBy: "project",
+      sortOrder: "desc",
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain("if (aValue === null) return 1;");
+    expect(script).toContain("if (bValue === null) return -1;");
+  });
+
   test("list_tasks includes dueDate asc sorting in script", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "task-sort-due", name: "sort due" }]);
     await getTool("list_tasks")({

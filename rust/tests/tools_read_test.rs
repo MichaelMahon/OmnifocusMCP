@@ -564,7 +564,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
-        None,
         5,
     )
     .await
@@ -1100,6 +1099,13 @@ async fn list_tasks_tag_filters_support_any_all_merge_and_empty_array() {
         .expect("script capture lock should succeed")
         .clone();
     assert!(script.contains("const tagNames = null;"));
+}
+}
+}
+}
+}
+}
+}
 
 #[tokio::test]
 async fn list_tasks_tags_filter_modes_and_merging_are_in_script() {
