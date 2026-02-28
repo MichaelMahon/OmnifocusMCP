@@ -763,6 +763,61 @@ async def test_list_notifications_happy_path(
 
 
 @pytest.mark.asyncio
+async def test_add_notification_absolute_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "id": "n2",
+        "kind": "absolute",
+        "absoluteFireDate": "2026-03-03T10:30:00Z",
+        "relativeFireOffset": None,
+        "nextFireDate": "2026-03-03T10:30:00Z",
+        "isSnoozed": False,
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.add_notification(
+        task_id="t3", absoluteDate="2026-03-03T10:30:00Z"
+    )
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const taskId = "t3";' in script
+    assert 'const absoluteDateValue = "2026-03-03T10:30:00Z";' in script
+    assert "const relativeOffsetValue = null;" in script
+    assert "task.addNotification(new Date(absoluteDateValue))" in script
+    assert "task.effectiveDueDate" in script
+
+
+@pytest.mark.asyncio
+async def test_add_notification_relative_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "id": "n3",
+        "kind": "relative",
+        "absoluteFireDate": None,
+        "relativeFireOffset": -3600,
+        "nextFireDate": "2026-03-03T09:00:00Z",
+        "isSnoozed": False,
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.add_notification(task_id="t3", relativeOffset=-3600)
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert "const absoluteDateValue = null;" in script
+    assert "const relativeOffsetValue = -3600.0;" in script
+    assert "task.addNotification(relativeOffsetValue)" in script
+    assert "relativeFireOffset: notification.initialFireDate ? null : notification.relativeFireOffset," in script
+
+
+@pytest.mark.asyncio
 async def test_search_tasks_happy_path(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
@@ -1336,6 +1391,26 @@ async def test_list_notifications_empty_task_id_validation_error(
 ) -> None:
     with pytest.raises(ValueError, match="task_id must not be empty"):
         await server_module.list_notifications(task_id="   ")
+
+
+@pytest.mark.asyncio
+async def test_add_notification_validation_errors(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="task_id must not be empty"):
+        await server_module.add_notification(task_id="   ", absoluteDate="2026-03-01T00:00:00Z")
+    with pytest.raises(
+        ValueError, match="exactly one of absoluteDate or relativeOffset must be provided"
+    ):
+        await server_module.add_notification(task_id="t3")
+    with pytest.raises(
+        ValueError, match="exactly one of absoluteDate or relativeOffset must be provided"
+    ):
+        await server_module.add_notification(
+            task_id="t3",
+            absoluteDate="2026-03-01T00:00:00Z",
+            relativeOffset=-60,
+        )
+    with pytest.raises(ValueError, match="absoluteDate must not be empty when provided"):
+        await server_module.add_notification(task_id="t3", absoluteDate="   ")
 
 
 @pytest.mark.asyncio

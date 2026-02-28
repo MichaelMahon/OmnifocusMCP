@@ -564,6 +564,83 @@ describe("representative read and write tool handlers", () => {
     ]);
   });
 
+  test("add_notification absolute mode creates date-based reminder", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "n2",
+      kind: "absolute",
+      absoluteFireDate: "2026-03-03T10:30:00Z",
+      relativeFireOffset: null,
+      nextFireDate: "2026-03-03T10:30:00Z",
+      isSnoozed: false,
+    });
+    const result = await getTool("add_notification")({
+      task_id: "task-9",
+      absoluteDate: "2026-03-03T10:30:00Z",
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const taskId = "task-9";');
+    expect(script).toContain('const absoluteDateValue = "2026-03-03T10:30:00Z";');
+    expect(script).toContain("const relativeOffsetValue = null;");
+    expect(script).toContain("task.addNotification(new Date(absoluteDateValue))");
+    expect(script).toContain("task.effectiveDueDate");
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "n2",
+      kind: "absolute",
+      absoluteFireDate: "2026-03-03T10:30:00Z",
+      relativeFireOffset: null,
+      nextFireDate: "2026-03-03T10:30:00Z",
+      isSnoozed: false,
+    });
+  });
+
+  test("add_notification relative mode creates due-relative reminder", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "n3",
+      kind: "relative",
+      absoluteFireDate: null,
+      relativeFireOffset: -3600,
+      nextFireDate: "2026-03-03T09:00:00Z",
+      isSnoozed: false,
+    });
+    const result = await getTool("add_notification")({
+      task_id: "task-9",
+      relativeOffset: -3600,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain("const absoluteDateValue = null;");
+    expect(script).toContain("const relativeOffsetValue = -3600;");
+    expect(script).toContain("task.addNotification(relativeOffsetValue)");
+    expect(script).toContain(
+      "relativeFireOffset: notification.initialFireDate ? null : notification.relativeFireOffset,"
+    );
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "n3",
+      kind: "relative",
+      absoluteFireDate: null,
+      relativeFireOffset: -3600,
+      nextFireDate: "2026-03-03T09:00:00Z",
+      isSnoozed: false,
+    });
+  });
+
+  test("add_notification validates exactly one mode", async () => {
+    const missingMode = await getTool("add_notification")({ task_id: "task-9" });
+    expect(missingMode.isError).toBe(true);
+    expect(JSON.parse(missingMode.content[0].text)).toEqual({
+      error: "exactly one of absoluteDate or relativeOffset must be provided.",
+    });
+
+    const bothModes = await getTool("add_notification")({
+      task_id: "task-9",
+      absoluteDate: "2026-03-03T10:30:00Z",
+      relativeOffset: -300,
+    });
+    expect(bothModes.isError).toBe(true);
+    expect(JSON.parse(bothModes.content[0].text)).toEqual({
+      error: "exactly one of absoluteDate or relativeOffset must be provided.",
+    });
+  });
+
   test("get_task includes native taskStatus field mapping", async () => {
     runOmniJsMock.mockResolvedValueOnce({
       id: "task-9",
