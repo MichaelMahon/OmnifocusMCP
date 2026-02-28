@@ -90,6 +90,7 @@ async def test_get_inbox_happy_path(
             "tags": ["home"],
             "estimatedMinutes": 15,
             "hasChildren": False,
+            "taskStatus": "available",
         }
     ]
     configured = mock_server_run_omnijs(payload)
@@ -106,6 +107,11 @@ async def test_get_inbox_happy_path(
         in state["calls"][0]["script"]
     )
     assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
+    assert 'if (s.includes("Available")) return "available";' in state["calls"][0]["script"]
+    assert "taskStatus: (() => {" in state["calls"][0]["script"]
+    assert 'if (s.includes("Available")) return "available";' in state["calls"][0]["script"]
+    assert "taskStatus: (() => {" in state["calls"][0]["script"]
+    assert 'if (s.includes("Available")) return "available";' in state["calls"][0]["script"]
 
 
 @pytest.mark.asyncio
@@ -272,6 +278,7 @@ async def test_list_tasks_happy_path(
             "tags": ["urgent"],
             "estimatedMinutes": 30,
             "hasChildren": False,
+            "taskStatus": "next",
         }
     ]
     configured = mock_server_run_omnijs(payload)
@@ -290,6 +297,7 @@ async def test_list_tasks_happy_path(
         in state["calls"][0]["script"]
     )
     assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
+    assert 'if (s.includes("Available")) return "available";' in state["calls"][0]["script"]
     assert ".slice(0, 7)" in state["calls"][0]["script"]
 
 
@@ -590,6 +598,7 @@ async def test_get_task_happy_path(
         "deferDate": None,
         "completed": False,
         "completionDate": None,
+        "taskStatus": "available",
         "projectName": "Proj",
         "tags": [],
         "estimatedMinutes": None,
@@ -607,6 +616,8 @@ async def test_get_task_happy_path(
     assert json.loads(result) == payload
     assert len(state["calls"]) == 1
     assert 'const taskId = "t3";' in state["calls"][0]["script"]
+    assert "taskStatus: (() => {" in state["calls"][0]["script"]
+    assert 'if (s.includes("Completed")) return "completed";' in state["calls"][0]["script"]
 
 
 @pytest.mark.asyncio
@@ -668,6 +679,7 @@ async def test_list_subtasks_happy_path(
             "tags": ["home"],
             "estimatedMinutes": 10,
             "hasChildren": False,
+            "taskStatus": "blocked",
         }
     ]
     configured = mock_server_run_omnijs(payload)
@@ -680,6 +692,9 @@ async def test_list_subtasks_happy_path(
     assert len(state["calls"]) == 1
     assert 'const taskId = "t3";' in state["calls"][0]["script"]
     assert "const subtasks = task.children.slice(0, 4);" in state["calls"][0]["script"]
+    assert "const s = String(subtask.taskStatus);" in state["calls"][0]["script"]
+    assert "taskStatus: (() => {" in state["calls"][0]["script"]
+    assert 'if (s.includes("Next")) return "next";' in state["calls"][0]["script"]
 
 
 @pytest.mark.asyncio
@@ -700,6 +715,7 @@ async def test_search_tasks_happy_path(
             "tags": [],
             "estimatedMinutes": 5,
             "hasChildren": False,
+            "taskStatus": "due_soon",
         }
     ]
     configured = mock_server_run_omnijs(payload)
@@ -716,6 +732,9 @@ async def test_search_tasks_happy_path(
         in state["calls"][0]["script"]
     )
     assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
+    assert 'if (s.includes("Available")) return "available";' in state["calls"][0]["script"]
+    assert "taskStatus: (() => {" in state["calls"][0]["script"]
+    assert 'if (s.includes("Overdue")) return "overdue";' in state["calls"][0]["script"]
 
 
 @pytest.mark.asyncio
@@ -1131,11 +1150,11 @@ async def test_get_forecast_happy_path(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
     payload = {
-        "overdue": [{"id": "t5", "name": "Overdue", "completionDate": None, "hasChildren": False}],
-        "dueToday": [{"id": "t6", "name": "Today", "completionDate": None, "hasChildren": True}],
-        "flagged": [{"id": "t7", "name": "Flagged", "completionDate": None, "hasChildren": False}],
-        "deferred": [{"id": "t8", "name": "Deferred", "completionDate": None, "hasChildren": False}],
-        "dueThisWeek": [{"id": "t9", "name": "This week", "completionDate": None, "hasChildren": False}],
+        "overdue": [{"id": "t5", "name": "Overdue", "completionDate": None, "hasChildren": False, "taskStatus": "overdue"}],
+        "dueToday": [{"id": "t6", "name": "Today", "completionDate": None, "hasChildren": True, "taskStatus": "due_soon"}],
+        "flagged": [{"id": "t7", "name": "Flagged", "completionDate": None, "hasChildren": False, "taskStatus": "available"}],
+        "deferred": [{"id": "t8", "name": "Deferred", "completionDate": None, "hasChildren": False, "taskStatus": "blocked"}],
+        "dueThisWeek": [{"id": "t9", "name": "This week", "completionDate": None, "hasChildren": False, "taskStatus": "next"}],
         "counts": {
             "overdueCount": 2,
             "dueTodayCount": 1,
@@ -1158,6 +1177,9 @@ async def test_get_forecast_happy_path(
     assert "const counts = {" in state["calls"][0]["script"]
     assert "completionDate: task.completionDate ? task.completionDate.toISOString() : null," in state["calls"][0]["script"]
     assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
+    assert "taskStatus: (() => {" in state["calls"][0]["script"]
+    assert "taskStatus: (() => {" in state["calls"][0]["script"]
+    assert 'if (s.includes("Dropped")) return "dropped";' in state["calls"][0]["script"]
 
 
 @pytest.mark.asyncio
