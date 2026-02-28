@@ -923,8 +923,8 @@ async fn delete_folder_script_captures_counts_before_deletion() {
         .cloned()
         .expect("one script should be captured");
     assert!(captured.contains("const folderFilter = \"folder-1\";"));
-    assert!(captured.contains("const projectCount = document.flattenedProjects.filter"));
-    assert!(captured.contains("const subfolderCount = document.flattenedFolders.filter"));
+    assert!(captured.contains("const projectCount = folder.projects.length;"));
+    assert!(captured.contains("const subfolderCount = folder.folders.length;"));
     assert!(captured.contains("deleteObject(folder);"));
     assert!(captured.contains("subfolderCount: subfolderCount"));
 }
