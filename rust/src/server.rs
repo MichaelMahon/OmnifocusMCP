@@ -1,3 +1,525 @@
-pub fn module_ready() -> bool {
-    true
+use std::sync::Arc;
+
+use rmcp::{
+    handler::server::{
+        router::{prompt::PromptRouter, tool::ToolRouter},
+        wrapper::Parameters,
+    },
+    model::{
+        CallToolResult, Content, GetPromptResult, ListResourcesResult, PaginatedRequestParams,
+        PromptMessage, PromptMessageRole, RawResource, ReadResourceRequestParams,
+        ReadResourceResult, RequestContext, ResourceContents, RoleServer, ServerCapabilities,
+        ServerInfo,
+    },
+    prompt, prompt_handler, prompt_router, tool, tool_handler, tool_router, ErrorData as McpError,
+    ServerHandler,
+};
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+
+use crate::{
+    error::{OmniFocusError, Result},
+    jxa::JxaRunner,
+    prompts::{daily_review, inbox_processing, project_planning, weekly_review},
+    resources::{
+        inbox_resource, projects_resource, today_resource, INBOX_RESOURCE_URI,
+        PROJECTS_RESOURCE_URI, TODAY_RESOURCE_URI,
+    },
+    tools::{
+        folders::list_folders,
+        forecast::get_forecast,
+        perspectives::list_perspectives,
+        projects::{complete_project, create_project, get_project, list_projects},
+        tags::{create_tag, list_tags},
+        tasks::{
+            complete_task, create_task, create_tasks_batch, delete_task, get_inbox, get_task,
+            list_tasks, move_task, search_tasks, update_task, CreateTaskInput,
+        },
+    },
+};
+
+#[derive(Clone)]
+struct DynJxaRunner {
+    inner: Arc<dyn JxaRunner>,
+}
+
+impl DynJxaRunner {
+    fn new(inner: Arc<dyn JxaRunner>) -> Self {
+        Self { inner }
+    }
+}
+
+impl JxaRunner for DynJxaRunner {
+    async fn run_omnijs(&self, script: &str) -> Result<Value> {
+        self.inner.run_omnijs(script).await
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct LimitParams {
+    limit: Option<i32>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct ListTasksParams {
+    project: Option<String>,
+    tag: Option<String>,
+    flagged: Option<bool>,
+    status: Option<String>,
+    limit: Option<i32>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct TaskIdParams {
+    task_id: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct SearchTasksParams {
+    query: String,
+    limit: Option<i32>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct CreateTaskParams {
+    name: String,
+    project: Option<String>,
+    note: Option<String>,
+    due_date: Option<String>,
+    defer_date: Option<String>,
+    flagged: Option<bool>,
+    tags: Option<Vec<String>>,
+    estimated_minutes: Option<i32>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct CreateTasksBatchParams {
+    tasks: Vec<CreateTaskInput>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct UpdateTaskParams {
+    task_id: String,
+    name: Option<String>,
+    note: Option<String>,
+    due_date: Option<String>,
+    defer_date: Option<String>,
+    flagged: Option<bool>,
+    tags: Option<Vec<String>>,
+    estimated_minutes: Option<i32>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct MoveTaskParams {
+    task_id: String,
+    project: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct ListProjectsParams {
+    folder: Option<String>,
+    status: Option<String>,
+    limit: Option<i32>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct ProjectIdOrNameParams {
+    project_id_or_name: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct CreateProjectParams {
+    name: String,
+    folder: Option<String>,
+    note: Option<String>,
+    due_date: Option<String>,
+    defer_date: Option<String>,
+    sequential: Option<bool>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct CreateTagParams {
+    name: String,
+    parent: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct ProjectPlanningPromptParams {
+    project: String,
+}
+
+#[derive(Clone)]
+pub struct OmniFocusServer {
+    runner: DynJxaRunner,
+    tool_router: ToolRouter<Self>,
+    prompt_router: PromptRouter<Self>,
+}
+
+impl OmniFocusServer {
+    pub fn new(runner: Arc<dyn JxaRunner>) -> Self {
+        Self {
+            runner: DynJxaRunner::new(runner),
+            tool_router: Self::tool_router(),
+            prompt_router: Self::prompt_router(),
+        }
+    }
+}
+
+fn to_mcp_error(error: OmniFocusError) -> McpError {
+    match error {
+        OmniFocusError::Validation(message) => McpError::invalid_params(message, None),
+        _ => McpError::internal_error(error.to_string(), None),
+    }
+}
+
+fn as_call_tool_result<T: Serialize>(value: &T) -> std::result::Result<CallToolResult, McpError> {
+    let text = serde_json::to_string(value)
+        .map_err(|error| McpError::internal_error(error.to_string(), None))?;
+    Ok(CallToolResult::success(vec![Content::text(text)]))
+}
+
+#[tool_router(router = tool_router)]
+impl OmniFocusServer {
+    #[tool(description = "get inbox tasks from omnifocus.")]
+    async fn get_inbox(
+        &self,
+        Parameters(params): Parameters<LimitParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = get_inbox(&self.runner, params.limit.unwrap_or(100))
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "list tasks with optional filters.")]
+    async fn list_tasks(
+        &self,
+        Parameters(params): Parameters<ListTasksParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = list_tasks(
+            &self.runner,
+            params.project.as_deref(),
+            params.tag.as_deref(),
+            params.flagged,
+            params.status.as_deref().unwrap_or("available"),
+            params.limit.unwrap_or(100),
+        )
+        .await
+        .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "get full details for a task by id.")]
+    async fn get_task(
+        &self,
+        Parameters(params): Parameters<TaskIdParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = get_task(&self.runner, &params.task_id)
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "search tasks by name and note text.")]
+    async fn search_tasks(
+        &self,
+        Parameters(params): Parameters<SearchTasksParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = search_tasks(&self.runner, &params.query, params.limit.unwrap_or(100))
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "create one task in inbox or in a project.")]
+    async fn create_task(
+        &self,
+        Parameters(params): Parameters<CreateTaskParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = create_task(
+            &self.runner,
+            &params.name,
+            params.project.as_deref(),
+            params.note.as_deref(),
+            params.due_date.as_deref(),
+            params.defer_date.as_deref(),
+            params.flagged,
+            params.tags,
+            params.estimated_minutes,
+        )
+        .await
+        .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "create multiple tasks in one OmniFocus call.")]
+    async fn create_tasks_batch(
+        &self,
+        Parameters(params): Parameters<CreateTasksBatchParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = create_tasks_batch(&self.runner, params.tasks)
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "mark a task complete by id.")]
+    async fn complete_task(
+        &self,
+        Parameters(params): Parameters<TaskIdParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = complete_task(&self.runner, &params.task_id)
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "update fields on an existing task.")]
+    async fn update_task(
+        &self,
+        Parameters(params): Parameters<UpdateTaskParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = update_task(
+            &self.runner,
+            &params.task_id,
+            params.name.as_deref(),
+            params.note.as_deref(),
+            params.due_date.as_deref(),
+            params.defer_date.as_deref(),
+            params.flagged,
+            params.tags,
+            params.estimated_minutes,
+        )
+        .await
+        .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "delete a task by id.")]
+    async fn delete_task(
+        &self,
+        Parameters(params): Parameters<TaskIdParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = delete_task(&self.runner, &params.task_id)
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "move a task to a project or to inbox.")]
+    async fn move_task(
+        &self,
+        Parameters(params): Parameters<MoveTaskParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = move_task(&self.runner, &params.task_id, params.project.as_deref())
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "list projects with status and folder filters.")]
+    async fn list_projects(
+        &self,
+        Parameters(params): Parameters<ListProjectsParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = list_projects(
+            &self.runner,
+            params.folder.as_deref(),
+            params.status.as_deref().unwrap_or("active"),
+            params.limit.unwrap_or(100),
+        )
+        .await
+        .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "get a project by id or by exact name.")]
+    async fn get_project(
+        &self,
+        Parameters(params): Parameters<ProjectIdOrNameParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = get_project(&self.runner, &params.project_id_or_name)
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "create a project with optional metadata.")]
+    async fn create_project(
+        &self,
+        Parameters(params): Parameters<CreateProjectParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = create_project(
+            &self.runner,
+            &params.name,
+            params.folder.as_deref(),
+            params.note.as_deref(),
+            params.due_date.as_deref(),
+            params.defer_date.as_deref(),
+            params.sequential,
+        )
+        .await
+        .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "mark a project complete by id or name.")]
+    async fn complete_project(
+        &self,
+        Parameters(params): Parameters<ProjectIdOrNameParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = complete_project(&self.runner, &params.project_id_or_name)
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "list tags.")]
+    async fn list_tags(
+        &self,
+        Parameters(params): Parameters<LimitParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = list_tags(&self.runner, params.limit.unwrap_or(100))
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "create a tag with optional parent tag.")]
+    async fn create_tag(
+        &self,
+        Parameters(params): Parameters<CreateTagParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = create_tag(&self.runner, &params.name, params.parent.as_deref())
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "list folders.")]
+    async fn list_folders(
+        &self,
+        Parameters(params): Parameters<LimitParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = list_folders(&self.runner, params.limit.unwrap_or(100))
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "get forecast sections and tasks.")]
+    async fn get_forecast(
+        &self,
+        Parameters(params): Parameters<LimitParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = get_forecast(&self.runner, params.limit.unwrap_or(100))
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "list available perspectives.")]
+    async fn list_perspectives(
+        &self,
+        Parameters(params): Parameters<LimitParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = list_perspectives(&self.runner, params.limit.unwrap_or(100))
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+}
+
+#[prompt_router(router = prompt_router)]
+impl OmniFocusServer {
+    #[prompt(description = "daily planning prompt with due-soon, overdue, and flagged tasks.")]
+    async fn daily_review(&self) -> std::result::Result<Vec<PromptMessage>, McpError> {
+        let text = daily_review(&self.runner).await.map_err(to_mcp_error)?;
+        Ok(vec![PromptMessage::new_text(PromptMessageRole::User, text)])
+    }
+
+    #[prompt(description = "weekly review prompt with active projects and next-action coverage.")]
+    async fn weekly_review(&self) -> std::result::Result<Vec<PromptMessage>, McpError> {
+        let text = weekly_review(&self.runner).await.map_err(to_mcp_error)?;
+        Ok(vec![PromptMessage::new_text(PromptMessageRole::User, text)])
+    }
+
+    #[prompt(
+        description = "inbox processing prompt that drives one-by-one clarification decisions."
+    )]
+    async fn inbox_processing(&self) -> std::result::Result<Vec<PromptMessage>, McpError> {
+        let text = inbox_processing(&self.runner).await.map_err(to_mcp_error)?;
+        Ok(vec![PromptMessage::new_text(PromptMessageRole::User, text)])
+    }
+
+    #[prompt(
+        description = "project planning prompt that turns a project into actionable next steps."
+    )]
+    async fn project_planning(
+        &self,
+        Parameters(params): Parameters<ProjectPlanningPromptParams>,
+    ) -> std::result::Result<Vec<PromptMessage>, McpError> {
+        let text = project_planning(&self.runner, &params.project)
+            .await
+            .map_err(to_mcp_error)?;
+        Ok(vec![PromptMessage::new_text(PromptMessageRole::User, text)])
+    }
+}
+
+#[tool_handler(router = self.tool_router)]
+#[prompt_handler(router = self.prompt_router)]
+impl ServerHandler for OmniFocusServer {
+    fn get_info(&self) -> ServerInfo {
+        ServerInfo {
+            instructions: Some(
+                "OmniFocus MCP server exposing tools, resources, and prompts.".to_string(),
+            ),
+            capabilities: ServerCapabilities::builder()
+                .enable_tools()
+                .enable_resources()
+                .enable_prompts()
+                .build(),
+            ..Default::default()
+        }
+    }
+
+    async fn list_resources(
+        &self,
+        _request: Option<PaginatedRequestParams>,
+        _context: RequestContext<RoleServer>,
+    ) -> std::result::Result<ListResourcesResult, McpError> {
+        use rmcp::model::AnnotateAble;
+
+        Ok(ListResourcesResult::with_all_items(vec![
+            RawResource::new(INBOX_RESOURCE_URI, "Inbox tasks").no_annotation(),
+            RawResource::new(TODAY_RESOURCE_URI, "Today forecast").no_annotation(),
+            RawResource::new(PROJECTS_RESOURCE_URI, "Active projects").no_annotation(),
+        ]))
+    }
+
+    async fn read_resource(
+        &self,
+        request: ReadResourceRequestParams,
+        _context: RequestContext<RoleServer>,
+    ) -> std::result::Result<ReadResourceResult, McpError> {
+        let uri = request.uri;
+        let content = match uri.as_str() {
+            INBOX_RESOURCE_URI => inbox_resource(&self.runner).await.map_err(to_mcp_error)?,
+            TODAY_RESOURCE_URI => today_resource(&self.runner).await.map_err(to_mcp_error)?,
+            PROJECTS_RESOURCE_URI => projects_resource(&self.runner)
+                .await
+                .map_err(to_mcp_error)?,
+            _ => {
+                return Err(McpError::invalid_params(
+                    format!("Unknown resource URI: {uri}"),
+                    None,
+                ));
+            }
+        };
+
+        Ok(ReadResourceResult {
+            contents: vec![ResourceContents::text(content, uri)],
+        })
+    }
 }
