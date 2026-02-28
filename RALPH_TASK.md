@@ -148,7 +148,7 @@ files. Do NOT modify `RALPH_TASK.md`. This task is docs/config only.
 
 ### Success Criteria
 
-9. [ ] Create `CONTRIBUTING.md` at the repository root with:
+9. [x] Create `CONTRIBUTING.md` at the repository root with:
 
        **Development setup:** how to clone and set up all 3
        implementations (Python with uv, TypeScript with npm, Rust
