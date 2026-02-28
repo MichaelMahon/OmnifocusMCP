@@ -624,6 +624,8 @@ pub async fn list_tasks_with_planned<R: JxaRunner>(
     defer_after: Option<&str>,
     completed_before: Option<&str>,
     completed_after: Option<&str>,
+    planned_before: Option<&str>,
+    planned_after: Option<&str>,
     max_estimated_minutes: Option<i32>,
     sort_by: Option<&str>,
     sort_order: &str,
@@ -1023,6 +1025,8 @@ pub async fn get_task_counts_duplicate<R: JxaRunner>(
     defer_after: Option<&str>,
     completed_before: Option<&str>,
     completed_after: Option<&str>,
+    planned_before: Option<&str>,
+    planned_after: Option<&str>,
     max_estimated_minutes: Option<i32>,
 ) -> Result<TaskCountsResult> {
     if let Some(project_name) = project {
@@ -1524,8 +1528,6 @@ const deferBeforeRaw = {defer_before_filter};
 const deferAfterRaw = {defer_after_filter};
 const completedBeforeRaw = {completed_before_filter};
 const completedAfterRaw = {completed_after_filter};
-const plannedBeforeRaw = {planned_before_filter};
-const plannedAfterRaw = {planned_after_filter};
 const maxEstimatedMinutes = {max_estimated_minutes_filter};
 const sortBy = {sort_by_filter};
 const sortOrder = {sort_order_filter};

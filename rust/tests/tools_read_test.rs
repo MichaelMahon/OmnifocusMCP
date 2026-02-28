@@ -1465,6 +1465,55 @@ async fn search_tasks_script_supports_completion_date_filter_with_auto_sort() {
 }
 
 #[tokio::test]
+async fn search_tasks_script_supports_planned_date_filters() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-search-planned", "search planned task")]),
+        last_script: last_script.clone(),
+    };
+
+    let searched = search_tasks_with_planned(
+        &runner,
+        "shape",
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("2026-03-10T00:00:00Z"),
+        Some("2026-02-20T00:00:00Z"),
+        None,
+        None,
+        "asc",
+        3,
+    )
+    .await
+    .expect("search with planned date filters should parse");
+    assert_eq!(searched.len(), 1);
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const plannedBeforeRaw = "2026-03-10T00:00:00Z";"#));
+    assert!(script.contains(r#"const plannedAfterRaw = "2026-02-20T00:00:00Z";"#));
+    assert!(script.contains(
+        "if (plannedBefore !== null && !(plannedDate !== null && plannedDate < plannedBefore)) return false;"
+    ));
+    assert!(script.contains(
+        "if (plannedAfter !== null && !(plannedDate !== null && plannedDate > plannedAfter)) return false;"
+    ));
+    assert!(script.contains("plannedDate: plannedDate ? plannedDate.toISOString() : null,"));
+}
+
+#[tokio::test]
 async fn search_tasks_script_supports_status_filter() {
     let last_script = Arc::new(Mutex::new(String::new()));
     let runner = CapturingRunner {
