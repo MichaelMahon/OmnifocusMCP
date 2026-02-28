@@ -112,6 +112,34 @@ flagged_tasks_json:
 """
 
 
+@_typed_prompt(mcp)
+async def weekly_review() -> str:
+    """weekly review prompt with active projects and next-action coverage."""
+    active_projects = await list_projects(status="active", limit=500)
+    available_tasks = await list_tasks(status="available", limit=1000)
+
+    return f"""run a gtd-style weekly review using the data below.
+
+1) review all active projects and classify each as:
+   - on track
+   - at risk
+   - stalled (no clear next action)
+2) identify stalled projects by checking whether each project has at least one available next action.
+3) propose the next concrete action for every stalled project.
+4) highlight projects that need defer/due date updates or scope adjustments.
+5) produce a concise weekly plan:
+   - top 5 project priorities
+   - key risks/blockers
+   - cleanup actions (drop, defer, delegate, or someday/maybe)
+
+active_projects_json:
+{active_projects}
+
+available_tasks_json:
+{available_tasks}
+"""
+
+
 @_typed_tool(mcp)
 async def list_tasks(
     project: str | None = None,

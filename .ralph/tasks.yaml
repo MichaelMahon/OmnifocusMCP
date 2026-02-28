@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772255515
-generated_at: 2026-02-28T05:11:57Z
+source_mtime: 1772255540
+generated_at: 2026-02-28T05:12:27Z
 
 tasks:
   - id: "line_109"
@@ -338,7 +338,7 @@ tasks:
     raw_marker: 47.
   - id: "line_267"
     line_number: 267
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Prompt `weekly_review` — fetches all active projects, identifies
     indent_level: 0

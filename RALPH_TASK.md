@@ -264,7 +264,7 @@ encoding GTD workflows.
 46. [x] Resource `omnifocus://projects` — all active projects summary.
 47. [x] Prompt `daily_review` — fetches due-soon, overdue, flagged tasks;
         helps prioritize the day and identify top 3 items.
-48. [ ] Prompt `weekly_review` — fetches all active projects, identifies
+48. [x] Prompt `weekly_review` — fetches all active projects, identifies
         stalled projects, guides GTD-style weekly review.
 49. [ ] Prompt `inbox_processing` — fetches inbox items, walks through each:
         decide project, tags, dates, or delete.
