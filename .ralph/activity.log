@@ -716,3 +716,22 @@ Ralph Session Started: Fri Feb 27 23:14:33 CST 2026
 ═══════════════════════════════════════════════════════════════
 Ralph Session Started: Fri Feb 27 23:15:05 CST 2026
 ═══════════════════════════════════════════════════════════════
+[23:15:06] 🔴 TOKENS: 88805 / 80000 (111%) - rotation imminent [read:343KB write:0KB assist:0KB shell:0KB]
+[23:15:07] 🟢 SESSION START: model=Auto
+[23:15:08] 🔴 SHELL cd "/Users/vitalyrodnenko/Projects/OmnifocusMCP/python" && pytest tests/test_tools_read.py -v → exit 0
+[23:15:08] 🔴 ROTATE: Token threshold reached (88859 >= 80000)
+[23:15:15] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/RALPH_TASK.md (367 lines, ~35.8KB)
+[23:15:15] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/guardrails.md (28 lines, ~2.7KB)
+[23:15:15] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/progress.md (675 lines, ~65.9KB)
+[23:15:15] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/errors.log (5 lines, ~.4KB)
+[23:15:20] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/python/src/omnifocus_mcp/jxa.py (125 lines, ~12.2KB)
+[23:15:20] 🟡 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/python/src/omnifocus_mcp/server.py (1193 lines, ~116.5KB)
+[23:15:20] 🟡 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/python/tests/test_errors.py (52 lines, ~5.0KB)
+[23:15:20] 🔴 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/python/tests/test_tools_read.py (561 lines, ~54.7KB)
+[23:15:20] 🔴 WARN: Approaching token limit (75994 >= 70000)
+[23:15:20] 🔴 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/python/tests/test_tools_write.py (633 lines, ~61.8KB)
+[23:15:20] 🔴 ROTATE: Token threshold reached (91819 >= 80000)
+
+═══════════════════════════════════════════════════════════════
+Ralph Session Started: Fri Feb 27 23:15:22 CST 2026
+═══════════════════════════════════════════════════════════════

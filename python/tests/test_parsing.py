@@ -61,3 +61,29 @@ async def test_run_omnijs_parses_envelope_and_returns_data(
     assert result == {"id": "abc123"}
     assert len(seen_scripts) == 1
     assert "evaluateJavaScript" in seen_scripts[0]
+
+
+@pytest.mark.asyncio
+async def test_run_omnijs_surfaces_not_found_errors_cleanly(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_run_jxa_json(script: str, timeout_seconds: float = 30.0) -> Any:
+        return {"ok": False, "error": "Task not found: missing-id"}
+
+    monkeypatch.setattr("omnifocus_mcp.jxa.run_jxa_json", fake_run_jxa_json)
+
+    with pytest.raises(RuntimeError, match="Task not found: missing-id"):
+        await run_omnijs("return null;")
+
+
+@pytest.mark.asyncio
+async def test_run_omnijs_wraps_unknown_errors_with_actionable_prefix(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_run_jxa_json(script: str, timeout_seconds: float = 30.0) -> Any:
+        return {"ok": False, "error": "unexpected omni automation exception"}
+
+    monkeypatch.setattr("omnifocus_mcp.jxa.run_jxa_json", fake_run_jxa_json)
+
+    with pytest.raises(RuntimeError, match="OmniFocus operation failed: unexpected omni automation exception"):
+        await run_omnijs("return null;")

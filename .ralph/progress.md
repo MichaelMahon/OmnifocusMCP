@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 17
-- Current status: Phase 5 in progress (criterion 51 complete; next 52).
+- Current status: Phase 6 in progress (phase 5 complete; next 54).
 
 ## How This Works
 
@@ -21,12 +21,12 @@ This is how Ralph maintains continuity across iterations.
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
 | 3     | Python: Read Tools + Tests        | 16–28     | 13/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 15/15 |
-| 5     | Python: Resources & Prompts + Tests | 44–53   | 8/10 |
+| 5     | Python: Resources & Prompts + Tests | 44–53   | 10/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 51 / 75 criteria complete**
+**Total: 53 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -658,5 +658,23 @@ This is how Ralph maintains continuity across iterations.
 ### 2026-02-27 23:15:03
 **Session 21 ended** - 🔄 Context rotation (token limit reached)
 
+### 2026-02-27 23:14:48
+**Session 21 update**
+- completed phase 5 criterion 52 by adding prompt-template tests in `python/tests/test_tools_read.py`:
+  - `daily_review`, `weekly_review`, `inbox_processing`, and `project_planning`
+  - verifies expected prompt structure and embedded json placeholders
+- completed phase 5 criterion 53 by running the phase check command from `RALPH_TASK.md`
+- re-ran full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- phase 5 complete (criteria 44-53)
+- next up: phase 6 criterion 54 (user-friendly tool error responses)
+
 ### 2026-02-27 23:15:05
 **Session 22 started** (model: auto)
+
+### 2026-02-27 23:15:20
+**Session 22 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-27 23:15:22
+**Session 23 started** (model: auto)

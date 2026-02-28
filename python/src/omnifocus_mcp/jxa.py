@@ -26,6 +26,29 @@ def _friendly_jxa_error(stderr: str) -> str:
     return f"JXA execution failed: {stderr.strip()}"
 
 
+def _friendly_omnijs_error(error: str) -> str:
+    cleaned = error.strip()
+    lowered = cleaned.lower()
+    if lowered.startswith("task not found:"):
+        return cleaned
+    if lowered.startswith("project not found:"):
+        return cleaned
+    if lowered.startswith("tag not found:"):
+        return cleaned
+    if lowered.startswith("folder not found:"):
+        return cleaned
+    if "not running" in lowered and "omnifocus" in lowered:
+        return "OmniFocus is not running. Please open OmniFocus and try again."
+    if "application isn't running" in lowered and "omnifocus" in lowered:
+        return "OmniFocus is not running. Please open OmniFocus and try again."
+    if "not authorized" in lowered or "not permitted" in lowered:
+        return (
+            "macOS blocked Automation access to OmniFocus. "
+            "Grant permission in System Settings > Privacy & Security > Automation."
+        )
+    return f"OmniFocus operation failed: {cleaned}"
+
+
 async def run_jxa(script: str, timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS) -> str:
     process = await asyncio.create_subprocess_exec(
         "osascript",
@@ -95,7 +118,7 @@ result;
     if ok is not True:
         error = envelope.get("error")
         if isinstance(error, str) and error.strip():
-            raise RuntimeError(f"OmniFocus script error: {error}")
+            raise RuntimeError(_friendly_omnijs_error(error))
         raise RuntimeError("OmniFocus script error.")
 
     return envelope.get("data")
