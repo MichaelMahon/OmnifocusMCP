@@ -288,7 +288,7 @@ Reference implementations:
           folderName). Return the array.
         - Implement and test in all 3 implementations.
 
-22. [ ] **`search_tags`** — all 3 implementations.
+22. [x] **`search_tags`** — all 3 implementations.
         - **Input:** `query: str` (non-empty), `limit: int = 100`
         - **JXA:** call `tagsMatching(query).slice(0, limit)`.
           Map results to tag summaries (id, name, status, parent).
