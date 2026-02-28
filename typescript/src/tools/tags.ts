@@ -8,33 +8,66 @@ export function register(server: Server): void {
     "list_tags",
     "list tags with availability counts and optional status filter.",
     {
-      status: z.enum(["active", "inactive", "all"]).default("all"),
+      statusFilter: z.enum(["active", "on_hold", "dropped", "all"]).default("all"),
+      sortBy: z.enum(["name", "availableTaskCount", "totalTaskCount"]).optional(),
+      sortOrder: z.enum(["asc", "desc"]).default("asc"),
       limit: z.number().int().min(1).default(100),
     },
-    async ({ status, limit }) => {
+    async ({ statusFilter, sortBy, sortOrder, limit }) => {
       try {
-        const statusFilter = escapeForJxa(status);
+        const statusFilterValue = escapeForJxa(statusFilter);
+        const sortByValue = sortBy === undefined ? "null" : escapeForJxa(sortBy);
+        const sortOrderValue = escapeForJxa(sortOrder);
         const script = `
-const statusFilter = ${statusFilter};
-const normalizeTagStatus = (tag) => tag.active ? "active" : "inactive";
+const statusFilter = ${statusFilterValue};
+const sortBy = ${sortByValue};
+const sortOrder = ${sortOrderValue};
+
 const tagCounts = new Map();
 document.flattenedTasks.forEach(task => {
-  if (task.completed) return;
   task.tags.forEach(tag => {
-    const current = tagCounts.get(tag.id.primaryKey) || 0;
-    tagCounts.set(tag.id.primaryKey, current + 1);
+    const tagId = tag.id.primaryKey;
+    const current = tagCounts.get(tagId) || { availableTaskCount: 0, totalTaskCount: 0 };
+    current.totalTaskCount += 1;
+    if (!task.completed) current.availableTaskCount += 1;
+    tagCounts.set(tagId, current);
   });
 });
-const tags = document.flattenedTags
-  .filter(tag => statusFilter === "all" || normalizeTagStatus(tag) === statusFilter)
-  .slice(0, ${limit});
-return tags.map(tag => ({
-  id: tag.id.primaryKey,
-  name: tag.name,
-  parent: tag.parent ? tag.parent.name : null,
-  availableTaskCount: tagCounts.get(tag.id.primaryKey) || 0,
-  status: normalizeTagStatus(tag)
-}));
+const normalizeTagStatus = (tag) => {
+  const rawStatus = String(tag.status || "").toLowerCase().trim();
+  if (rawStatus === "") return "active";
+  return rawStatus.replace(/\\s+/g, "_");
+};
+
+const compareValues = (left, right) => {
+  if (left < right) return sortOrder === "asc" ? -1 : 1;
+  if (left > right) return sortOrder === "asc" ? 1 : -1;
+  return 0;
+};
+
+const filteredTags = document.flattenedTags.filter(tag => {
+  return statusFilter === "all" || normalizeTagStatus(tag) === statusFilter;
+});
+
+const mappedTags = filteredTags.map(tag => {
+  const counts = tagCounts.get(tag.id.primaryKey) || { availableTaskCount: 0, totalTaskCount: 0 };
+  return {
+    id: tag.id.primaryKey,
+    name: tag.name,
+    parent: tag.parent ? tag.parent.name : null,
+    availableTaskCount: counts.availableTaskCount,
+    totalTaskCount: counts.totalTaskCount,
+    status: normalizeTagStatus(tag)
+  };
+});
+
+const sortedTags = sortBy === null ? mappedTags : mappedTags.slice().sort((a, b) => {
+  if (sortBy === "name") {
+    return compareValues(String(a.name).toLowerCase(), String(b.name).toLowerCase());
+  }
+  return compareValues(a[sortBy], b[sortBy]);
+});
+return sortedTags.slice(0, ${limit});
 `.trim();
         return textResult(await runOmniJs(script));
       } catch (error: unknown) {

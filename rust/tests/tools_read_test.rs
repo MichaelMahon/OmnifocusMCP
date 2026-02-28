@@ -473,6 +473,25 @@ async fn validation_errors_for_read_tools() {
 }
 
 #[tokio::test]
+async fn get_inbox_script_includes_completion_and_children_fields() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-inbox", "inbox task")]),
+        last_script: last_script.clone(),
+    };
+
+    let inbox = get_inbox(&runner, 5).await.expect("inbox should parse");
+    assert_eq!(inbox.len(), 1);
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains("completionDate: task.completionDate ? task.completionDate.toISOString() : null,"));
+    assert!(script.contains("hasChildren: task.hasChildren"));
+}
+
+#[tokio::test]
 async fn list_projects_script_includes_stalled_and_next_task_fields() {
     let last_script = Arc::new(Mutex::new(String::new()));
     let runner = CapturingRunner {

@@ -260,7 +260,7 @@ See individual phase criteria below.
 
 ### Success Criteria
 
-10. [ ] **Add `completionDate` and `hasChildren` to `get_inbox` response** —
+10. [x] **Add `completionDate` and `hasChildren` to `get_inbox` response** —
         all 3 implementations.
         - Same two fields added to the task object mapper in get_inbox
           JXA script.

@@ -5,35 +5,93 @@ use crate::{
     jxa::{escape_for_jxa, JxaRunner},
 };
 
-pub async fn list_tags<R: JxaRunner>(runner: &R, limit: i32) -> Result<Value> {
+pub async fn list_tags<R: JxaRunner>(
+    runner: &R,
+    status_filter: &str,
+    sort_by: Option<&str>,
+    sort_order: &str,
+    limit: i32,
+) -> Result<Value> {
     if limit < 1 {
         return Err(OmniFocusError::Validation(
             "limit must be greater than 0.".to_string(),
         ));
     }
+    if !matches!(status_filter, "active" | "on_hold" | "dropped" | "all") {
+        return Err(OmniFocusError::Validation(
+            "statusFilter must be one of: active, on_hold, dropped, all.".to_string(),
+        ));
+    }
+    if let Some(sort_field) = sort_by {
+        if !matches!(sort_field, "name" | "availableTaskCount" | "totalTaskCount") {
+            return Err(OmniFocusError::Validation(
+                "sortBy must be one of: name, availableTaskCount, totalTaskCount.".to_string(),
+            ));
+        }
+    }
+    if !matches!(sort_order, "asc" | "desc") {
+        return Err(OmniFocusError::Validation(
+            "sortOrder must be one of: asc, desc.".to_string(),
+        ));
+    }
+
+    let status_filter_value = escape_for_jxa(status_filter);
+    let sort_by_value = sort_by
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let sort_order_value = escape_for_jxa(sort_order);
     let script = format!(
-        r#"const tagCounts = new Map();
+        r#"const statusFilter = {status_filter_value};
+const sortBy = {sort_by_value};
+const sortOrder = {sort_order_value};
+
+const tagCounts = new Map();
 document.flattenedTasks.forEach(task => {{
-  if (task.completed) return;
   task.tags.forEach(tag => {{
     const tagId = tag.id.primaryKey;
-    const current = tagCounts.get(tagId) || 0;
-    tagCounts.set(tagId, current + 1);
+    const current = tagCounts.get(tagId) || {{ availableTaskCount: 0, totalTaskCount: 0 }};
+    current.totalTaskCount += 1;
+    if (!task.completed) current.availableTaskCount += 1;
+    tagCounts.set(tagId, current);
   }});
 }});
+
 const normalizeTagStatus = (tag) => {{
   const rawStatus = String(tag.status || "").toLowerCase().trim();
   if (rawStatus === "") return "active";
   return rawStatus.replace(/\s+/g, "_");
 }};
-const tags = document.flattenedTags.slice(0, {limit});
-return tags.map(tag => ({{
+
+const compareValues = (left, right) => {{
+  if (left < right) return sortOrder === "asc" ? -1 : 1;
+  if (left > right) return sortOrder === "asc" ? 1 : -1;
+  return 0;
+}};
+
+const filteredTags = document.flattenedTags.filter(tag => {{
+  return statusFilter === "all" || normalizeTagStatus(tag) === statusFilter;
+}});
+
+const mappedTags = filteredTags.map(tag => {{
+  const counts = tagCounts.get(tag.id.primaryKey) || {{ availableTaskCount: 0, totalTaskCount: 0 }};
+  return {{
   id: tag.id.primaryKey,
   name: tag.name,
   parent: tag.parent ? tag.parent.name : null,
-  availableTaskCount: tagCounts.get(tag.id.primaryKey) || 0,
+  availableTaskCount: counts.availableTaskCount,
+  totalTaskCount: counts.totalTaskCount,
   status: normalizeTagStatus(tag)
-}}));"#
+  }};
+}});
+
+const sortedTags = sortBy === null ? mappedTags : mappedTags.slice().sort((a, b) => {{
+  if (sortBy === "name") {{
+    return compareValues(String(a.name).toLowerCase(), String(b.name).toLowerCase());
+  }}
+  return compareValues(a[sortBy], b[sortBy]);
+}});
+
+return sortedTags.slice(0, {limit});"#
     );
     runner.run_omnijs(&script).await
 }

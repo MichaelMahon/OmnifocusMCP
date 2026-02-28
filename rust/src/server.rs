@@ -209,6 +209,17 @@ struct SearchTagsParams {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct ListTagsParams {
+    #[serde(rename = "statusFilter")]
+    status_filter: Option<String>,
+    #[serde(rename = "sortBy")]
+    sort_by: Option<String>,
+    #[serde(rename = "sortOrder")]
+    sort_order: Option<String>,
+    limit: Option<i32>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct ProjectIdOrNameParams {
     project_id_or_name: String,
 }
@@ -784,11 +795,17 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     #[tool(description = "list tags.")]
     async fn list_tags(
         &self,
-        Parameters(params): Parameters<LimitParams>,
+        Parameters(params): Parameters<ListTagsParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = list_tags(self.runner.as_ref(), params.limit.unwrap_or(100))
-            .await
-            .map_err(to_mcp_error)?;
+        let result = list_tags(
+            self.runner.as_ref(),
+            params.status_filter.as_deref().unwrap_or("all"),
+            params.sort_by.as_deref(),
+            params.sort_order.as_deref().unwrap_or("asc"),
+            params.limit.unwrap_or(100),
+        )
+        .await
+        .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 
