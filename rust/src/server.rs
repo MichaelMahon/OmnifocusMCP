@@ -80,10 +80,6 @@ struct ListTasksParams {
     planned_after: Option<String>,
     #[serde(rename = "maxEstimatedMinutes")]
     max_estimated_minutes: Option<i32>,
-    #[serde(rename = "plannedBefore")]
-    planned_before: Option<String>,
-    #[serde(rename = "plannedAfter")]
-    planned_after: Option<String>,
     #[serde(rename = "sortBy")]
     sort_by: Option<String>,
     #[serde(rename = "sortOrder")]

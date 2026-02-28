@@ -346,6 +346,12 @@ pub async fn get_task_counts_legacy1<R: JxaRunner>(
     let completed_after_filter = completed_after
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
+    let planned_before_filter = planned_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let planned_after_filter = planned_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
     let max_estimated_minutes_filter = max_estimated_minutes
         .map(|value| value.to_string())
         .unwrap_or_else(|| "null".to_string());
@@ -527,6 +533,12 @@ pub async fn get_task_counts_legacy3<R: JxaRunner>(
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
     let completed_after_filter = completed_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let planned_before_filter = planned_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let planned_after_filter = planned_after
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
     let max_estimated_minutes_filter = max_estimated_minutes
@@ -785,8 +797,6 @@ const deferBeforeRaw = {defer_before_filter};
 const deferAfterRaw = {defer_after_filter};
 const completedBeforeRaw = {completed_before_filter};
 const completedAfterRaw = {completed_after_filter};
-const plannedBeforeRaw = {planned_before_filter};
-const plannedAfterRaw = {planned_after_filter};
 const maxEstimatedMinutes = {max_estimated_minutes_filter};
 const sortBy = {sort_by_filter};
 const sortOrder = {sort_order_filter};
@@ -1114,12 +1124,6 @@ pub async fn get_task_counts_duplicate<R: JxaRunner>(
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
     let completed_after_filter = completed_after
-        .map(escape_for_jxa)
-        .unwrap_or_else(|| "null".to_string());
-    let planned_before_filter = planned_before
-        .map(escape_for_jxa)
-        .unwrap_or_else(|| "null".to_string());
-    let planned_after_filter = planned_after
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
     let max_estimated_minutes_filter = max_estimated_minutes
@@ -1501,12 +1505,6 @@ pub async fn search_tasks_with_planned<R: JxaRunner>(
     let completed_after_filter = completed_after
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
-    let planned_before_filter = planned_before
-        .map(escape_for_jxa)
-        .unwrap_or_else(|| "null".to_string());
-    let planned_after_filter = planned_after
-        .map(escape_for_jxa)
-        .unwrap_or_else(|| "null".to_string());
     let max_estimated_minutes_filter = max_estimated_minutes
         .map(|value| value.to_string())
         .unwrap_or_else(|| "null".to_string());
@@ -1528,6 +1526,8 @@ const deferBeforeRaw = {defer_before_filter};
 const deferAfterRaw = {defer_after_filter};
 const completedBeforeRaw = {completed_before_filter};
 const completedAfterRaw = {completed_after_filter};
+const plannedBeforeRaw = {planned_before_filter};
+const plannedAfterRaw = {planned_after_filter};
 const maxEstimatedMinutes = {max_estimated_minutes_filter};
 const sortBy = {sort_by_filter};
 const sortOrder = {sort_order_filter};
@@ -1728,6 +1728,8 @@ pub async fn search_tasks<R: JxaRunner>(
     defer_after: Option<&str>,
     completed_before: Option<&str>,
     completed_after: Option<&str>,
+    planned_before: Option<&str>,
+    planned_after: Option<&str>,
     max_estimated_minutes: Option<i32>,
     sort_by: Option<&str>,
     sort_order: &str,
