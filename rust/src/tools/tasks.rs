@@ -11,6 +11,10 @@ fn parse_task_list(value: Value) -> Result<Vec<TaskResult>> {
     Ok(serde_json::from_value(value)?)
 }
 
+pub async fn uncomplete_task<R: JxaRunner>(runner: &R, task_id: &str) -> Result<Value> {
+    crate::tools::utility::uncomplete_task(runner, task_id).await
+}
+
 pub async fn get_inbox<R: JxaRunner>(runner: &R, limit: i32) -> Result<Vec<TaskResult>> {
     if limit < 1 {
         return Err(OmniFocusError::Validation(

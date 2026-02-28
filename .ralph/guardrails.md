@@ -95,3 +95,8 @@
 - **Instruction**: Run `rg` for both current and next folder tool symbols (`update_folder`, `delete_folder`) in Python/TypeScript/Rust tool modules to catch duplicate in-progress definitions before lint
 - **Added after**: full gate failed at Python lint with `F811` because `delete_folder` was defined twice while `update_folder` criterion work was being validated
 
+### Sign: Keep `noqa` On The First Deferred Import Line
+- **Trigger**: After adding a new symbol to deferred imports in `server.py` that sit below runtime code
+- **Instruction**: Keep `# noqa: E402,F401` on the opening `from ... import (` line (not only the closing parenthesis line) so ruff suppresses deferred-import and re-export warnings for each imported symbol
+- **Added after**: full `test_command` failed on `server.py` with `E402` and per-symbol `F401` after formatter expanded the tags import block
+
