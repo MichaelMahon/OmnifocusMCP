@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 3
-- Current status: Phase 3 in progress (criteria 16-27 complete).
+- Current status: Phase 3 complete (criteria 16-28 complete). next: phase 4 criterion 29.
 
 ## How This Works
 
@@ -19,14 +19,14 @@ This is how Ralph maintains continuity across iterations.
 |-------|-----------------------------------|-----------|------|
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
-| 3     | Python: Read Tools + Tests        | 16–28     | 12/13 |
+| 3     | Python: Read Tools + Tests        | 16–28     | 13/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 0/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 27 / 75 criteria complete**
+**Total: 28 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -265,3 +265,12 @@ This is how Ralph maintains continuity across iterations.
   - `list_projects` now validates allowed `status` values explicitly
 - re-ran full command from `RALPH_TASK.md`; all checks passed
 - next up: phase 3 criterion 28 (phase test command pass)
+
+### 2026-02-28 05:15:00
+**Session 4 update**
+- completed phase 3 criterion 28 (`ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass)
+- verified full project command remains green:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- phase 3 is now complete (criteria 16-28)
+- next up: phase 4 criterion 29 (`create_task`)

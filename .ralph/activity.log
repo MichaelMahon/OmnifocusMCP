@@ -281,3 +281,13 @@ EOF
 [22:57:34] 🔴 SHELL git status --short → exit 0
 [22:57:34] 🔴 SHELL git log -8 --oneline → exit 0
 [22:57:34] 🔴 SHELL git diff --staged; git diff → exit 0
+[22:57:37] 🔴 SHELL git add "python/src/omnifocus_mcp/server.py" "python/tests/test_tools_read.py" "RALPH_TASK.md" ".ralph/progress.md" ".ralph/activity.log" && git commit --trailer "Made-with: Cursor" -m "$(cat <<'EOF'
+ralph: add read-tool error-path coverage
+
+Add phase 3 error-path tests for missing tasks, invalid filters, and empty results, and enforce runtime status validation for task and project listing filters.
+EOF
+)" && git status --short → exit 0
+[22:57:45] 🔴 TOKENS: 66269 / 80000 (82%) - approaching limit [read:253KB write:0KB assist:2KB shell:0KB]
+[22:57:49] 🔴 SHELL git diff --staged; git diff → exit 0
+[22:57:49] 🔴 SHELL git log -8 --oneline → exit 0
+[22:57:49] 🔴 SHELL git status --short → exit 0

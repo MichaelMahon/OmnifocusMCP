@@ -204,7 +204,7 @@ parameter (default 100).
 27. [x] Error-path tests: task not found by ID → error response. Invalid
         filter value → validation error. Empty result set → empty array
         (not an error).
-28. [ ] `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
+28. [x] `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
 
 ---
 
