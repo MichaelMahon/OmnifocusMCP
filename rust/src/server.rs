@@ -30,8 +30,8 @@ use crate::{
         forecast::get_forecast,
         perspectives::list_perspectives,
         projects::{
-            complete_project, create_project, get_project, list_projects, uncomplete_project,
-            update_project,
+            complete_project, create_project, get_project, list_projects, set_project_status,
+            uncomplete_project, update_project,
         },
         tags::{create_tag, list_tags},
         tasks::{
@@ -157,6 +157,12 @@ struct ListProjectsParams {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct ProjectIdOrNameParams {
     project_id_or_name: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct SetProjectStatusParams {
+    project_id_or_name: String,
+    status: String,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -556,6 +562,21 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.sequential,
             params.completed_by_children,
             params.review_interval.as_deref(),
+        )
+        .await
+        .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "set a project's organizational status by id or name.")]
+    async fn set_project_status(
+        &self,
+        Parameters(params): Parameters<SetProjectStatusParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = set_project_status(
+            self.runner.as_ref(),
+            &params.project_id_or_name,
+            &params.status,
         )
         .await
         .map_err(to_mcp_error)?;

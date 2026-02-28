@@ -295,6 +295,57 @@ return {{
     runner.run_omnijs(&script).await
 }
 
+pub async fn set_project_status<R: JxaRunner>(
+    runner: &R,
+    project_id_or_name: &str,
+    status: &str,
+) -> Result<Value> {
+    if project_id_or_name.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "project_id_or_name must not be empty.".to_string(),
+        ));
+    }
+    if !matches!(status, "active" | "on_hold" | "dropped") {
+        return Err(OmniFocusError::Validation(
+            "status must be one of: active, on_hold, dropped.".to_string(),
+        ));
+    }
+
+    let project_filter = escape_for_jxa(project_id_or_name.trim());
+    let status_value = escape_for_jxa(status);
+    let script = format!(
+        r#"const projectFilter = {project_filter};
+const statusValue = {status_value};
+const project = document.flattenedProjects.find(item => {{
+  return item.id.primaryKey === projectFilter || item.name === projectFilter;
+}});
+if (!project) {{
+  throw new Error(`Project not found: ${{projectFilter}}`);
+}}
+
+let targetStatus;
+if (statusValue === "active") {{
+  targetStatus = Project.Status.Active;
+}} else if (statusValue === "on_hold") {{
+  targetStatus = Project.Status.OnHold;
+}} else if (statusValue === "dropped") {{
+  targetStatus = Project.Status.Dropped;
+}} else {{
+  throw new Error(`Invalid status: ${{statusValue}}`);
+}}
+
+project.status = targetStatus;
+
+return {{
+  id: project.id.primaryKey,
+  name: project.name,
+  status: statusValue
+}};"#
+    );
+
+    runner.run_omnijs(&script).await
+}
+
 #[allow(clippy::too_many_arguments)]
 pub async fn update_project<R: JxaRunner>(
     runner: &R,
