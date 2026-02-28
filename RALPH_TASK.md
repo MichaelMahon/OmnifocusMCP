@@ -225,7 +225,7 @@ write tools return confirmation with the affected item's current state.
 32. [x] Tool `update_task` — by `id`. Optional: `name`, `note`, `dueDate`,
         `deferDate`, `flagged`, `tags[]`, `estimatedMinutes`. Only provided
         fields change. Returns updated task.
-33. [ ] Tool `delete_task` — drops/removes by `id`. Warns if task has
+33. [x] Tool `delete_task` — drops/removes by `id`. Warns if task has
         children. Returns confirmation.
 34. [ ] Tool `move_task` — moves task to a different project (by name) or
         back to inbox. Returns confirmation.

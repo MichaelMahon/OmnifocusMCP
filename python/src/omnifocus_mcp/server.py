@@ -845,3 +845,40 @@ return {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@_typed_tool(mcp)
+async def delete_task(task_id: str) -> str:
+    """delete a task by id and return a confirmation payload.
+
+    if the task has children, the response includes a warning message.
+    """
+    if task_id.strip() == "":
+        raise ValueError("task_id must not be empty.")
+
+    task_id_value = escape_for_jxa(task_id.strip())
+
+    script = f"""
+const taskId = {task_id_value};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+
+const taskName = task.name;
+const childCount = task.children.length;
+const warning = childCount > 0
+  ? `Deleted task had ${{childCount}} child task(s).`
+  : null;
+
+task.drop();
+
+return {{
+  id: taskId,
+  name: taskName,
+  deleted: true,
+  warning: warning
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)

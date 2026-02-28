@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 5
-- Current status: Phase 4 in progress (criterion 32 complete; next 33).
+- Current status: Phase 4 in progress (criterion 33 complete; next 34).
 
 ## How This Works
 
@@ -20,13 +20,13 @@ This is how Ralph maintains continuity across iterations.
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
 | 3     | Python: Read Tools + Tests        | 16–28     | 13/13 |
-| 4     | Python: Write Tools + Tests       | 29–43     | 4/15 |
+| 4     | Python: Write Tools + Tests       | 29–43     | 5/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 32 / 75 criteria complete**
+**Total: 33 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -329,3 +329,15 @@ This is how Ralph maintains continuity across iterations.
   - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
   - `cd ../typescript && npx tsc --noEmit && npm test`
 - next up: phase 4 criterion 33 (`delete_task`)
+
+### 2026-02-27 23:01:49
+**Session 5 update**
+- completed phase 4 criterion 33 (`delete_task`)
+- extended `python/src/omnifocus_mcp/server.py` with `delete_task(task_id)`:
+  - validates non-empty task id and resolves by `id.primaryKey`
+  - deletes the task via OmniJS and returns `{id, name, deleted}`
+  - includes a warning message when the deleted task had child tasks
+- re-ran full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 4 criterion 34 (`move_task`)
