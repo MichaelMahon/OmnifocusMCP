@@ -383,6 +383,38 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain("task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes");
   });
 
+  test("get_task_counts uses filters and returns count payload", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      total: 6,
+      available: 3,
+      completed: 2,
+      overdue: 1,
+      dueSoon: 2,
+      flagged: 2,
+      deferred: 1,
+    });
+    const result = await getTool("get_task_counts")({
+      project: "Errands",
+      tags: ["Home"],
+      flagged: true,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const projectFilter = "Errands";');
+    expect(script).toContain('const tagNames = ["Home"];');
+    expect(script).toContain("const flaggedFilter = true;");
+    expect(script).toContain("const counts = {");
+    expect(script).toContain("counts.overdue += 1;");
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      total: 6,
+      available: 3,
+      completed: 2,
+      overdue: 1,
+      dueSoon: 2,
+      flagged: 2,
+      deferred: 1,
+    });
+  });
+
   test("list_subtasks generates child query script with limit", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "sub-1", name: "child" }]);
     const result = await getTool("list_subtasks")({

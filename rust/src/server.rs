@@ -39,8 +39,9 @@ use crate::{
         tags::{create_tag, delete_tag, list_tags, search_tags, update_tag},
         tasks::{
             complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
-            delete_tasks_batch, get_inbox, get_task, list_subtasks, list_tasks, move_task,
-            search_tasks, set_task_repetition, uncomplete_task, update_task, CreateTaskInput,
+            delete_tasks_batch, get_inbox, get_task, get_task_counts, list_subtasks, list_tasks,
+            move_task, search_tasks, set_task_repetition, uncomplete_task, update_task,
+            CreateTaskInput,
         },
         utility::append_to_note as append_to_note_tool,
     },
@@ -79,6 +80,30 @@ struct ListTasksParams {
     #[serde(rename = "sortOrder")]
     sort_order: Option<String>,
     limit: Option<i32>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct GetTaskCountsParams {
+    project: Option<String>,
+    tag: Option<String>,
+    tags: Option<Vec<String>>,
+    #[serde(rename = "tagFilterMode")]
+    tag_filter_mode: Option<String>,
+    flagged: Option<bool>,
+    #[serde(rename = "dueBefore")]
+    due_before: Option<String>,
+    #[serde(rename = "dueAfter")]
+    due_after: Option<String>,
+    #[serde(rename = "deferBefore")]
+    defer_before: Option<String>,
+    #[serde(rename = "deferAfter")]
+    defer_after: Option<String>,
+    #[serde(rename = "completedBefore")]
+    completed_before: Option<String>,
+    #[serde(rename = "completedAfter")]
+    completed_after: Option<String>,
+    #[serde(rename = "maxEstimatedMinutes")]
+    max_estimated_minutes: Option<i32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -420,6 +445,33 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             sort_by.as_deref(),
             sort_order.as_deref().unwrap_or("asc"),
             limit.unwrap_or(100),
+        )
+        .await
+        .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(
+        description = "get aggregate task counts for any filter combination without listing individual tasks."
+    )]
+    async fn get_task_counts(
+        &self,
+        Parameters(params): Parameters<GetTaskCountsParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = get_task_counts(
+            self.runner.as_ref(),
+            params.project.as_deref(),
+            params.tag.as_deref(),
+            params.tags,
+            params.tag_filter_mode.as_deref().unwrap_or("any"),
+            params.flagged,
+            params.due_before.as_deref(),
+            params.due_after.as_deref(),
+            params.defer_before.as_deref(),
+            params.defer_after.as_deref(),
+            params.completed_before.as_deref(),
+            params.completed_after.as_deref(),
+            params.max_estimated_minutes,
         )
         .await
         .map_err(to_mcp_error)?;

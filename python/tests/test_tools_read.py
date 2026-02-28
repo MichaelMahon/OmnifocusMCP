@@ -494,6 +494,47 @@ async def test_list_tasks_duration_filter_excludes_null_estimated_minutes_in_scr
 
 
 @pytest.mark.asyncio
+async def test_get_task_counts_includes_filters_and_aggregate_counters_in_script(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs(
+        {
+            "total": 4,
+            "available": 2,
+            "completed": 1,
+            "overdue": 1,
+            "dueSoon": 1,
+            "flagged": 2,
+            "deferred": 1,
+        }
+    )
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.get_task_counts(
+        project="Errands",
+        tag="Home",
+        tags=["Deep", "Home"],
+        tagFilterMode="all",
+        flagged=True,
+        dueBefore="2026-03-10T00:00:00Z",
+        completedAfter="2026-03-01T00:00:00Z",
+        maxEstimatedMinutes=30,
+    )
+
+    script = state["calls"][0]["script"]
+    assert 'const projectFilter = "Errands";' in script
+    assert 'const tagNames = ["Home", "Deep"];' in script
+    assert 'const tagFilterMode = "all";' in script
+    assert 'const flaggedFilter = true;' in script
+    assert 'const dueBeforeRaw = "2026-03-10T00:00:00Z";' in script
+    assert "const counts = {" in script
+    assert "counts.dueSoon += 1;" in script
+    assert "counts.deferred += 1;" in script
+    assert json.loads(result)["total"] == 4
+
+
+@pytest.mark.asyncio
 async def test_get_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = {
         "id": "t3",
@@ -521,6 +562,45 @@ async def test_get_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[
     assert json.loads(result) == payload
     assert len(state["calls"]) == 1
     assert 'const taskId = "t3";' in state["calls"][0]["script"]
+
+
+@pytest.mark.asyncio
+async def test_get_task_counts_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    payload = {
+        "total": 6,
+        "available": 3,
+        "completed": 2,
+        "overdue": 1,
+        "dueSoon": 2,
+        "flagged": 2,
+        "deferred": 1,
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.get_task_counts(project="Errands", tags=["Home"], flagged=True)
+
+    assert json.loads(result) == payload
+    assert len(state["calls"]) == 1
+    script = state["calls"][0]["script"]
+    assert 'const projectFilter = "Errands";' in script
+    assert 'const tagNames = ["Home"];' in script
+    assert "const flaggedFilter = true;" in script
+    assert "const counts = {" in script
+    assert "counts.overdue += 1;" in script
+
+
+@pytest.mark.asyncio
+async def test_get_task_counts_validation_errors(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="project must not be empty when provided."):
+        await server_module.get_task_counts(project="  ")
+    with pytest.raises(ValueError, match="tagFilterMode must be one of: any, all."):
+        await server_module.get_task_counts(tagFilterMode="invalid")
+    with pytest.raises(
+        ValueError, match="maxEstimatedMinutes must be greater than or equal to 0."
+    ):
+        await server_module.get_task_counts(maxEstimatedMinutes=-1)
 
 
 @pytest.mark.asyncio
