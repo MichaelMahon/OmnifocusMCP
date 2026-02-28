@@ -25,9 +25,9 @@ def pytest_collection_modifyitems(
 ) -> None:
     if config.getoption("-m") == "integration":
         return
-    if _omnifocus_available():
-        return
-    skip_integration = pytest.mark.skip(reason="integration tests require running OmniFocus")
+    skip_integration = pytest.mark.skip(
+        reason="integration tests run only with `-m integration`."
+    )
     for item in items:
         if "integration" in item.keywords:
             item.add_marker(skip_integration)

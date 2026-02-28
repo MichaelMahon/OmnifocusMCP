@@ -21,10 +21,10 @@ This is how Ralph maintains continuity across iterations.
 | 1     | Real OmniFocus Smoke Test      | 1–5       | 5/5  |
 | 2     | Fix JXA Bugs                   | 6–9       | 4/4  |
 | 3     | Split Monolith Files           | 10–17     | 8/8  |
-| 4     | Integration Tests              | 18–24     | 3/7  |
+| 4     | Integration Tests              | 18–24     | 4/7  |
 | 5     | Final Cleanup                  | 25–28     | 0/4  |
 
-**Total: 20 / 28 criteria complete**
+**Total: 21 / 28 criteria complete**
 
 ## Key Context
 
@@ -197,3 +197,9 @@ This is how Ralph maintains continuity across iterations.
 - validated integration teardown stability after cleanup adjustments; no teardown errors on task/project lifecycle tests
 - marked criterion 20 complete in `RALPH_TASK.md`
 - next focus: criterion 21 (`cd python && pytest tests/ -v` should skip integration tests when not selecting `-m integration`)
+
+### 2026-02-28 09:28:35
+- updated `python/tests/conftest.py` so integration tests are skipped by default unless `-m integration` is explicitly selected
+- ran `cd python && pytest tests/ -v`: `64 passed, 5 skipped`, confirming integration tests skip cleanly in normal runs
+- marked criterion 21 complete in `RALPH_TASK.md`
+- next focus: criterion 22 (`typescript/tests/integration.test.ts`)
