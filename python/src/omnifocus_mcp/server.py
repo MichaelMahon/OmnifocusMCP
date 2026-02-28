@@ -24,6 +24,7 @@ from omnifocus_mcp.tools.projects import (  # noqa: E402,F401
 )
 from omnifocus_mcp.tools.tags import create_tag, delete_tag, list_tags, update_tag  # noqa: E402,F401
 from omnifocus_mcp.tools.tasks import (  # noqa: E402,F401
+    append_to_note,
     complete_task,
     create_task,
     create_tasks_batch,
