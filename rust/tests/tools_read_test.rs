@@ -894,7 +894,9 @@ async fn add_notification_script_handles_absolute_and_relative_modes() {
     assert!(absolute_script_text.contains(r#"const absoluteDate = "2026-03-03T10:30:00Z";"#));
     assert!(absolute_script_text.contains("const relativeOffset = null;"));
     assert!(absolute_script_text.contains("const parsedAbsoluteDate = new Date(absoluteDate);"));
-    assert!(absolute_script_text.contains("notification = task.addNotification(parsedAbsoluteDate);"));
+    assert!(
+        absolute_script_text.contains("notification = task.addNotification(parsedAbsoluteDate);")
+    );
     assert!(absolute_script_text.contains("if (task.effectiveDueDate === null) {"));
 
     let relative_script = Arc::new(Mutex::new(String::new()));

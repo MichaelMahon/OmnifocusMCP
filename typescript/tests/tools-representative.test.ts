@@ -579,11 +579,10 @@ describe("representative read and write tool handlers", () => {
     });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain('const taskId = "task-9";');
-    expect(script).toContain('const absoluteDate = "2026-03-03T10:30:00Z";');
-    expect(script).toContain("const relativeOffset = null;");
-    expect(script).toContain("const parsedAbsoluteDate = new Date(absoluteDate);");
-    expect(script).toContain("notification = task.addNotification(parsedAbsoluteDate);");
-    expect(script).toContain("if (task.effectiveDueDate === null) {");
+    expect(script).toContain('const absoluteDateValue = "2026-03-03T10:30:00Z";');
+    expect(script).toContain("const relativeOffsetValue = null;");
+    expect(script).toContain("task.addNotification(new Date(absoluteDateValue))");
+    expect(script).toContain("if (relativeOffsetValue !== null && !task.effectiveDueDate) {");
     expect(JSON.parse(result.content[0].text)).toEqual({
       id: "n2",
       kind: "absolute",
@@ -608,9 +607,9 @@ describe("representative read and write tool handlers", () => {
       relativeOffset: -3600,
     });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
-    expect(script).toContain("const absoluteDate = null;");
-    expect(script).toContain("const relativeOffset = -3600;");
-    expect(script).toContain("notification = task.addNotification(relativeOffset);");
+    expect(script).toContain("const absoluteDateValue = null;");
+    expect(script).toContain("const relativeOffsetValue = -3600;");
+    expect(script).toContain("task.addNotification(relativeOffsetValue)");
     expect(script).toContain(
       "relativeFireOffset: notification.initialFireDate ? null : notification.relativeFireOffset,"
     );
