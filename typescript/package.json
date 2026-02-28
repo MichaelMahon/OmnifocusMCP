@@ -4,9 +4,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "echo \"No TypeScript tests yet\""
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsc -w -p tsconfig.json",
+    "test": "vitest run --passWithNoTests",
+    "lint": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "*",
+    "zod": "*"
   },
   "devDependencies": {
-    "typescript": "^5.9.2"
+    "@types/node": "*",
+    "typescript": "*",
+    "vitest": "*"
   }
 }
