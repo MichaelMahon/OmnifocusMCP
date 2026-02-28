@@ -321,7 +321,7 @@ identical — only the server framework and subprocess calls change.
         timeout. Uses `child_process.execFile`.
 63. [x] All 10 read tools ported and `npm run build` passes with no errors.
 64. [x] All 9 write tools ported and build passes.
-65. [ ] Resources (3) and prompts (4) ported.
+65. [x] Resources (3) and prompts (4) ported.
 66. [ ] `typescript/README.md` with install instructions, MCP client config
         examples (Claude Desktop, Cursor, Cline, generic stdio).
 67. [ ] `package.json` has `"bin"` entry; server runs via `npx`.
