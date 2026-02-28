@@ -330,18 +330,25 @@ return task.notifications.map(n => ({
           relativeOffset === undefined ? "null" : String(relativeOffset);
         const script = `
 const taskId = ${taskId};
-const absoluteDateValue = ${absoluteDateValue};
-const relativeOffsetValue = ${relativeOffsetValue};
+const absoluteDate = ${absoluteDateValue};
+const relativeOffset = ${relativeOffsetValue};
 const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
 if (!task) {
   throw new Error(\`Task not found: \${taskId}\`);
 }
-if (relativeOffsetValue !== null && !task.effectiveDueDate) {
-  throw new Error(\`Task \${taskId} must have an effective due date when using relativeOffset.\`);
+let notification = null;
+if (absoluteDate !== null) {
+  const parsedAbsoluteDate = new Date(absoluteDate);
+  if (Number.isNaN(parsedAbsoluteDate.getTime())) {
+    throw new Error("absoluteDate must be a valid ISO 8601 date string.");
+  }
+  notification = task.addNotification(parsedAbsoluteDate);
+} else {
+  if (task.effectiveDueDate === null) {
+    throw new Error("relativeOffset requires a task with an effective due date.");
+  }
+  notification = task.addNotification(relativeOffset);
 }
-const notification = absoluteDateValue !== null
-  ? task.addNotification(new Date(absoluteDateValue))
-  : task.addNotification(relativeOffsetValue);
 if (!notification) {
   throw new Error("Failed to create notification.");
 }
