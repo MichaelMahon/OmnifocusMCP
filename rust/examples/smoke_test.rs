@@ -1,8 +1,12 @@
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    future::Future,
+    pin::Pin,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use omnifocus_mcp::{
     error::{OmniFocusError, Result},
-    jxa::{JxaRunner, RealJxaRunner},
+    jxa::{run_omnijs_with_timeout, JxaRunner},
     tools::{
         folders::{create_folder, delete_folder, get_folder, list_folders, update_folder},
         forecast::get_forecast,
@@ -28,6 +32,18 @@ struct SmokeTest {
     created_project_ids: Vec<String>,
     created_tag_ids: Vec<String>,
     created_folder_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default)]
+struct SmokeJxaRunner;
+
+impl JxaRunner for SmokeJxaRunner {
+    fn run_omnijs<'a>(
+        &'a self,
+        script: &'a str,
+    ) -> Pin<Box<dyn Future<Output = Result<Value>> + Send + 'a>> {
+        Box::pin(async move { run_omnijs_with_timeout(script, 120.0).await })
+    }
 }
 
 impl SmokeTest {
@@ -82,7 +98,7 @@ impl SmokeTest {
         }
     }
 
-    async fn check_bridge(&mut self, runner: &RealJxaRunner) -> Result<()> {
+    async fn check_bridge<R: JxaRunner>(&mut self, runner: &R) -> Result<()> {
         let value = runner
             .run_omnijs("return document.flattenedTasks.length;")
             .await?;
@@ -95,7 +111,7 @@ impl SmokeTest {
         }
     }
 
-    async fn check_read_tools(&mut self, runner: &RealJxaRunner) -> Result<()> {
+    async fn check_read_tools<R: JxaRunner>(&mut self, runner: &R) -> Result<()> {
         let inbox_items = get_inbox(runner, 20).await?;
         if let Some(first) = inbox_items.first() {
             if first.id.trim().is_empty() || first.name.trim().is_empty() {
@@ -176,7 +192,7 @@ impl SmokeTest {
         Ok(())
     }
 
-    async fn check_write_tools(&mut self, runner: &RealJxaRunner) -> Result<()> {
+    async fn check_write_tools<R: JxaRunner>(&mut self, runner: &R) -> Result<()> {
         let project_name = self.unique_name("smoke project");
         let created_project = create_project(
             runner,
@@ -198,7 +214,13 @@ impl SmokeTest {
             require_string_key(&created_folder, "id", "create_folder result")?.to_string();
         self.created_folder_ids.push(folder_id.clone());
         let updated_folder_name = format!("{folder_name} updated");
-        let _ = update_folder(runner, &folder_id, Some(&updated_folder_name), Some("active")).await?;
+        let _ = update_folder(
+            runner,
+            &folder_id,
+            Some(&updated_folder_name),
+            Some("active"),
+        )
+        .await?;
         let folder_value = get_folder(runner, &folder_id).await?;
         let folder_obj = require_object(&folder_value, "get_folder result")?;
         if folder_obj.get("name").and_then(Value::as_str) != Some(updated_folder_name.as_str()) {
@@ -583,7 +605,7 @@ impl SmokeTest {
         Ok(())
     }
 
-    async fn cleanup(&mut self, runner: &RealJxaRunner) {
+    async fn cleanup<R: JxaRunner>(&mut self, runner: &R) {
         for task_id in self.created_task_ids.clone() {
             let _ = delete_task(runner, &task_id).await;
         }
@@ -605,7 +627,7 @@ impl SmokeTest {
         self.created_tag_ids.clear();
     }
 
-    async fn run(&mut self, runner: &RealJxaRunner) -> i32 {
+    async fn run<R: JxaRunner>(&mut self, runner: &R) -> i32 {
         match self.check_bridge(runner).await {
             Ok(()) => self.pass_step("jxa bridge basics"),
             Err(error) => self.fail_step("jxa bridge basics", &error.to_string()),
@@ -656,7 +678,7 @@ fn require_string_key<'a>(value: &'a Value, key: &str, label: &str) -> Result<&'
 
 #[tokio::main]
 async fn main() {
-    let runner = RealJxaRunner::new();
+    let runner = SmokeJxaRunner;
     let mut smoke_test = SmokeTest::new();
     let exit_code = smoke_test.run(&runner).await;
     std::process::exit(exit_code);
