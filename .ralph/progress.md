@@ -579,3 +579,9 @@ This is how Ralph maintains continuity across iterations.
 - ran required rust validation command after changes: `cd rust && cargo fmt && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
 - marked criterion 31 complete in `RALPH_TASK.md`
 - next focus: criterion 32 (run smoke test against real OmniFocus and verify zero failures)
+
+### 2026-02-28 11:29:04
+**Session 17 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 11:29:06
+**Session 18 started** (model: auto)

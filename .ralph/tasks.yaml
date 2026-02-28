@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772299377
-generated_at: 2026-02-28T17:23:32Z
+source_mtime: 1772299701
+generated_at: 2026-02-28T17:29:03Z
 
 tasks:
   - id: "line_44"
@@ -219,7 +219,7 @@ tasks:
     raw_marker: 30.
   - id: "line_277"
     line_number: 277
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Create `rust/examples/smoke_test.rs` — standalone async binary
     indent_level: 0
