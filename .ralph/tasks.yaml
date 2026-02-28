@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772300034
-generated_at: 2026-02-28T17:35:18Z
+source_mtime: 1772300170
+generated_at: 2026-02-28T17:37:16Z
 
 tasks:
   - id: "line_44"
@@ -233,7 +233,7 @@ tasks:
     raw_marker: 32.
   - id: "line_283"
     line_number: 283
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Create `rust/tests/integration_test.rs` gated by
     indent_level: 0
