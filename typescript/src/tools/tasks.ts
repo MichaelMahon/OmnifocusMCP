@@ -147,6 +147,60 @@ export function register(server: Server): void {
     }
   );
 
+  server.tool(
+    "get_task_counts",
+    "get aggregate task counts for any filter combination without listing individual tasks. much faster than list_tasks for answering 'how many' questions.",
+    {
+      project: z.string().min(1).optional(),
+      tag: z.string().min(1).optional(),
+      tags: z.array(z.string().min(1)).optional(),
+      tagFilterMode: z.enum(["any", "all"]).default("any"),
+      flagged: z.boolean().optional(),
+      dueBefore: z.string().optional(),
+      dueAfter: z.string().optional(),
+      deferBefore: z.string().optional(),
+      deferAfter: z.string().optional(),
+      completedBefore: z.string().optional(),
+      completedAfter: z.string().optional(),
+      maxEstimatedMinutes: z.number().int().min(0).optional(),
+    },
+    async ({
+      project,
+      tag,
+      tags,
+      tagFilterMode,
+      flagged,
+      dueBefore,
+      dueAfter,
+      deferBefore,
+      deferAfter,
+      completedBefore,
+      completedAfter,
+      maxEstimatedMinutes,
+    }) => {
+      try {
+        return textResult(
+          await getTaskCountsData(
+            project,
+            tag,
+            tags,
+            tagFilterMode ?? "any",
+            flagged,
+            dueBefore,
+            dueAfter,
+            deferBefore,
+            deferAfter,
+            completedBefore,
+            completedAfter,
+            maxEstimatedMinutes
+          )
+        );
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
   server.tool("get_task", "get a single task by id.", { task_id: z.string().min(1) }, async ({ task_id }) => {
     try {
       const taskId = escapeForJxa(task_id);
@@ -1064,7 +1118,7 @@ const parseOptionalDate = (value, fieldName) => {
   if (value === null) return null;
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
-    throw new Error(\`${fieldName} must be a valid ISO 8601 date string.\`);
+    throw new Error(\`\${fieldName} must be a valid ISO 8601 date string.\`);
   }
   return parsed;
 };
@@ -1125,6 +1179,131 @@ filteredTasks.forEach(task => {
     if (dueDate !== null && dueDate >= now && dueDate <= soon) counts.dueSoon += 1;
   }
 });
+
+return counts;
+`.trim();
+  return runOmniJs(script);
+}
+
+export async function getTaskCountsData(
+  project: string | undefined,
+  tag: string | undefined,
+  tags: string[] | undefined,
+  tagFilterMode: "any" | "all" = "any",
+  flagged: boolean | undefined,
+  dueBefore: string | undefined,
+  dueAfter: string | undefined,
+  deferBefore: string | undefined,
+  deferAfter: string | undefined,
+  completedBefore: string | undefined,
+  completedAfter: string | undefined,
+  maxEstimatedMinutes: number | undefined
+): Promise<unknown> {
+  const projectFilter = project === undefined ? "null" : escapeForJxa(project.trim());
+  const mergedTagNames: string[] = [];
+  if (tag !== undefined) {
+    const normalizedTag = tag.trim();
+    if (normalizedTag.length > 0 && !mergedTagNames.includes(normalizedTag)) {
+      mergedTagNames.push(normalizedTag);
+    }
+  }
+  if (tags !== undefined) {
+    for (const tagName of tags) {
+      const normalizedTag = tagName.trim();
+      if (normalizedTag.length > 0 && !mergedTagNames.includes(normalizedTag)) {
+        mergedTagNames.push(normalizedTag);
+      }
+    }
+  }
+  const tagNamesFilter = mergedTagNames.length === 0 ? "null" : JSON.stringify(mergedTagNames);
+  const tagFilterModeFilter = escapeForJxa(tagFilterMode);
+  const flaggedFilter = flagged === undefined ? "null" : flagged ? "true" : "false";
+  const dueBeforeFilter = dueBefore === undefined ? "null" : escapeForJxa(dueBefore);
+  const dueAfterFilter = dueAfter === undefined ? "null" : escapeForJxa(dueAfter);
+  const deferBeforeFilter = deferBefore === undefined ? "null" : escapeForJxa(deferBefore);
+  const deferAfterFilter = deferAfter === undefined ? "null" : escapeForJxa(deferAfter);
+  const completedBeforeFilter = completedBefore === undefined ? "null" : escapeForJxa(completedBefore);
+  const completedAfterFilter = completedAfter === undefined ? "null" : escapeForJxa(completedAfter);
+  const maxEstimatedMinutesFilter = maxEstimatedMinutes === undefined ? "null" : String(maxEstimatedMinutes);
+  const script = `
+const projectFilter = ${projectFilter};
+const tagNames = ${tagNamesFilter};
+const tagFilterMode = ${tagFilterModeFilter};
+const flaggedFilter = ${flaggedFilter};
+const dueBeforeRaw = ${dueBeforeFilter};
+const dueAfterRaw = ${dueAfterFilter};
+const deferBeforeRaw = ${deferBeforeFilter};
+const deferAfterRaw = ${deferAfterFilter};
+const completedBeforeRaw = ${completedBeforeFilter};
+const completedAfterRaw = ${completedAfterFilter};
+const maxEstimatedMinutes = ${maxEstimatedMinutesFilter};
+const now = new Date();
+const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
+const parseOptionalDate = (value, fieldName) => {
+  if (value === null) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(\`\${fieldName} must be a valid ISO 8601 date string.\`);
+  }
+  return parsed;
+};
+const dueBefore = parseOptionalDate(dueBeforeRaw, "dueBefore");
+const dueAfter = parseOptionalDate(dueAfterRaw, "dueAfter");
+const deferBefore = parseOptionalDate(deferBeforeRaw, "deferBefore");
+const deferAfter = parseOptionalDate(deferAfterRaw, "deferAfter");
+const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
+const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
+
+const counts = {
+  total: 0,
+  available: 0,
+  completed: 0,
+  overdue: 0,
+  dueSoon: 0,
+  flagged: 0,
+  deferred: 0
+};
+
+for (const task of document.flattenedTasks) {
+  if (projectFilter !== null) {
+    const projectName = task.containingProject ? task.containingProject.name : null;
+    if (projectName !== projectFilter) continue;
+  }
+
+  if (tagNames !== null && tagNames.length > 0) {
+    let tagMatches = false;
+    if (tagFilterMode === "all") {
+      tagMatches = tagNames.every(tn => task.tags.some(t => t.name === tn));
+    } else {
+      tagMatches = task.tags.some(t => tagNames.includes(t.name));
+    }
+    if (!tagMatches) continue;
+  }
+
+  if (flaggedFilter !== null && task.flagged !== flaggedFilter) continue;
+  if (dueBefore !== null && !(task.dueDate !== null && task.dueDate < dueBefore)) continue;
+  if (dueAfter !== null && !(task.dueDate !== null && task.dueDate > dueAfter)) continue;
+  if (deferBefore !== null && !(task.deferDate !== null && task.deferDate < deferBefore)) continue;
+  if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) continue;
+  if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) continue;
+  if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) continue;
+  if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) continue;
+
+  counts.total += 1;
+  if (task.flagged) counts.flagged += 1;
+
+  if (task.completed) {
+    counts.completed += 1;
+    continue;
+  }
+
+  const isAvailable = task.deferDate === null || task.deferDate <= now;
+  if (isAvailable) counts.available += 1;
+
+  if (task.deferDate !== null && task.deferDate > now) counts.deferred += 1;
+  if (task.dueDate !== null && task.dueDate < now) counts.overdue += 1;
+  if (task.dueDate !== null && task.dueDate >= now && task.dueDate <= soon) counts.dueSoon += 1;
+}
 
 return counts;
 `.trim();
