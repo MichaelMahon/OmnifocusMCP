@@ -146,15 +146,15 @@ depends on. Validate it works against real OmniFocus.
 
 ### Tests (Phase 2)
 
-11. [ ] Test setup: `python/tests/conftest.py` with shared fixtures and a
+11. [x] Test setup: `python/tests/conftest.py` with shared fixtures and a
        mock for `run_omnijs` that returns pre-built JSON (no real osascript).
-12. [ ] Tests for `escape_for_jxa`: strings with double quotes, backslashes,
+12. [x] Tests for `escape_for_jxa`: strings with double quotes, backslashes,
        newlines, unicode, emoji, empty string, very long strings. All pass.
-13. [ ] Tests for `run_jxa` error paths (mocked subprocess): non-zero exit
+13. [x] Tests for `run_jxa` error paths (mocked subprocess): non-zero exit
        → clear error message. Timeout → TimeoutError.
-14. [ ] Tests for `run_omnijs` / `run_jxa_json` (mocked subprocess): valid
+14. [x] Tests for `run_omnijs` / `run_jxa_json` (mocked subprocess): valid
        JSON stdout → parsed result. Malformed stdout → clean error.
-15. [ ] `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
+15. [x] `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
 
 ---
 

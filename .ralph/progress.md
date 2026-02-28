@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 1
-- Current status: Phase 2 core JXA layer completed through criterion 10.
+- Current status: Phase 2 complete (criteria 4-15 done).
 
 ## How This Works
 
@@ -18,7 +18,7 @@ This is how Ralph maintains continuity across iterations.
 | Phase | Description                       | Criteria  | Done |
 |-------|-----------------------------------|-----------|------|
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
-| 2     | Python: JXA Layer + Tests         | 4–15      | 7/12 |
+| 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
 | 3     | Python: Read Tools + Tests        | 16–28     | 0/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 0/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
@@ -26,7 +26,7 @@ This is how Ralph maintains continuity across iterations.
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 10 / 75 criteria complete**
+**Total: 15 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -79,3 +79,31 @@ This is how Ralph maintains continuity across iterations.
   - `ruff` and strict `mypy` pass
   - pytest exits with "no tests ran" (phase 2 test files not created yet)
 - next up: phase 2 criterion 11 (test setup / `conftest.py`)
+
+### 2026-02-27 22:52:05
+**Session 1 update**
+- completed phase 2 criteria 11-14
+- added python test scaffolding and mocked boundary tests:
+  - `python/tests/conftest.py`
+  - `python/tests/test_jxa.py`
+  - `python/tests/test_errors.py`
+  - `python/tests/test_parsing.py`
+- python validation now passes:
+  - `ruff check src/`
+  - `mypy src/ --strict`
+  - `pytest tests/ -v` (12 passed)
+- full task command still fails at TypeScript step because `typescript` toolchain is not initialized yet (`npx tsc --noEmit` cannot run)
+- next up: resolve criterion 15 by scaffolding TypeScript baseline enough for the combined test command
+
+### 2026-02-27 22:54:20
+**Session 1 update**
+- completed phase 2 criterion 15
+- scaffolded minimal `typescript/` baseline required for the shared command:
+  - `typescript/package.json` with local `typescript` devDependency
+  - `typescript/tsconfig.json`
+  - `typescript/src/index.ts`
+  - installed deps and generated `typescript/package-lock.json`
+- validated full phase command now passes end-to-end:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 3 criterion 16 (`get_inbox` read tool)
