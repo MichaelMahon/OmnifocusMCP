@@ -61,7 +61,20 @@ async fn read_task_tools_happy_path() {
     let list_runner = MockRunner {
         payload: json!([task_value("t2", "listed task")]),
     };
-    let listed = list_tasks(&list_runner, None, None, None, "available", 100)
+    let listed = list_tasks(
+        &list_runner,
+        None,
+        None,
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        100,
+    )
         .await
         .expect("tasks should parse");
     assert_eq!(listed.len(), 1);
@@ -176,7 +189,20 @@ async fn empty_results_return_empty_vec() {
         .expect("inbox should parse");
     assert!(inbox.is_empty());
 
-    let listed = list_tasks(&empty_runner, None, None, None, "all", 100)
+    let listed = list_tasks(
+        &empty_runner,
+        None,
+        None,
+        None,
+        "all",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        100,
+    )
         .await
         .expect("list tasks should parse");
     assert!(listed.is_empty());
@@ -203,7 +229,20 @@ async fn malformed_json_from_jxa_produces_json_parse_error() {
         .expect_err("invalid inbox payload should fail");
     assert!(matches!(inbox_err, OmniFocusError::JsonParse(_)));
 
-    let list_err = list_tasks(&malformed_runner, None, None, None, "all", 100)
+    let list_err = list_tasks(
+        &malformed_runner,
+        None,
+        None,
+        None,
+        "all",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        100,
+    )
         .await
         .expect_err("invalid list payload should fail");
     assert!(matches!(list_err, OmniFocusError::JsonParse(_)));
@@ -218,7 +257,21 @@ async fn validation_errors_for_read_tools() {
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
-        list_tasks(&runner, None, None, None, "available", 0).await,
+        list_tasks(
+            &runner,
+            None,
+            None,
+            None,
+            "available",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            0,
+        )
+        .await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(

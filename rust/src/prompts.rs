@@ -8,9 +8,17 @@ use crate::{
 };
 
 pub async fn daily_review<R: JxaRunner>(runner: &R) -> Result<String> {
-    let due_soon = list_tasks(runner, None, None, None, "due_soon", 25).await?;
-    let overdue = list_tasks(runner, None, None, None, "overdue", 25).await?;
-    let flagged = list_tasks(runner, None, None, Some(true), "all", 25).await?;
+    let due_soon = list_tasks(
+        runner, None, None, None, "due_soon", None, None, None, None, None, None, 25,
+    )
+    .await?;
+    let overdue = list_tasks(
+        runner, None, None, None, "overdue", None, None, None, None, None, None, 25,
+    )
+    .await?;
+    let flagged =
+        list_tasks(runner, None, None, Some(true), "all", None, None, None, None, None, None, 25)
+            .await?;
 
     let due_soon_json = serde_json::to_string(&due_soon)?;
     let overdue_json = serde_json::to_string(&overdue)?;
@@ -23,7 +31,21 @@ pub async fn daily_review<R: JxaRunner>(runner: &R) -> Result<String> {
 
 pub async fn weekly_review<R: JxaRunner>(runner: &R) -> Result<String> {
     let active_projects = list_projects(runner, None, "active", 500).await?;
-    let available_tasks = list_tasks(runner, None, None, None, "available", 1000).await?;
+    let available_tasks = list_tasks(
+        runner,
+        None,
+        None,
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        1000,
+    )
+    .await?;
 
     let active_projects_json = serde_json::to_string(&active_projects)?;
     let available_tasks_json = serde_json::to_string(&available_tasks)?;
@@ -51,8 +73,21 @@ pub async fn project_planning<R: JxaRunner>(runner: &R, project: &str) -> Result
 
     let project_name = project.trim();
     let project_details = get_project(runner, project_name).await?;
-    let available_tasks =
-        list_tasks(runner, Some(project_name), None, None, "available", 500).await?;
+    let available_tasks = list_tasks(
+        runner,
+        Some(project_name),
+        None,
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        500,
+    )
+    .await?;
 
     let project_details_json = serde_json::to_string(&project_details)?;
     let available_tasks_json = serde_json::to_string(&available_tasks)?;

@@ -25,11 +25,31 @@ export function register(server: Server): void {
       tag: z.string().min(1).optional(),
       flagged: z.boolean().optional(),
       status: z.enum(["available", "due_soon", "overdue", "completed", "all"]).default("available"),
+      dueBefore: z.string().optional(),
+      dueAfter: z.string().optional(),
+      deferBefore: z.string().optional(),
+      deferAfter: z.string().optional(),
+      completedBefore: z.string().optional(),
+      completedAfter: z.string().optional(),
       limit: z.number().int().min(1).default(100),
     },
-    async ({ project, tag, flagged, status, limit }) => {
+    async ({ project, tag, flagged, status, dueBefore, dueAfter, deferBefore, deferAfter, completedBefore, completedAfter, limit }) => {
       try {
-        return textResult(await listTasksData(project, tag, flagged, status, limit));
+        return textResult(
+          await listTasksData(
+            project,
+            tag,
+            flagged,
+            status,
+            dueBefore,
+            dueAfter,
+            deferBefore,
+            deferAfter,
+            completedBefore,
+            completedAfter,
+            limit
+          )
+        );
       } catch (error: unknown) {
         return errorResult(normalizeError(error));
       }
@@ -652,19 +672,52 @@ export async function listTasksData(
   tag: string | undefined,
   flagged: boolean | undefined,
   status: TaskStatus,
+  dueBefore: string | undefined,
+  dueAfter: string | undefined,
+  deferBefore: string | undefined,
+  deferAfter: string | undefined,
+  completedBefore: string | undefined,
+  completedAfter: string | undefined,
   limit: number
 ): Promise<unknown> {
   const projectFilter = project === undefined ? "null" : escapeForJxa(project.trim());
   const tagFilter = tag === undefined ? "null" : escapeForJxa(tag.trim());
   const flaggedFilter = flagged === undefined ? "null" : flagged ? "true" : "false";
   const statusFilter = escapeForJxa(status);
+  const dueBeforeFilter = dueBefore === undefined ? "null" : escapeForJxa(dueBefore);
+  const dueAfterFilter = dueAfter === undefined ? "null" : escapeForJxa(dueAfter);
+  const deferBeforeFilter = deferBefore === undefined ? "null" : escapeForJxa(deferBefore);
+  const deferAfterFilter = deferAfter === undefined ? "null" : escapeForJxa(deferAfter);
+  const completedBeforeFilter = completedBefore === undefined ? "null" : escapeForJxa(completedBefore);
+  const completedAfterFilter = completedAfter === undefined ? "null" : escapeForJxa(completedAfter);
   const script = `
 const projectFilter = ${projectFilter};
 const tagFilter = ${tagFilter};
 const flaggedFilter = ${flaggedFilter};
 const statusFilter = ${statusFilter};
+const dueBeforeRaw = ${dueBeforeFilter};
+const dueAfterRaw = ${dueAfterFilter};
+const deferBeforeRaw = ${deferBeforeFilter};
+const deferAfterRaw = ${deferAfterFilter};
+const completedBeforeRaw = ${completedBeforeFilter};
+const completedAfterRaw = ${completedAfterFilter};
 const now = new Date();
 const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
+const parseOptionalDate = (value, fieldName) => {
+  if (value === null) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(\`\${fieldName} must be a valid ISO 8601 date string.\`);
+  }
+  return parsed;
+};
+const dueBefore = parseOptionalDate(dueBeforeRaw, "dueBefore");
+const dueAfter = parseOptionalDate(dueAfterRaw, "dueAfter");
+const deferBefore = parseOptionalDate(deferBeforeRaw, "deferBefore");
+const deferAfter = parseOptionalDate(deferAfterRaw, "deferAfter");
+const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
+const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
+const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;
 const tasks = document.flattenedTasks
   .filter(task => {
     if (projectFilter !== null) {
@@ -676,14 +729,30 @@ const tasks = document.flattenedTasks
       if (!taskTags.includes(tagFilter)) return false;
     }
     if (flaggedFilter !== null && task.flagged !== flaggedFilter) return false;
-    if (statusFilter === "all") return true;
-    if (statusFilter === "completed") return task.completed;
-    if (task.completed) return false;
-    if (statusFilter === "available") return true;
-    const dueDate = task.dueDate;
-    if (statusFilter === "overdue") return dueDate !== null && dueDate < now;
-    if (statusFilter === "due_soon") return dueDate !== null && dueDate >= now && dueDate <= soon;
-    return false;
+    let statusMatches = false;
+    if (statusFilter === "all") {
+      statusMatches = true;
+    } else if (statusFilter === "completed") {
+      statusMatches = task.completed;
+    } else if (task.completed) {
+      statusMatches = includeCompletedForDateFilter;
+    } else {
+      if (statusFilter === "available") {
+        statusMatches = true;
+      } else {
+        const dueDate = task.dueDate;
+        if (statusFilter === "overdue") statusMatches = dueDate !== null && dueDate < now;
+        if (statusFilter === "due_soon") statusMatches = dueDate !== null && dueDate >= now && dueDate <= soon;
+      }
+    }
+    if (!statusMatches) return false;
+    if (dueBefore !== null && !(task.dueDate !== null && task.dueDate < dueBefore)) return false;
+    if (dueAfter !== null && !(task.dueDate !== null && task.dueDate > dueAfter)) return false;
+    if (deferBefore !== null && !(task.deferDate !== null && task.deferDate < deferBefore)) return false;
+    if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
+    if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
+    if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
+    return true;
   })
   .slice(0, ${limit});
 return tasks.map(task => ({

@@ -42,12 +42,19 @@ return tasks.map(task => {{
     parse_task_list(value)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn list_tasks<R: JxaRunner>(
     runner: &R,
     project: Option<&str>,
     tag: Option<&str>,
     flagged: Option<bool>,
     status: &str,
+    due_before: Option<&str>,
+    due_after: Option<&str>,
+    defer_before: Option<&str>,
+    defer_after: Option<&str>,
+    completed_before: Option<&str>,
+    completed_after: Option<&str>,
     limit: i32,
 ) -> Result<Vec<TaskResult>> {
     if limit < 1 {
@@ -94,14 +101,53 @@ pub async fn list_tasks<R: JxaRunner>(
         })
         .unwrap_or_else(|| "null".to_string());
     let status_filter = escape_for_jxa(status);
+    let due_before_filter = due_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let due_after_filter = due_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let defer_before_filter = defer_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let defer_after_filter = defer_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let completed_before_filter = completed_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let completed_after_filter = completed_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
 
     let script = format!(
         r#"const projectFilter = {project_filter};
 const tagFilter = {tag_filter};
 const flaggedFilter = {flagged_filter};
 const statusFilter = {status_filter};
+const dueBeforeRaw = {due_before_filter};
+const dueAfterRaw = {due_after_filter};
+const deferBeforeRaw = {defer_before_filter};
+const deferAfterRaw = {defer_after_filter};
+const completedBeforeRaw = {completed_before_filter};
+const completedAfterRaw = {completed_after_filter};
 const now = new Date();
 const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
+const parseOptionalDate = (value, fieldName) => {{
+  if (value === null) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {{
+    throw new Error(`${{fieldName}} must be a valid ISO 8601 date string.`);
+  }}
+  return parsed;
+}};
+const dueBefore = parseOptionalDate(dueBeforeRaw, "dueBefore");
+const dueAfter = parseOptionalDate(dueAfterRaw, "dueAfter");
+const deferBefore = parseOptionalDate(deferBeforeRaw, "deferBefore");
+const deferAfter = parseOptionalDate(deferAfterRaw, "deferAfter");
+const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
+const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
+const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;
 
 const tasks = document.flattenedTasks
   .filter(task => {{
@@ -117,17 +163,31 @@ const tasks = document.flattenedTasks
 
     if (flaggedFilter !== null && task.flagged !== flaggedFilter) return false;
 
-    if (statusFilter === "all") return true;
-    if (statusFilter === "completed") return task.completed;
-    if (task.completed) return false;
-
-    const dueDate = task.dueDate;
-    if (statusFilter === "available") return true;
-    if (statusFilter === "overdue") return dueDate !== null && dueDate < now;
-    if (statusFilter === "due_soon") {{
-      return dueDate !== null && dueDate >= now && dueDate <= soon;
+    let statusMatches = false;
+    if (statusFilter === "all") {{
+      statusMatches = true;
+    }} else if (statusFilter === "completed") {{
+      statusMatches = task.completed;
+    }} else if (task.completed) {{
+      statusMatches = includeCompletedForDateFilter;
+    }} else {{
+      const dueDate = task.dueDate;
+      if (statusFilter === "available") {{
+        statusMatches = true;
+      }} else if (statusFilter === "overdue") {{
+        statusMatches = dueDate !== null && dueDate < now;
+      }} else if (statusFilter === "due_soon") {{
+        statusMatches = dueDate !== null && dueDate >= now && dueDate <= soon;
+      }}
     }}
-    return false;
+    if (!statusMatches) return false;
+    if (dueBefore !== null && !(task.dueDate !== null && task.dueDate < dueBefore)) return false;
+    if (dueAfter !== null && !(task.dueDate !== null && task.dueDate > dueAfter)) return false;
+    if (deferBefore !== null && !(task.deferDate !== null && task.deferDate < deferBefore)) return false;
+    if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
+    if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
+    if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
+    return true;
   }})
   .slice(0, {limit});
 

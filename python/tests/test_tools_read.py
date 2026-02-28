@@ -257,6 +257,52 @@ async def test_list_tasks_happy_path(mock_server_run_omnijs: Callable[[Any], dic
 
 
 @pytest.mark.asyncio
+async def test_list_tasks_date_filters_are_included_in_script(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(
+        project="Proj",
+        tag="urgent",
+        flagged=True,
+        status="available",
+        dueBefore="2026-03-10T00:00:00Z",
+        dueAfter="2026-03-01T00:00:00Z",
+        deferBefore="2026-03-08T00:00:00Z",
+        deferAfter="2026-02-25T00:00:00Z",
+        completedBefore="2026-03-09T00:00:00Z",
+        completedAfter="2026-02-20T00:00:00Z",
+        limit=9,
+    )
+
+    script = state["calls"][0]["script"]
+    assert 'const dueBeforeRaw = "2026-03-10T00:00:00Z";' in script
+    assert 'const completedAfterRaw = "2026-02-20T00:00:00Z";' in script
+    assert 'throw new Error(`${fieldName} must be a valid ISO 8601 date string.`);' in script
+    assert "const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;" in script
+    assert "if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;" in script
+    assert ".slice(0, 9)" in script
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_completed_date_filter_auto_includes_completed_logic(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(status="available", completedAfter="2026-03-01T00:00:00Z", limit=5)
+
+    script = state["calls"][0]["script"]
+    assert "else if (task.completed) {" in script
+    assert "statusMatches = includeCompletedForDateFilter;" in script
+
+
+@pytest.mark.asyncio
 async def test_get_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = {
         "id": "t3",
@@ -543,6 +589,19 @@ async def test_get_task_not_found_error(server_module: Any, monkeypatch: pytest.
 
     with pytest.raises(RuntimeError, match="Task not found: missing-id"):
         await server_module.get_task("missing-id")
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_invalid_date_error_bubbles_up(
+    server_module: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
+        raise RuntimeError("dueBefore must be a valid ISO 8601 date string.")
+
+    _patch_run_omnijs(monkeypatch, server_module, fake_run_omnijs)
+
+    with pytest.raises(RuntimeError, match="dueBefore must be a valid ISO 8601 date string."):
+        await server_module.list_tasks(dueBefore="bad-date")
 
 
 @pytest.mark.asyncio

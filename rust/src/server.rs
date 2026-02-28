@@ -57,6 +57,18 @@ struct ListTasksParams {
     tag: Option<String>,
     flagged: Option<bool>,
     status: Option<String>,
+    #[serde(rename = "dueBefore")]
+    due_before: Option<String>,
+    #[serde(rename = "dueAfter")]
+    due_after: Option<String>,
+    #[serde(rename = "deferBefore")]
+    defer_before: Option<String>,
+    #[serde(rename = "deferAfter")]
+    defer_after: Option<String>,
+    #[serde(rename = "completedBefore")]
+    completed_before: Option<String>,
+    #[serde(rename = "completedAfter")]
+    completed_after: Option<String>,
     limit: Option<i32>,
 }
 
@@ -323,6 +335,12 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.tag.as_deref(),
             params.flagged,
             params.status.as_deref().unwrap_or("available"),
+            params.due_before.as_deref(),
+            params.due_after.as_deref(),
+            params.defer_before.as_deref(),
+            params.defer_after.as_deref(),
+            params.completed_before.as_deref(),
+            params.completed_after.as_deref(),
             params.limit.unwrap_or(100),
         )
         .await

@@ -195,7 +195,10 @@ async fn test_read_tools_return_valid_json() -> Result<(), Box<dyn std::error::E
         assert!(!first.name.is_empty());
     }
 
-    let listed = list_tasks(&runner, None, None, None, "all", 20).await?;
+    let listed = list_tasks(
+        &runner, None, None, None, "all", None, None, None, None, None, None, 20,
+    )
+    .await?;
     if let Some(first) = listed.first() {
         assert!(!first.id.is_empty());
         assert!(!first.name.is_empty());
