@@ -191,7 +191,7 @@ parameter (default 100).
         nested), `availableTaskCount`, `status`.
 23. [x] Tool `list_folders` — returns folder hierarchy: `id`, `name`,
         `parentName`, `projectCount`.
-24. [ ] Tool `get_forecast` — today's dashboard: overdue + due today +
+24. [x] Tool `get_forecast` — today's dashboard: overdue + due today +
         flagged tasks, grouped by section.
 25. [ ] Tool `list_perspectives` — available perspectives (built-in + custom):
         `id`, `name`.

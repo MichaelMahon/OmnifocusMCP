@@ -4,8 +4,8 @@
 
 ## Summary
 
-- Iterations completed: 2
-- Current status: Phase 3 in progress (criteria 16-23 complete).
+- Iterations completed: 3
+- Current status: Phase 3 in progress (criteria 16-24 complete).
 
 ## How This Works
 
@@ -19,14 +19,14 @@ This is how Ralph maintains continuity across iterations.
 |-------|-----------------------------------|-----------|------|
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
-| 3     | Python: Read Tools + Tests        | 16–28     | 8/13 |
+| 3     | Python: Read Tools + Tests        | 16–28     | 9/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 0/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 23 / 75 criteria complete**
+**Total: 24 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -217,3 +217,15 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-27 22:54:04
 **Session 4 started** (model: auto)
+
+### 2026-02-28 05:00:10
+**Session 4 update**
+- completed phase 3 criterion 24 (`get_forecast`)
+- extended `python/src/omnifocus_mcp/server.py` with `get_forecast(limit=100)`:
+  - validates positive `limit`
+  - groups open tasks into `overdue`, `dueToday`, and `flagged` sections
+  - returns task summaries with id/name/note, due+defer dates, project name, tags, flagged/completed, and estimated minutes
+- re-ran full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 3 criterion 25 (`list_perspectives`)
