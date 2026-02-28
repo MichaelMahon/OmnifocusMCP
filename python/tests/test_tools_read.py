@@ -82,8 +82,10 @@ async def test_get_inbox_happy_path(mock_server_run_omnijs: Callable[[Any], dict
             "flagged": False,
             "dueDate": None,
             "deferDate": None,
+            "completionDate": None,
             "tags": ["home"],
             "estimatedMinutes": 15,
+            "hasChildren": False,
         }
     ]
     configured = mock_server_run_omnijs(payload)
@@ -95,6 +97,8 @@ async def test_get_inbox_happy_path(mock_server_run_omnijs: Callable[[Any], dict
     assert json.loads(result) == payload
     assert len(state["calls"]) == 1
     assert ".slice(0, 5)" in state["calls"][0]["script"]
+    assert "completionDate: task.completionDate ? task.completionDate.toISOString() : null," in state["calls"][0]["script"]
+    assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
 
 
 @pytest.mark.asyncio

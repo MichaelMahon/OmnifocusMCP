@@ -32,8 +32,10 @@ return tasks.map(task => {{
     flagged: task.flagged,
     dueDate: task.dueDate ? task.dueDate.toISOString() : null,
     deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+    completionDate: task.completionDate ? task.completionDate.toISOString() : null,
     tags: tags,
-    estimatedMinutes: task.estimatedMinutes
+    estimatedMinutes: task.estimatedMinutes,
+    hasChildren: task.hasChildren
   }};
 }});"#
     );

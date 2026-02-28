@@ -699,8 +699,10 @@ return tasks.map(task => ({
   flagged: task.flagged,
   dueDate: task.dueDate ? task.dueDate.toISOString() : null,
   deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+  completionDate: task.completionDate ? task.completionDate.toISOString() : null,
   tags: task.tags.map(tag => tag.name),
-  estimatedMinutes: task.estimatedMinutes
+  estimatedMinutes: task.estimatedMinutes,
+  hasChildren: task.hasChildren
 }));
 `.trim();
   return runOmniJs(script);

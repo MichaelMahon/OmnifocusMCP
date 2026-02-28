@@ -1,4 +1,5 @@
 import json
+from typing import Literal
 
 from omnifocus_mcp.jxa import escape_for_jxa, run_omnijs
 from omnifocus_mcp.registration import typed_tool
@@ -6,22 +7,44 @@ from omnifocus_mcp.app import mcp
 
 
 @typed_tool(mcp)
-async def list_tags(limit: int = 100) -> str:
+async def list_tags(
+    statusFilter: Literal["active", "on_hold", "dropped", "all"] = "all",
+    sortBy: Literal["name", "availableTaskCount", "totalTaskCount"] | None = None,
+    sortOrder: Literal["asc", "desc"] = "asc",
+    limit: int = 100,
+) -> str:
     """list tags with hierarchy, task availability counts, and status.
 
     returns tag id, name, parent tag name, available task count, and status.
     """
     if limit < 1:
         raise ValueError("limit must be greater than 0.")
+    if statusFilter not in ("active", "on_hold", "dropped", "all"):
+        raise ValueError("statusFilter must be one of: active, on_hold, dropped, all.")
+    if sortBy is not None and sortBy not in ("name", "availableTaskCount", "totalTaskCount"):
+        raise ValueError(
+            "sortBy must be one of: name, availableTaskCount, totalTaskCount."
+        )
+    if sortOrder not in ("asc", "desc"):
+        raise ValueError("sortOrder must be one of: asc, desc.")
+
+    status_filter = escape_for_jxa(statusFilter)
+    sort_by_filter = "null" if sortBy is None else escape_for_jxa(sortBy)
+    sort_order_filter = escape_for_jxa(sortOrder)
 
     script = f"""
+const statusFilter = {status_filter};
+const sortBy = {sort_by_filter};
+const sortOrder = {sort_order_filter};
+
 const tagCounts = new Map();
 document.flattenedTasks.forEach(task => {{
-  if (task.completed) return;
   task.tags.forEach(tag => {{
     const tagId = tag.id.primaryKey;
-    const current = tagCounts.get(tagId) || 0;
-    tagCounts.set(tagId, current + 1);
+    const current = tagCounts.get(tagId) || {{ availableTaskCount: 0, totalTaskCount: 0 }};
+    current.totalTaskCount += 1;
+    if (!task.completed) current.availableTaskCount += 1;
+    tagCounts.set(tagId, current);
   }});
 }});
 
@@ -31,16 +54,36 @@ const normalizeTagStatus = (tag) => {{
   return rawStatus.replace(/\\s+/g, "_");
 }};
 
-const tags = document.flattenedTags.slice(0, {limit});
-return tags.map(tag => {{
+const compareValues = (left, right) => {{
+  if (left < right) return sortOrder === "asc" ? -1 : 1;
+  if (left > right) return sortOrder === "asc" ? 1 : -1;
+  return 0;
+}};
+
+const filteredTags = document.flattenedTags.filter(tag => {{
+  return statusFilter === "all" || normalizeTagStatus(tag) === statusFilter;
+}});
+
+const mappedTags = filteredTags.map(tag => {{
+  const counts = tagCounts.get(tag.id.primaryKey) || {{ availableTaskCount: 0, totalTaskCount: 0 }};
   return {{
     id: tag.id.primaryKey,
     name: tag.name,
     parent: tag.parent ? tag.parent.name : null,
-    availableTaskCount: tagCounts.get(tag.id.primaryKey) || 0,
+    availableTaskCount: counts.availableTaskCount,
+    totalTaskCount: counts.totalTaskCount,
     status: normalizeTagStatus(tag)
   }};
 }});
+
+const sortedTags = sortBy === null ? mappedTags : mappedTags.slice().sort((a, b) => {{
+  if (sortBy === "name") {{
+    return compareValues(String(a.name).toLowerCase(), String(b.name).toLowerCase());
+  }}
+  return compareValues(a[sortBy], b[sortBy]);
+}});
+
+return sortedTags.slice(0, {limit});
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
