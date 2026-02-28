@@ -171,10 +171,14 @@ async def project_planning(project: str) -> str:
     if project.strip() == "":
         raise ValueError("project must not be empty.")
 
-    project_details = await get_project(project_id_or_name=project.strip())
-    available_tasks = await list_tasks(project=project.strip(), status="available", limit=500)
+    project_name = project.strip()
+    project_details = await get_project(project_id_or_name=project_name)
+    available_tasks = await list_tasks(project=project_name, status="available", limit=500)
 
     return f"""plan this project into clear executable work.
+
+project name:
+{project_name}
 
 planning goals:
 1) summarize the project outcome in one concise sentence.

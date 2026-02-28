@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772255636
-generated_at: 2026-02-28T05:14:14Z
+source_mtime: 1772255685
+generated_at: 2026-02-28T05:15:01Z
 
 tasks:
   - id: "line_109"
@@ -366,14 +366,14 @@ tasks:
     raw_marker: 51.
   - id: "line_278"
     line_number: 278
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Tests for each prompt: verify template renders with expected
     indent_level: 0
     raw_marker: 52.
   - id: "line_280"
     line_number: 280
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
     indent_level: 0

@@ -275,9 +275,9 @@ encoding GTD workflows.
 
 51. [x] Tests for each resource: verify correct JXA script is called and
         response is valid JSON.
-52. [ ] Tests for each prompt: verify template renders with expected
+52. [x] Tests for each prompt: verify template renders with expected
         structure (contains instructions, placeholder for data).
-53. [ ] `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
+53. [x] `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
 
 ---
 

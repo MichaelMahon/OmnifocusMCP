@@ -201,11 +201,13 @@ async def test_project_planning_prompt_renders_expected_sections(
 
     prompt = await server.project_planning("Alpha")
 
-    assert "project_state_json:" in prompt
+    assert "project_details_json:" in prompt
+    assert "project_available_tasks_json:" in prompt
     assert "project name:" in prompt
     assert "Alpha" in prompt
     assert '"id": "p-123"' in prompt
-    assert len(state["calls"]) == 1
+    assert "planning goals:" in prompt
+    assert len(state["calls"]) == 2
 
 
 @pytest.mark.asyncio
@@ -445,3 +447,114 @@ async def test_list_tasks_empty_result_returns_empty_array(
     result = await server.list_tasks(limit=4)
 
     assert json.loads(result) == []
+
+
+@pytest.mark.asyncio
+async def test_daily_review_prompt_renders_structure_and_fetches_sections(
+    server_module: Any,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    scripts: list[str] = []
+
+    async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
+        scripts.append(script)
+        return []
+
+    monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
+
+    prompt = await server_module.daily_review()
+
+    assert "run a focused daily review" in prompt
+    assert "overdue_tasks_json:" in prompt
+    assert "due_soon_tasks_json:" in prompt
+    assert "flagged_tasks_json:" in prompt
+    assert len(scripts) == 3
+    assert any('const statusFilter = "due_soon";' in script for script in scripts)
+    assert any('const statusFilter = "overdue";' in script for script in scripts)
+    assert any('const statusFilter = "all";' in script for script in scripts)
+    assert any("const flaggedFilter = true;" in script for script in scripts)
+
+
+@pytest.mark.asyncio
+async def test_weekly_review_prompt_renders_structure_and_fetches_data(
+    server_module: Any,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    scripts: list[str] = []
+
+    async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
+        scripts.append(script)
+        return []
+
+    monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
+
+    prompt = await server_module.weekly_review()
+
+    assert "run a gtd-style weekly review" in prompt
+    assert "active_projects_json:" in prompt
+    assert "available_tasks_json:" in prompt
+    assert "top 5 project priorities" in prompt
+    assert len(scripts) == 2
+    assert any('const statusFilter = "active";' in script for script in scripts)
+    assert any('const statusFilter = "available";' in script for script in scripts)
+
+
+@pytest.mark.asyncio
+async def test_inbox_processing_prompt_renders_structure_and_fetches_inbox(
+    server_module: Any,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    scripts: list[str] = []
+
+    async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
+        scripts.append(script)
+        return [{"id": "i1", "name": "Inbox item"}]
+
+    monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
+
+    prompt = await server_module.inbox_processing()
+
+    assert "run a gtd inbox processing session" in prompt
+    assert "inbox_items_json:" in prompt
+    assert "prioritized processing queue" in prompt
+    assert len(scripts) == 1
+    assert ".slice(0, 200)" in scripts[0]
+
+
+@pytest.mark.asyncio
+async def test_project_planning_prompt_renders_structure_and_fetches_project_state(
+    server_module: Any,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    scripts: list[str] = []
+
+    async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
+        scripts.append(script)
+        if "const projectFilter =" in script:
+            return {
+                "id": "proj-1",
+                "name": "Alpha",
+                "status": "active",
+                "folderName": None,
+                "taskCount": 2,
+                "remainingTaskCount": 2,
+                "deferDate": None,
+                "dueDate": None,
+                "note": "",
+                "sequential": False,
+                "reviewInterval": None,
+                "rootTasks": [],
+            }
+        return [{"id": "t1", "name": "Next action"}]
+
+    monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
+
+    prompt = await server_module.project_planning("Alpha")
+
+    assert "plan this project into clear executable work." in prompt
+    assert "project_details_json:" in prompt
+    assert "project_available_tasks_json:" in prompt
+    assert "work breakdown with columns" in prompt
+    assert len(scripts) == 2
+    assert any('const projectFilter = "Alpha";' in script for script in scripts)
+    assert any('const statusFilter = "available";' in script for script in scripts)
