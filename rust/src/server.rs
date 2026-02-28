@@ -95,6 +95,31 @@ struct TaskIdLimitParams {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct SearchTasksParams {
     query: String,
+    project: Option<String>,
+    tag: Option<String>,
+    tags: Option<Vec<String>>,
+    #[serde(rename = "tagFilterMode")]
+    tag_filter_mode: Option<String>,
+    flagged: Option<bool>,
+    status: Option<String>,
+    #[serde(rename = "dueBefore")]
+    due_before: Option<String>,
+    #[serde(rename = "dueAfter")]
+    due_after: Option<String>,
+    #[serde(rename = "deferBefore")]
+    defer_before: Option<String>,
+    #[serde(rename = "deferAfter")]
+    defer_after: Option<String>,
+    #[serde(rename = "completedBefore")]
+    completed_before: Option<String>,
+    #[serde(rename = "completedAfter")]
+    completed_after: Option<String>,
+    #[serde(rename = "maxEstimatedMinutes")]
+    max_estimated_minutes: Option<i32>,
+    #[serde(rename = "sortBy")]
+    sort_by: Option<String>,
+    #[serde(rename = "sortOrder")]
+    sort_order: Option<String>,
     limit: Option<i32>,
 }
 
@@ -435,6 +460,21 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         let result = search_tasks(
             self.runner.as_ref(),
             &params.query,
+            params.project.as_deref(),
+            params.tag.as_deref(),
+            params.tags,
+            params.tag_filter_mode.as_deref().unwrap_or("any"),
+            params.flagged,
+            params.status.as_deref().unwrap_or("available"),
+            params.due_before.as_deref(),
+            params.due_after.as_deref(),
+            params.defer_before.as_deref(),
+            params.defer_after.as_deref(),
+            params.completed_before.as_deref(),
+            params.completed_after.as_deref(),
+            params.max_estimated_minutes,
+            params.sort_by.as_deref(),
+            params.sort_order.as_deref().unwrap_or("asc"),
             params.limit.unwrap_or(100),
         )
         .await

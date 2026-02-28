@@ -947,3 +947,208 @@ return tasks.map(task => ({
 `.trim();
   return runOmniJs(script);
 }
+
+export async function searchTasksData(
+  query: string,
+  project: string | undefined,
+  tag: string | undefined,
+  tags: string[] | undefined,
+  tagFilterMode: "any" | "all" = "any",
+  flagged: boolean | undefined,
+  status: TaskStatus,
+  dueBefore: string | undefined,
+  dueAfter: string | undefined,
+  deferBefore: string | undefined,
+  deferAfter: string | undefined,
+  completedBefore: string | undefined,
+  completedAfter: string | undefined,
+  maxEstimatedMinutes: number | undefined,
+  sortBy:
+    | "dueDate"
+    | "deferDate"
+    | "name"
+    | "completionDate"
+    | "estimatedMinutes"
+    | "project"
+    | "flagged"
+    | undefined,
+  sortOrder: "asc" | "desc",
+  limit: number
+): Promise<unknown> {
+  let effectiveSortBy = sortBy;
+  let effectiveSortOrder = sortOrder;
+  if ((completedBefore !== undefined || completedAfter !== undefined) && effectiveSortBy === undefined) {
+    effectiveSortBy = "completionDate";
+    effectiveSortOrder = "desc";
+  }
+  const projectFilter = project === undefined ? "null" : escapeForJxa(project.trim());
+  const mergedTagNames: string[] = [];
+  if (tag !== undefined) {
+    const normalizedTag = tag.trim();
+    if (normalizedTag.length > 0 && !mergedTagNames.includes(normalizedTag)) {
+      mergedTagNames.push(normalizedTag);
+    }
+  }
+  if (tags !== undefined) {
+    for (const tagName of tags) {
+      const normalizedTag = tagName.trim();
+      if (normalizedTag.length > 0 && !mergedTagNames.includes(normalizedTag)) {
+        mergedTagNames.push(normalizedTag);
+      }
+    }
+  }
+  const tagNamesFilter = mergedTagNames.length === 0 ? "null" : JSON.stringify(mergedTagNames);
+  const tagFilterModeFilter = escapeForJxa(tagFilterMode);
+  const flaggedFilter = flagged === undefined ? "null" : flagged ? "true" : "false";
+  const statusFilter = escapeForJxa(status);
+  const dueBeforeFilter = dueBefore === undefined ? "null" : escapeForJxa(dueBefore);
+  const dueAfterFilter = dueAfter === undefined ? "null" : escapeForJxa(dueAfter);
+  const deferBeforeFilter = deferBefore === undefined ? "null" : escapeForJxa(deferBefore);
+  const deferAfterFilter = deferAfter === undefined ? "null" : escapeForJxa(deferAfter);
+  const completedBeforeFilter = completedBefore === undefined ? "null" : escapeForJxa(completedBefore);
+  const completedAfterFilter = completedAfter === undefined ? "null" : escapeForJxa(completedAfter);
+  const maxEstimatedMinutesFilter = maxEstimatedMinutes === undefined ? "null" : String(maxEstimatedMinutes);
+  const sortByFilter = effectiveSortBy === undefined ? "null" : escapeForJxa(effectiveSortBy);
+  const sortOrderFilter = escapeForJxa(effectiveSortOrder);
+  const queryFilter = escapeForJxa(query.trim());
+  const script = `
+const queryFilter = ${queryFilter}.toLowerCase();
+const projectFilter = ${projectFilter};
+const tagNames = ${tagNamesFilter};
+const tagFilterMode = ${tagFilterModeFilter};
+const flaggedFilter = ${flaggedFilter};
+const statusFilter = ${statusFilter};
+const dueBeforeRaw = ${dueBeforeFilter};
+const dueAfterRaw = ${dueAfterFilter};
+const deferBeforeRaw = ${deferBeforeFilter};
+const deferAfterRaw = ${deferAfterFilter};
+const completedBeforeRaw = ${completedBeforeFilter};
+const completedAfterRaw = ${completedAfterFilter};
+const maxEstimatedMinutes = ${maxEstimatedMinutesFilter};
+const sortBy = ${sortByFilter};
+const sortOrder = ${sortOrderFilter};
+const now = new Date();
+const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
+const parseOptionalDate = (value, fieldName) => {
+  if (value === null) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(\`\${fieldName} must be a valid ISO 8601 date string.\`);
+  }
+  return parsed;
+};
+const dueBefore = parseOptionalDate(dueBeforeRaw, "dueBefore");
+const dueAfter = parseOptionalDate(dueAfterRaw, "dueAfter");
+const deferBefore = parseOptionalDate(deferBeforeRaw, "deferBefore");
+const deferAfter = parseOptionalDate(deferAfterRaw, "deferAfter");
+const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
+const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
+const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;
+const filteredTasks = document.flattenedTasks
+  .filter(task => {
+    const name = (task.name || "").toLowerCase();
+    const note = (task.note || "").toLowerCase();
+    if (!(name.includes(queryFilter) || note.includes(queryFilter))) return false;
+    if (projectFilter !== null) {
+      const projectName = task.containingProject ? task.containingProject.name : null;
+      if (projectName !== projectFilter) return false;
+    }
+    if (tagNames !== null && tagNames.length > 0) {
+      let tagMatches = false;
+      if (tagFilterMode === "all") {
+        tagMatches = tagNames.every(tn => task.tags.some(t => t.name === tn));
+      } else {
+        tagMatches = task.tags.some(t => tagNames.includes(t.name));
+      }
+      if (!tagMatches) return false;
+    }
+    if (flaggedFilter !== null && task.flagged !== flaggedFilter) return false;
+    let statusMatches = false;
+    if (statusFilter === "all") {
+      statusMatches = true;
+    } else if (statusFilter === "completed") {
+      statusMatches = task.completed;
+    } else if (task.completed) {
+      statusMatches = includeCompletedForDateFilter;
+    } else {
+      const dueDate = task.dueDate;
+      if (statusFilter === "available") {
+        statusMatches = true;
+      } else if (statusFilter === "overdue") {
+        statusMatches = dueDate !== null && dueDate < now;
+      } else if (statusFilter === "due_soon") {
+        statusMatches = dueDate !== null && dueDate >= now && dueDate <= soon;
+      }
+    }
+    if (!statusMatches) return false;
+    if (dueBefore !== null && !(task.dueDate !== null && task.dueDate < dueBefore)) return false;
+    if (dueAfter !== null && !(task.dueDate !== null && task.dueDate > dueAfter)) return false;
+    if (deferBefore !== null && !(task.deferDate !== null && task.deferDate < deferBefore)) return false;
+    if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
+    if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
+    if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
+    if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;
+    return true;
+  });
+const compareValues = (aValue, bValue, isString = false) => {
+  if (aValue === null && bValue === null) return 0;
+  if (aValue === null) return 1;
+  if (bValue === null) return -1;
+  let left = aValue;
+  let right = bValue;
+  if (isString) {
+    left = String(aValue).toLowerCase();
+    right = String(bValue).toLowerCase();
+  }
+  if (left < right) return sortOrder === "asc" ? -1 : 1;
+  if (left > right) return sortOrder === "asc" ? 1 : -1;
+  return 0;
+};
+const sortedTasks = sortBy === null ? filteredTasks : filteredTasks.slice().sort((a, b) => {
+  let aValue = null;
+  let bValue = null;
+  let isString = false;
+  if (sortBy === "dueDate") {
+    aValue = a.dueDate;
+    bValue = b.dueDate;
+  } else if (sortBy === "deferDate") {
+    aValue = a.deferDate;
+    bValue = b.deferDate;
+  } else if (sortBy === "name") {
+    aValue = a.name;
+    bValue = b.name;
+    isString = true;
+  } else if (sortBy === "completionDate") {
+    aValue = a.completionDate;
+    bValue = b.completionDate;
+  } else if (sortBy === "estimatedMinutes") {
+    aValue = a.estimatedMinutes;
+    bValue = b.estimatedMinutes;
+  } else if (sortBy === "project") {
+    aValue = a.containingProject ? a.containingProject.name : null;
+    bValue = b.containingProject ? b.containingProject.name : null;
+    isString = true;
+  } else if (sortBy === "flagged") {
+    aValue = a.flagged;
+    bValue = b.flagged;
+  }
+  return compareValues(aValue, bValue, isString);
+});
+const tasks = sortedTasks.slice(0, ${limit});
+return tasks.map(task => ({
+  id: task.id.primaryKey,
+  name: task.name,
+  note: task.note,
+  flagged: task.flagged,
+  dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+  deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+  completed: task.completed,
+  completionDate: task.completionDate ? task.completionDate.toISOString() : null,
+  projectName: task.containingProject ? task.containingProject.name : null,
+  tags: task.tags.map(taskTag => taskTag.name),
+  estimatedMinutes: task.estimatedMinutes,
+  hasChildren: task.hasChildren
+}));
+`.trim();
+  return runOmniJs(script);
+}
