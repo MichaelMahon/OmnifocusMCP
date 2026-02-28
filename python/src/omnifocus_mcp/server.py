@@ -981,3 +981,31 @@ return {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@_typed_tool(mcp)
+async def complete_project(project_id_or_name: str) -> str:
+    """complete a project by id or name and return confirmation."""
+    if project_id_or_name.strip() == "":
+        raise ValueError("project_id_or_name must not be empty.")
+
+    project_filter = escape_for_jxa(project_id_or_name.strip())
+    script = f"""
+const projectFilter = {project_filter};
+const project = document.flattenedProjects.find(item => {{
+  return item.id.primaryKey === projectFilter || item.name === projectFilter;
+}});
+if (!project) {{
+  throw new Error(`Project not found: ${{projectFilter}}`);
+}}
+
+project.markComplete();
+
+return {{
+  id: project.id.primaryKey,
+  name: project.name,
+  completed: true
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)

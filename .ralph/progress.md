@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 5
-- Current status: Phase 4 in progress (criterion 35 complete; next 36).
+- Current status: Phase 4 in progress (criterion 36 complete; next 37).
 
 ## How This Works
 
@@ -20,13 +20,13 @@ This is how Ralph maintains continuity across iterations.
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
 | 3     | Python: Read Tools + Tests        | 16–28     | 13/13 |
-| 4     | Python: Write Tools + Tests       | 29–43     | 7/15 |
+| 4     | Python: Write Tools + Tests       | 29–43     | 8/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 35 / 75 criteria complete**
+**Total: 36 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -371,3 +371,15 @@ This is how Ralph maintains continuity across iterations.
   - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
   - `cd ../typescript && npx tsc --noEmit && npm test`
 - next up: phase 4 criterion 36 (`complete_project`)
+
+### 2026-02-27 23:04:32
+**Session 6 update**
+- completed phase 4 criterion 36 (`complete_project`)
+- extended `python/src/omnifocus_mcp/server.py` with `complete_project(project_id_or_name)`:
+  - validates non-empty input and resolves project by either `id.primaryKey` or exact name
+  - returns a clear `Project not found` error when resolution fails
+  - marks the project complete via OmniJS and returns confirmation payload with `id` and `name`
+- re-ran full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 4 criterion 37 (`create_tag`)

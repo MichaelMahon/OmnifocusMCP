@@ -231,7 +231,7 @@ write tools return confirmation with the affected item's current state.
         back to inbox. Returns confirmation.
 35. [x] Tool `create_project` — required `name`, optional `folder` (name),
         `note`, `dueDate`, `deferDate`, `sequential` (bool). Returns `{id}`.
-36. [ ] Tool `complete_project` — by `id` or `name`. Returns confirmation.
+36. [x] Tool `complete_project` — by `id` or `name`. Returns confirmation.
 37. [ ] Tool `create_tag` — required `name`, optional `parent` (tag name
         for nesting). Returns `{id}`.
 
