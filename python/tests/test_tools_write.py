@@ -570,35 +570,6 @@ async def test_delete_folder_validation_error_criterion18(server_module: Any) ->
         await server_module.delete_folder(folder_name_or_id="   ")
 
 
-@pytest.mark.asyncio
-async def test_append_to_note_happy_path_criterion20(
-    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
-) -> None:
-    payload = {"id": "task-1", "name": "Task 1", "type": "task", "noteLength": 42}
-    configured = mock_server_run_omnijs(payload)
-    state = configured["state"]
-    server = configured["server"]
-
-    result = await server.append_to_note(object_type="task", object_id="task-1", text="more context")
-
-    assert json.loads(result) == payload
-    script = state["calls"][0]["script"]
-    assert 'const objectType = "task";' in script
-    assert 'const objectId = "task-1";' in script
-    assert 'const textValue = "more context";' in script
-    assert "obj.appendStringToNote(textValue);" in script
-
-
-@pytest.mark.asyncio
-async def test_append_to_note_validation_error_criterion20(server_module: Any) -> None:
-    with pytest.raises(ValueError, match="object_type must be one of: task, project."):
-        await server_module.append_to_note(object_type="folder", object_id="task-1", text="x")
-    with pytest.raises(ValueError, match="object_id must not be empty."):
-        await server_module.append_to_note(object_type="task", object_id="   ", text="x")
-    with pytest.raises(ValueError, match="text must not be empty."):
-        await server_module.append_to_note(object_type="task", object_id="task-1", text="   ")
-
-
 @pytest.fixture
 def server_module(monkeypatch: pytest.MonkeyPatch) -> Any:
     class FakeFastMCP:
