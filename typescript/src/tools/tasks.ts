@@ -169,35 +169,76 @@ return subtasks.map(subtask => {
   server.tool(
     "search_tasks",
     "search tasks by case-insensitive query across name and note.",
-    { query: z.string().min(1), limit: z.number().int().min(1).default(100) },
-    async ({ query, limit }) => {
+    {
+      query: z.string().min(1),
+      project: z.string().min(1).optional(),
+      tag: z.string().min(1).optional(),
+      tags: z.array(z.string().min(1)).optional(),
+      tagFilterMode: z.enum(["any", "all"]).default("any"),
+      flagged: z.boolean().optional(),
+      status: z.enum(["available", "due_soon", "overdue", "completed", "all"]).default("available"),
+      dueBefore: z.string().optional(),
+      dueAfter: z.string().optional(),
+      deferBefore: z.string().optional(),
+      deferAfter: z.string().optional(),
+      completedBefore: z.string().optional(),
+      completedAfter: z.string().optional(),
+      maxEstimatedMinutes: z.number().int().min(0).optional(),
+      sortBy: z
+        .enum([
+          "dueDate",
+          "deferDate",
+          "name",
+          "completionDate",
+          "estimatedMinutes",
+          "project",
+          "flagged",
+        ])
+        .optional(),
+      sortOrder: z.enum(["asc", "desc"]).default("asc"),
+      limit: z.number().int().min(1).default(100),
+    },
+    async ({
+      query,
+      project,
+      tag,
+      tags,
+      tagFilterMode,
+      flagged,
+      status,
+      dueBefore,
+      dueAfter,
+      deferBefore,
+      deferAfter,
+      completedBefore,
+      completedAfter,
+      maxEstimatedMinutes,
+      sortBy,
+      sortOrder,
+      limit,
+    }) => {
       try {
-        const queryFilter = escapeForJxa(query.toLowerCase());
-        const script = `
-const queryFilter = ${queryFilter};
-const tasks = document.flattenedTasks
-  .filter(task => {
-    const name = (task.name || "").toLowerCase();
-    const note = (task.note || "").toLowerCase();
-    return name.includes(queryFilter) || note.includes(queryFilter);
-  })
-  .slice(0, ${limit});
-return tasks.map(task => ({
-  id: task.id.primaryKey,
-  name: task.name,
-  note: task.note,
-  flagged: task.flagged,
-  dueDate: task.dueDate ? task.dueDate.toISOString() : null,
-  deferDate: task.deferDate ? task.deferDate.toISOString() : null,
-  completed: task.completed,
-  completionDate: task.completionDate ? task.completionDate.toISOString() : null,
-  projectName: task.containingProject ? task.containingProject.name : null,
-  tags: task.tags.map(tag => tag.name),
-  estimatedMinutes: task.estimatedMinutes,
-  hasChildren: task.hasChildren
-}));
-`.trim();
-        return textResult(await runOmniJs(script));
+        return textResult(
+          await searchTasksData(
+            query,
+            project,
+            tag,
+            tags,
+            tagFilterMode ?? "any",
+            flagged,
+            status,
+            dueBefore,
+            dueAfter,
+            deferBefore,
+            deferAfter,
+            completedBefore,
+            completedAfter,
+            maxEstimatedMinutes,
+            sortBy,
+            sortOrder,
+            limit
+          )
+        );
       } catch (error: unknown) {
         return errorResult(normalizeError(error));
       }

@@ -358,27 +358,230 @@ return {{
 
 
 @typed_tool(mcp)
-async def search_tasks(query: str, limit: int = 100) -> str:
+async def search_tasks(
+    query: str,
+    project: str | None = None,
+    tag: str | None = None,
+    tags: list[str] | None = None,
+    tagFilterMode: Literal["any", "all"] = "any",
+    flagged: bool | None = None,
+    status: Literal["available", "due_soon", "overdue", "completed", "all"] = "available",
+    dueBefore: str | None = None,
+    dueAfter: str | None = None,
+    deferBefore: str | None = None,
+    deferAfter: str | None = None,
+    completedBefore: str | None = None,
+    completedAfter: str | None = None,
+    maxEstimatedMinutes: int | None = None,
+    sortBy: Literal[
+        "dueDate", "deferDate", "name", "completionDate", "estimatedMinutes", "project", "flagged"
+    ]
+    | None = None,
+    sortOrder: Literal["asc", "desc"] = "asc",
+    limit: int = 100,
+) -> str:
     """search task names and notes with case-insensitive matching.
 
     returns matching tasks with the standard list_tasks fields.
     """
     if query.strip() == "":
         raise ValueError("query must not be empty.")
+    if project is not None and project.strip() == "":
+        raise ValueError("project must not be empty when provided.")
+    if tag is not None and tag.strip() == "":
+        raise ValueError("tag must not be empty when provided.")
+    if tags is not None:
+        cleaned_tags = [t.strip() for t in tags if t.strip() != ""]
+        if len(cleaned_tags) == 0:
+            tags = None
+        else:
+            tags = cleaned_tags
+    if tagFilterMode not in ("any", "all"):
+        raise ValueError("tagFilterMode must be one of: any, all.")
+    if status not in ("available", "due_soon", "overdue", "completed", "all"):
+        raise ValueError("status must be one of: available, due_soon, overdue, completed, all.")
+    if sortBy is not None and sortBy not in (
+        "dueDate",
+        "deferDate",
+        "name",
+        "completionDate",
+        "estimatedMinutes",
+        "project",
+        "flagged",
+    ):
+        raise ValueError(
+            "sortBy must be one of: dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged."
+        )
+    if sortOrder not in ("asc", "desc"):
+        raise ValueError("sortOrder must be one of: asc, desc.")
     if limit < 1:
         raise ValueError("limit must be greater than 0.")
 
+    effective_sort_by = sortBy
+    effective_sort_order = sortOrder
+    if (completedBefore is not None or completedAfter is not None) and effective_sort_by is None:
+        effective_sort_by = "completionDate"
+        effective_sort_order = "desc"
+
+    project_filter = "null" if project is None else escape_for_jxa(project.strip())
+    merged_tag_names: list[str] = []
+    if tag is not None:
+        normalized_tag = tag.strip()
+        if normalized_tag and normalized_tag not in merged_tag_names:
+            merged_tag_names.append(normalized_tag)
+    if tags is not None:
+        for tag_name in tags:
+            normalized_tag = tag_name.strip()
+            if normalized_tag and normalized_tag not in merged_tag_names:
+                merged_tag_names.append(normalized_tag)
+    tag_names_filter = "null" if len(merged_tag_names) == 0 else json.dumps(merged_tag_names)
+    tag_filter_mode_filter = escape_for_jxa(tagFilterMode)
+    flagged_filter = "null" if flagged is None else ("true" if flagged else "false")
+    status_filter = escape_for_jxa(status)
+    due_before_filter = "null" if dueBefore is None else escape_for_jxa(dueBefore)
+    due_after_filter = "null" if dueAfter is None else escape_for_jxa(dueAfter)
+    defer_before_filter = "null" if deferBefore is None else escape_for_jxa(deferBefore)
+    defer_after_filter = "null" if deferAfter is None else escape_for_jxa(deferAfter)
+    completed_before_filter = "null" if completedBefore is None else escape_for_jxa(completedBefore)
+    completed_after_filter = "null" if completedAfter is None else escape_for_jxa(completedAfter)
+    max_estimated_minutes_filter = "null" if maxEstimatedMinutes is None else str(maxEstimatedMinutes)
+    sort_by_filter = "null" if effective_sort_by is None else escape_for_jxa(effective_sort_by)
+    sort_order_filter = escape_for_jxa(effective_sort_order)
     query_filter = escape_for_jxa(query.strip())
     script = f"""
-const query = {query_filter}.toLowerCase();
+const queryFilter = {query_filter}.toLowerCase();
+const projectFilter = {project_filter};
+const tagNames = {tag_names_filter};
+const tagFilterMode = {tag_filter_mode_filter};
+const flaggedFilter = {flagged_filter};
+const statusFilter = {status_filter};
+const dueBeforeRaw = {due_before_filter};
+const dueAfterRaw = {due_after_filter};
+const deferBeforeRaw = {defer_before_filter};
+const deferAfterRaw = {defer_after_filter};
+const completedBeforeRaw = {completed_before_filter};
+const completedAfterRaw = {completed_after_filter};
+const maxEstimatedMinutes = {max_estimated_minutes_filter};
+const sortBy = {sort_by_filter};
+const sortOrder = {sort_order_filter};
+const now = new Date();
+const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
+const parseOptionalDate = (value, fieldName) => {{
+  if (value === null) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {{
+    throw new Error(`${{fieldName}} must be a valid ISO 8601 date string.`);
+  }}
+  return parsed;
+}};
+const dueBefore = parseOptionalDate(dueBeforeRaw, "dueBefore");
+const dueAfter = parseOptionalDate(dueAfterRaw, "dueAfter");
+const deferBefore = parseOptionalDate(deferBeforeRaw, "deferBefore");
+const deferAfter = parseOptionalDate(deferAfterRaw, "deferAfter");
+const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
+const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
+const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;
 
-const tasks = document.flattenedTasks
+const filteredTasks = document.flattenedTasks
   .filter(task => {{
     const name = (task.name || "").toLowerCase();
     const note = (task.note || "").toLowerCase();
-    return name.includes(query) || note.includes(query);
-  }})
-  .slice(0, {limit});
+    if (!(name.includes(queryFilter) || note.includes(queryFilter))) return false;
+
+    if (projectFilter !== null) {{
+      const projectName = task.containingProject ? task.containingProject.name : null;
+      if (projectName !== projectFilter) return false;
+    }}
+
+    if (tagNames !== null && tagNames.length > 0) {{
+      let tagMatches = false;
+      if (tagFilterMode === "all") {{
+        tagMatches = tagNames.every(tn => task.tags.some(t => t.name === tn));
+      }} else {{
+        tagMatches = task.tags.some(t => tagNames.includes(t.name));
+      }}
+      if (!tagMatches) return false;
+    }}
+
+    if (flaggedFilter !== null && task.flagged !== flaggedFilter) return false;
+
+    let statusMatches = false;
+    if (statusFilter === "all") {{
+      statusMatches = true;
+    }} else if (statusFilter === "completed") {{
+      statusMatches = task.completed;
+    }} else if (task.completed) {{
+      statusMatches = includeCompletedForDateFilter;
+    }} else {{
+      const dueDate = task.dueDate;
+      if (statusFilter === "available") {{
+        statusMatches = true;
+      }} else if (statusFilter === "overdue") {{
+        statusMatches = dueDate !== null && dueDate < now;
+      }} else if (statusFilter === "due_soon") {{
+        statusMatches = dueDate !== null && dueDate >= now && dueDate <= soon;
+      }}
+    }}
+    if (!statusMatches) return false;
+
+    if (dueBefore !== null && !(task.dueDate !== null && task.dueDate < dueBefore)) return false;
+    if (dueAfter !== null && !(task.dueDate !== null && task.dueDate > dueAfter)) return false;
+    if (deferBefore !== null && !(task.deferDate !== null && task.deferDate < deferBefore)) return false;
+    if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
+    if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
+    if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
+    if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;
+
+    return true;
+  }});
+
+const compareValues = (aValue, bValue, isString = false) => {{
+  if (aValue === null && bValue === null) return 0;
+  if (aValue === null) return 1;
+  if (bValue === null) return -1;
+  let left = aValue;
+  let right = bValue;
+  if (isString) {{
+    left = String(aValue).toLowerCase();
+    right = String(bValue).toLowerCase();
+  }}
+  if (left < right) return sortOrder === "asc" ? -1 : 1;
+  if (left > right) return sortOrder === "asc" ? 1 : -1;
+  return 0;
+}};
+
+const sortedTasks = sortBy === null ? filteredTasks : filteredTasks.slice().sort((a, b) => {{
+  let aValue = null;
+  let bValue = null;
+  let isString = false;
+  if (sortBy === "dueDate") {{
+    aValue = a.dueDate;
+    bValue = b.dueDate;
+  }} else if (sortBy === "deferDate") {{
+    aValue = a.deferDate;
+    bValue = b.deferDate;
+  }} else if (sortBy === "name") {{
+    aValue = a.name;
+    bValue = b.name;
+    isString = true;
+  }} else if (sortBy === "completionDate") {{
+    aValue = a.completionDate;
+    bValue = b.completionDate;
+  }} else if (sortBy === "estimatedMinutes") {{
+    aValue = a.estimatedMinutes;
+    bValue = b.estimatedMinutes;
+  }} else if (sortBy === "project") {{
+    aValue = a.containingProject ? a.containingProject.name : null;
+    bValue = b.containingProject ? b.containingProject.name : null;
+    isString = true;
+  }} else if (sortBy === "flagged") {{
+    aValue = a.flagged;
+    bValue = b.flagged;
+  }}
+  return compareValues(aValue, bValue, isString);
+}});
+
+const tasks = sortedTasks.slice(0, {limit});
 
 return tasks.map(task => {{
   const tags = task.tags.map(taskTag => taskTag.name);
