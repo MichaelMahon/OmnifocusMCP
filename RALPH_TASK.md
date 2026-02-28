@@ -185,7 +185,7 @@ Use the trait-based approach: tool functions accept `&dyn JxaRunner`
 16. [x] Create `rust/src/tools/tags.rs`:
         - `list_tags(limit: i32 = 100)` — NO status parameter
         - `create_tag(name: String, parent?: String)`
-17. [ ] Create `rust/src/tools/folders.rs`:
+17. [x] Create `rust/src/tools/folders.rs`:
         - `list_folders(limit: i32 = 100)`
 18. [ ] Create `rust/src/tools/forecast.rs`:
         - `get_forecast(limit: i32 = 100)` — param is `limit`, NOT `days`

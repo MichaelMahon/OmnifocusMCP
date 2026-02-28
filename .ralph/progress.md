@@ -379,3 +379,10 @@ This is how Ralph maintains continuity across iterations.
 - ran the Rust task test command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
 - marked criterion 16 complete in `RALPH_TASK.md`
 - next focus: criterion 17 (`rust/src/tools/folders.rs`)
+
+### 2026-02-28 11:06:41
+- completed criterion 17 by implementing `rust/src/tools/folders.rs` with `list_folders(limit)` and Python-parity OmniJS for folder hierarchy and project counts
+- kept required validation parity (`limit > 0`) and returned OmniJS payload through shared JXA runner
+- ran the Rust task test command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 17 complete in `RALPH_TASK.md`
+- next focus: criterion 18 (`rust/src/tools/forecast.rs`)
