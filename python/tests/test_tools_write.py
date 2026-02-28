@@ -47,7 +47,15 @@ def mock_server_run_omnijs(
         return state["result"]
 
     monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
-
+    for module_name in (
+        "omnifocus_mcp.tools.tasks",
+        "omnifocus_mcp.tools.projects",
+        "omnifocus_mcp.tools.tags",
+        "omnifocus_mcp.tools.folders",
+        "omnifocus_mcp.tools.forecast",
+        "omnifocus_mcp.tools.perspectives",
+    ):
+        monkeypatch.setattr(importlib.import_module(module_name), "run_omnijs", fake_run_omnijs)
     def configure(result: Any) -> dict[str, Any]:
         state["result"] = result
         return {"state": state, "server": server_module}
@@ -333,6 +341,15 @@ def mock_server_run_omnijs(
         return state["result"]
 
     monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
+    for module_name in (
+        "omnifocus_mcp.tools.tasks",
+        "omnifocus_mcp.tools.projects",
+        "omnifocus_mcp.tools.tags",
+        "omnifocus_mcp.tools.folders",
+        "omnifocus_mcp.tools.forecast",
+        "omnifocus_mcp.tools.perspectives",
+    ):
+        monkeypatch.setattr(importlib.import_module(module_name), "run_omnijs", fake_run_omnijs)
 
     def configure(result: Any) -> dict[str, Any]:
         state["result"] = result

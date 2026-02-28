@@ -13,18 +13,17 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from omnifocus_mcp.jxa import run_omnijs
-from omnifocus_mcp.server import (
+from omnifocus_mcp.tools.folders import list_folders
+from omnifocus_mcp.tools.forecast import get_forecast
+from omnifocus_mcp.tools.perspectives import list_perspectives
+from omnifocus_mcp.tools.projects import get_project, list_projects
+from omnifocus_mcp.tools.tags import list_tags
+from omnifocus_mcp.tools.tasks import (
     complete_task,
     create_task,
     delete_task,
-    get_forecast,
     get_inbox,
-    get_project,
     get_task,
-    list_folders,
-    list_perspectives,
-    list_projects,
-    list_tags,
     list_tasks,
     search_tasks,
     update_task,

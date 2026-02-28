@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 0
-- Current status: Phase 2 complete. criteria 6-9 validated with passing mocked tests and passing real OmniFocus smoke test.
+- Current status: Phase 3 in progress. Python split criteria 10-13 complete with passing lint/type/tests after modularization.
 - Previous task: v1 completed (75/75), archived at `.ralph/RALPH_TASK_v1_complete.md`.
 
 ## How This Works
@@ -20,11 +20,11 @@ This is how Ralph maintains continuity across iterations.
 |-------|--------------------------------|-----------|------|
 | 1     | Real OmniFocus Smoke Test      | 1–5       | 5/5  |
 | 2     | Fix JXA Bugs                   | 6–9       | 4/4  |
-| 3     | Split Monolith Files           | 10–17     | 0/8  |
+| 3     | Split Monolith Files           | 10–17     | 4/8  |
 | 4     | Integration Tests              | 18–24     | 0/7  |
 | 5     | Final Cleanup                  | 25–28     | 0/4  |
 
-**Total: 9 / 28 criteria complete**
+**Total: 13 / 28 criteria complete**
 
 ## Key Context
 
@@ -80,6 +80,16 @@ This is how Ralph maintains continuity across iterations.
 - reran smoke test: `uv run python scripts/smoke_test.py` (0 failures)
 - marked Phase 2 criteria 6-9 complete in `RALPH_TASK.md`
 - next focus: begin Phase 3 criterion 10 (split Python monolith `server.py` to <50-line bootstrap)
+
+### 2026-02-28 10:20:00
+- split Python monolith into modular files under `python/src/omnifocus_mcp/tools/` (`tasks.py`, `projects.py`, `tags.py`, `folders.py`, `forecast.py`, `perspectives.py`)
+- added shared decorator helpers in `python/src/omnifocus_mcp/registration.py`
+- extracted `python/src/omnifocus_mcp/resources.py` and `python/src/omnifocus_mcp/prompts.py`
+- reduced `python/src/omnifocus_mcp/server.py` to a <50-line FastMCP bootstrap that imports split modules and exposes compatibility tool symbols
+- updated Python test monkeypatch fixtures to patch `run_omnijs` in split tool modules
+- ran `ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` in `python/` with 64 passing tests
+- marked criteria 10-13 complete in `RALPH_TASK.md`
+- next focus: start TypeScript split criteria 14-16
 
 ### 2026-02-28 08:49:57
 **Session 2 ended** - Agent finished naturally (26 criteria remaining)

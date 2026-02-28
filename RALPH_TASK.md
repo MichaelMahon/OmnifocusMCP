@@ -121,15 +121,15 @@ typescript/src/
 
 ### Success Criteria
 
-10. [ ] Python: `server.py` refactored to < 50 lines. Creates FastMCP
+10. [x] Python: `server.py` refactored to < 50 lines. Creates FastMCP
         instance, imports tool/resource/prompt modules that register
         themselves, exports `mcp`.
-11. [ ] Python: `tools/` directory created with separate files per entity.
+11. [x] Python: `tools/` directory created with separate files per entity.
         Each file imports `mcp` from `server` and registers its tools.
         JXA script constants live in the same file as the tool that uses them.
-12. [ ] Python: `resources.py` and `prompts.py` created with their
+12. [x] Python: `resources.py` and `prompts.py` created with their
         respective handlers extracted from the old `server.py`.
-13. [ ] Python: `ruff check src/ && ruff format --check src/ && mypy src/
+13. [x] Python: `ruff check src/ && ruff format --check src/ && mypy src/
         --strict && pytest tests/ -v` all pass. Zero test failures.
 14. [ ] TypeScript: `index.ts` refactored to < 50 lines. Creates
         McpServer, calls `register(server)` from each tool module,

@@ -7,6 +7,24 @@ from typing import Any
 
 import pytest
 
+
+def _patch_run_omnijs(
+    monkeypatch: pytest.MonkeyPatch,
+    server_module: Any,
+    fake_run_omnijs: Callable[..., Any],
+) -> None:
+    monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
+    for module_name in (
+        "omnifocus_mcp.tools.tasks",
+        "omnifocus_mcp.tools.projects",
+        "omnifocus_mcp.tools.tags",
+        "omnifocus_mcp.tools.folders",
+        "omnifocus_mcp.tools.forecast",
+        "omnifocus_mcp.tools.perspectives",
+    ):
+        monkeypatch.setattr(importlib.import_module(module_name), "run_omnijs", fake_run_omnijs)
+
+
 @pytest.fixture
 def server_module(monkeypatch: pytest.MonkeyPatch) -> Any:
     class FakeFastMCP:
@@ -45,7 +63,7 @@ def mock_server_run_omnijs(
         state["calls"].append({"script": script, "timeout_seconds": timeout_seconds})
         return state["result"]
 
-    monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
+    _patch_run_omnijs(monkeypatch, server_module, fake_run_omnijs)
 
     def configure(result: Any) -> dict[str, Any]:
         state["result"] = result
@@ -425,7 +443,7 @@ async def test_get_task_not_found_error(server_module: Any, monkeypatch: pytest.
     async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
         raise RuntimeError("Task not found: missing-id")
 
-    monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
+    _patch_run_omnijs(monkeypatch, server_module, fake_run_omnijs)
 
     with pytest.raises(RuntimeError, match="Task not found: missing-id"):
         await server_module.get_task("missing-id")
@@ -472,7 +490,7 @@ async def test_daily_review_prompt_renders_structure_and_fetches_sections(
         scripts.append(script)
         return []
 
-    monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
+    _patch_run_omnijs(monkeypatch, server_module, fake_run_omnijs)
 
     prompt = await server_module.daily_review()
 
@@ -498,7 +516,7 @@ async def test_weekly_review_prompt_renders_structure_and_fetches_data(
         scripts.append(script)
         return []
 
-    monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
+    _patch_run_omnijs(monkeypatch, server_module, fake_run_omnijs)
 
     prompt = await server_module.weekly_review()
 
@@ -522,7 +540,7 @@ async def test_inbox_processing_prompt_renders_structure_and_fetches_inbox(
         scripts.append(script)
         return [{"id": "i1", "name": "Inbox item"}]
 
-    monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
+    _patch_run_omnijs(monkeypatch, server_module, fake_run_omnijs)
 
     prompt = await server_module.inbox_processing()
 
@@ -559,7 +577,7 @@ async def test_project_planning_prompt_renders_structure_and_fetches_project_sta
             }
         return [{"id": "t1", "name": "Next action"}]
 
-    monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
+    _patch_run_omnijs(monkeypatch, server_module, fake_run_omnijs)
 
     prompt = await server_module.project_planning("Alpha")
 
@@ -583,7 +601,7 @@ async def test_server_handles_rapid_sequential_tool_calls(
         calls.append(script)
         return [{"id": "t1", "name": "Task"}]
 
-    monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
+    _patch_run_omnijs(monkeypatch, server_module, fake_run_omnijs)
 
     responses: list[str] = []
     for _ in range(50):
