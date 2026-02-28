@@ -505,6 +505,38 @@ async def test_get_folder_validation_error_criterion16(server_module: Any) -> No
         await server_module.get_folder(folder_name_or_id="   ")
 
 
+@pytest.mark.asyncio
+async def test_update_folder_happy_path_criterion17(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "folder-1", "name": "Areas", "status": "dropped"}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.update_folder(folder_name_or_id="folder-1", name="Areas", status="dropped")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const folderFilter = "folder-1";' in script
+    assert 'const newName = "Areas";' in script
+    assert 'const statusValue = "dropped";' in script
+    assert "Folder.Status.Dropped" in script
+    assert "folder.status = targetStatus;" in script
+
+
+@pytest.mark.asyncio
+async def test_update_folder_validation_error_criterion17(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="folder_name_or_id must not be empty."):
+        await server_module.update_folder(folder_name_or_id="   ", name="Areas")
+    with pytest.raises(ValueError, match="name must not be empty when provided."):
+        await server_module.update_folder(folder_name_or_id="folder-1", name="   ")
+    with pytest.raises(ValueError, match="status must be one of: active, dropped."):
+        await server_module.update_folder(folder_name_or_id="folder-1", status="on_hold")
+    with pytest.raises(ValueError, match="at least one field must be provided: name or status."):
+        await server_module.update_folder(folder_name_or_id="folder-1")
+
+
 @pytest.fixture
 def server_module(monkeypatch: pytest.MonkeyPatch) -> Any:
     class FakeFastMCP:
