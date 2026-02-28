@@ -312,7 +312,7 @@ identical — only the server framework and subprocess calls change.
 
 ### Success Criteria
 
-60. [ ] `typescript/package.json` with `@modelcontextprotocol/sdk`, `zod`,
+60. [x] `typescript/package.json` with `@modelcontextprotocol/sdk`, `zod`,
         dev deps (`typescript`, `@types/node`, `vitest`). `"type": "module"`.
         Scripts: `build`, `start`, `dev`, `test`, `lint`.
 61. [ ] `typescript/tsconfig.json` targets ES2022 / NodeNext, outputs `dist/`.
