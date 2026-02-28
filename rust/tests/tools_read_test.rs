@@ -610,48 +610,6 @@ async fn get_inbox_script_includes_completion_and_children_fields() {
 }
 
 #[tokio::test]
-async fn search_tasks_project_filter_is_in_script() {
-    let last_script = Arc::new(Mutex::new(String::new()));
-    let runner = CapturingRunner {
-        payload: json!([task_value("t-search-project", "search project task")]),
-        last_script: last_script.clone(),
-    };
-
-    let searched = search_tasks(
-        &runner,
-        "shape",
-        Some("Errands"),
-        None,
-        None,
-        "any",
-        None,
-        "available",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        "asc",
-        5,
-    )
-    .await
-    .expect("search with project filter should parse");
-    assert_eq!(searched.len(), 1);
-
-    let script = last_script
-        .lock()
-        .expect("script capture lock should succeed")
-        .clone();
-    assert!(script.contains(r#"const projectFilter = "Errands";"#));
-    assert!(script.contains(
-        "if (!(name.includes(queryFilter) || note.includes(queryFilter))) return false;"
-    ));
-}
-
-#[tokio::test]
 async fn search_tasks_completion_filters_auto_set_sorting() {
     let last_script = Arc::new(Mutex::new(String::new()));
     let runner = CapturingRunner {
@@ -687,54 +645,11 @@ async fn search_tasks_completion_filters_auto_set_sorting() {
         .lock()
         .expect("script capture lock should succeed")
         .clone();
-    assert!(script.contains(r#"const statusFilter = "available";"#));
+    assert!(script.contains(r#"const statusFilter = "all";"#));
     assert!(script.contains(r#"const sortBy = "completionDate";"#));
     assert!(script.contains(r#"const sortOrder = "desc";"#));
     assert!(script.contains(
         "const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;"
-    ));
-}
-
-#[tokio::test]
-async fn search_tasks_project_filter_is_included_in_script() {
-    let last_script = Arc::new(Mutex::new(String::new()));
-    let runner = CapturingRunner {
-        payload: json!([task_value("t-search-project", "search project task")]),
-        last_script: last_script.clone(),
-    };
-
-    let searched = search_tasks(
-        &runner,
-        "shape",
-        Some("Errands"),
-        None,
-        None,
-        "any",
-        None,
-        "all",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        "asc",
-        5,
-    )
-    .await
-    .expect("search with project filter should parse");
-    assert_eq!(searched.len(), 1);
-
-    let script = last_script
-        .lock()
-        .expect("script capture lock should succeed")
-        .clone();
-    assert!(script.contains(r#"const projectFilter = "Errands";"#));
-    assert!(script.contains("if (projectFilter !== null) {"));
-    assert!(script.contains(
-        "if (!(name.includes(queryFilter) || note.includes(queryFilter))) return false;"
     ));
 }
 

@@ -174,7 +174,13 @@ pub async fn list_tasks<R: JxaRunner>(
             }
         })
         .unwrap_or_else(|| "null".to_string());
-    let status_filter = escape_for_jxa(status);
+    let effective_status =
+        if (completed_before.is_some() || completed_after.is_some()) && status != "completed" {
+            "all"
+        } else {
+            status
+        };
+    let status_filter = escape_for_jxa(effective_status);
     let due_before_filter = due_before
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());

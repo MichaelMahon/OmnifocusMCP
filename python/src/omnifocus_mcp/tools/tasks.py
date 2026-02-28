@@ -48,9 +48,7 @@ async def list_tasks(
     tags: list[str] | None = None,
     tagFilterMode: Literal["any", "all"] = "any",
     flagged: bool | None = None,
-    status: Literal[
-        "available", "due_soon", "overdue", "completed", "all"
-    ] = "available",
+    status: Literal["available", "due_soon", "overdue", "completed", "all"] = "all",
     dueBefore: str | None = None,
     dueAfter: str | None = None,
     deferBefore: str | None = None,
