@@ -374,3 +374,9 @@ Reading even two full files will blow your budget and trigger rotation.
 
 ### 2026-02-28 14:45:35
 **Session 34 started** (model: auto)
+
+### 2026-02-28 14:46:31
+**Session 34 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 14:46:33
+**Session 35 started** (model: auto)
