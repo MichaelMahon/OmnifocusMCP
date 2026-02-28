@@ -4146,5 +4146,229 @@ ${JSON.stringify(availableTasks)}
   }
 );
 
+server.resource("inbox_resource", "omnifocus://inbox", async (uri) => {
+  try {
+    const data = await fetchInboxData(100);
+    return {
+      contents: [
+        {
+          uri: uri.toString(),
+          mimeType: "application/json",
+          text: JSON.stringify(data),
+        },
+      ],
+    };
+  } catch (error: unknown) {
+    const message = normalizeError(error);
+    return {
+      contents: [
+        {
+          uri: uri.toString(),
+          mimeType: "application/json",
+          text: JSON.stringify({ error: message }),
+        },
+      ],
+    };
+  }
+});
+
+server.resource("today_resource", "omnifocus://today", async (uri) => {
+  try {
+    const data = await fetchForecastData(100);
+    return {
+      contents: [
+        {
+          uri: uri.toString(),
+          mimeType: "application/json",
+          text: JSON.stringify(data),
+        },
+      ],
+    };
+  } catch (error: unknown) {
+    const message = normalizeError(error);
+    return {
+      contents: [
+        {
+          uri: uri.toString(),
+          mimeType: "application/json",
+          text: JSON.stringify({ error: message }),
+        },
+      ],
+    };
+  }
+});
+
+server.resource("projects_resource", "omnifocus://projects", async (uri) => {
+  try {
+    const data = await fetchProjectsData(100);
+    return {
+      contents: [
+        {
+          uri: uri.toString(),
+          mimeType: "application/json",
+          text: JSON.stringify(data),
+        },
+      ],
+    };
+  } catch (error: unknown) {
+    const message = normalizeError(error);
+    return {
+      contents: [
+        {
+          uri: uri.toString(),
+          mimeType: "application/json",
+          text: JSON.stringify({ error: message }),
+        },
+      ],
+    };
+  }
+});
+
+server.prompt(
+  "daily_review",
+  "daily planning prompt with due-soon, overdue, and flagged tasks.",
+  async () => {
+    const dueSoon = await fetchTasksData({ status: "due_soon", limit: 25 });
+    const overdue = await fetchTasksData({ status: "overdue", limit: 25 });
+    const flagged = await fetchTasksData({ flagged: true, status: "all", limit: 25 });
+
+    const text = `run a focused daily review using the task data below.
+
+1) identify the highest-risk overdue items.
+2) review due-soon tasks and sequence today's execution.
+3) evaluate flagged work and confirm urgency.
+4) produce exactly three top priorities for today with short rationale.
+5) call out anything that should be deferred, delegated, or dropped.
+
+overdue_tasks_json:
+${JSON.stringify(overdue)}
+
+due_soon_tasks_json:
+${JSON.stringify(dueSoon)}
+
+flagged_tasks_json:
+${JSON.stringify(flagged)}
+`;
+
+    return {
+      messages: [{ role: "user", content: { type: "text", text: text } }],
+    };
+  }
+);
+
+server.prompt(
+  "weekly_review",
+  "weekly review prompt with active projects and next-action coverage.",
+  async () => {
+    const activeProjects = await fetchProjectsData(500);
+    const availableTasks = await fetchTasksData({ status: "available", limit: 1000 });
+
+    const text = `run a gtd-style weekly review using the data below.
+
+1) review all active projects and classify each as:
+   - on track
+   - at risk
+   - stalled (no clear next action)
+2) identify stalled projects by checking whether each project has at least one available next action.
+3) propose the next concrete action for every stalled project.
+4) highlight projects that need defer/due date updates or scope adjustments.
+5) produce a concise weekly plan:
+   - top 5 project priorities
+   - key risks/blockers
+   - cleanup actions (drop, defer, delegate, or someday/maybe)
+
+active_projects_json:
+${JSON.stringify(activeProjects)}
+
+available_tasks_json:
+${JSON.stringify(availableTasks)}
+`;
+
+    return {
+      messages: [{ role: "user", content: { type: "text", text: text } }],
+    };
+  }
+);
+
+server.prompt(
+  "inbox_processing",
+  "inbox processing prompt that drives one-by-one clarification decisions.",
+  async () => {
+    const inboxItems = await fetchInboxData(200);
+    const text = `run a gtd inbox processing session using the inbox data below.
+
+for each inbox item, guide a decision in this order:
+1) clarify desired outcome and next action.
+2) decide if it should be deleted, deferred, delegated, or kept.
+3) if kept, assign the best target project (or keep in inbox if truly unassigned).
+4) propose relevant tags and whether it should be flagged.
+5) suggest due/defer dates only when there is a real deadline or start date.
+6) suggest estimated minutes when the task is actionable.
+
+respond with:
+- a prioritized processing queue
+- concrete update recommendations per item
+- a short batch action plan for the first 5 items
+
+inbox_items_json:
+${JSON.stringify(inboxItems)}
+`;
+
+    return {
+      messages: [{ role: "user", content: { type: "text", text: text } }],
+    };
+  }
+);
+
+server.prompt(
+  "project_planning",
+  "project planning prompt that turns a project into actionable next steps.",
+  { project: z.string().min(1) },
+  async ({ project }) => {
+    const projectName = project.trim();
+    if (projectName === "") {
+      throw new Error("project must not be empty.");
+    }
+
+    const projectDetails = await fetchProjectData(projectName);
+    const availableTasks = await fetchTasksData({
+      project: projectName,
+      status: "available",
+      limit: 500,
+    });
+
+    const text = `plan this project into clear executable work.
+
+project name:
+${projectName}
+
+planning goals:
+1) summarize the project outcome in one concise sentence.
+2) evaluate current task coverage and identify missing steps.
+3) convert vague items into concrete next actions (verb-first, observable).
+4) sequence work logically (dependencies first, then parallelizable actions).
+5) estimate effort (minutes/hours) for each next action and flag high-risk items.
+6) recommend what to do now, next, later, and what to defer/drop.
+
+output format:
+- project summary
+- work breakdown with columns:
+  action, estimate, priority, dependency, suggested tags, due/defer recommendation, rationale
+- first 3 actions to execute immediately
+- risk/blocker list with mitigation ideas
+
+project_details_json:
+${JSON.stringify(projectDetails)}
+
+project_available_tasks_json:
+${JSON.stringify(availableTasks)}
+`;
+
+    return {
+      messages: [{ role: "user", content: { type: "text", text: text } }],
+    };
+  }
+);
+
 const transport = new StdioServerTransport();
 await server.connect(transport);

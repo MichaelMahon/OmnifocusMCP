@@ -4,7 +4,7 @@
 
 ## Summary
 
-- Iterations completed: 32
+- Iterations completed: 37
 - Current status: Phase 7 in progress (criterion 67 complete; next 68).
 
 ## How This Works
@@ -23,10 +23,10 @@ This is how Ralph maintains continuity across iterations.
 | 4     | Python: Write Tools + Tests       | 29–43     | 15/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 10/10 |
 | 6     | Python: Polish                    | 54–59     | 6/6  |
-| 7     | TypeScript: Full Port + Tests     | 60–71     | 7/12 |
+| 7     | TypeScript: Full Port + Tests     | 60–71     | 8/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 66 / 75 criteria complete**
+**Total: 67 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -930,6 +930,14 @@ This is how Ralph maintains continuity across iterations.
 ### 2026-02-27 23:27:44
 **Session 36 ended** - 🔄 Context rotation (token limit reached)
 
+### 2026-02-27 23:28:37
+**Session 34 update**
+- implemented phase 7 criterion 65 in `typescript/src/index.ts` by adding:
+  - resources: `omnifocus://inbox`, `omnifocus://today`, `omnifocus://projects`
+  - prompts: `daily_review`, `weekly_review`, `inbox_processing`, `project_planning`
+- added TypeScript helper data fetchers used by resources/prompts to mirror Python behavior
+- next up: phase 7 criterion 66 (`typescript/README.md` install and client config docs)
+
 ### 2026-02-27 23:27:46
 **Session 37 started** (model: auto)
 
@@ -938,3 +946,15 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-27 23:28:12
 **Session 38 started** (model: auto)
+
+### 2026-02-27 23:28:07
+**Session 38 update**
+- completed phase 7 criterion 67 by verifying `typescript/package.json` includes a `bin` mapping:
+  - `"omnifocus-mcp-typescript": "dist/index.js"`
+- re-ran full validation command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 7 criterion 68 (TypeScript `escapeForJxa` adversarial-input tests)
+
+### 2026-02-27 23:28:41
+**Session 38 ended** - 🔄 Context rotation (token limit reached)
