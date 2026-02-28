@@ -595,3 +595,25 @@ This is how Ralph maintains continuity across iterations.
   - rust: `cargo fmt --check && cargo clippy -- -D warnings && cargo test get_inbox_script_includes_completion_and_children_fields -- --nocapture && cargo test list_tasks_date_filter_script_contains_expected_logic -- --nocapture && cargo test search_tasks_script_includes_completion_and_children_fields -- --nocapture && cargo test get_forecast_script_includes_deferred_due_this_week_counts_and_enriched_fields_variant -- --nocapture`
 - marked criterion 23 complete in `RALPH_TASK.md`
 - next: criterion 24 (`effectiveDueDate`, `effectiveDeferDate`, `effectiveFlagged` on `get_task` across all 3 implementations)
+
+### 2026-02-28 15:29:08
+- strengthened criterion 23 test evidence for enum validity across all 3 implementations:
+  - python: `python/tests/test_tools_read.py` now asserts parsed `taskStatus` is present and in the expected enum set
+  - typescript: `typescript/tests/tools-representative.test.ts` now validates parsed `taskStatus` and checks enum membership
+  - rust: `rust/tests/tools_read_test.rs` now validates parsed `task_status` enum membership in read-task happy path
+- reran the full required gate successfully:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd typescript && npx tsc --noEmit && npm test`
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+- confirmed `RALPH_TASK.md` criterion 23 is marked complete
+- next: criterion 24 (`effectiveDueDate`, `effectiveDeferDate`, `effectiveFlagged` on `get_task` across all 3 implementations)
+
+### 2026-02-28 15:29:40
+- finalized criterion 23 with explicit taskStatus coverage in python/rust read-tool tests and forecast payload checks
+- confirmed `taskStatus` mapping is present for `get_inbox`, `list_tasks`, `search_tasks`, `get_task`, `list_subtasks`, and `get_forecast` in all 3 implementations
+- ran full required gate successfully:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd typescript && npx tsc --noEmit && npm test`
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+- `RALPH_TASK.md` criterion 23 is checked
+- next: criterion 24 (`effectiveDueDate`, `effectiveDeferDate`, `effectiveFlagged` on `get_task`)
