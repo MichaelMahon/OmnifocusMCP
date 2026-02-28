@@ -33,7 +33,7 @@ use crate::{
             complete_project, create_project, delete_project, get_project, list_projects,
             move_project, set_project_status, uncomplete_project, update_project,
         },
-        tags::{create_tag, list_tags},
+        tags::{create_tag, list_tags, update_tag},
         tasks::{
             complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
             delete_tasks_batch, get_inbox, get_task, list_subtasks, list_tasks, move_task,
@@ -205,6 +205,13 @@ struct UpdateProjectParams {
 struct CreateTagParams {
     name: String,
     parent: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct UpdateTagParams {
+    tag_name_or_id: String,
+    name: Option<String>,
+    status: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -636,6 +643,22 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         let result = create_tag(self.runner.as_ref(), &params.name, params.parent.as_deref())
             .await
             .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "update a tag by id or name.")]
+    async fn update_tag(
+        &self,
+        Parameters(params): Parameters<UpdateTagParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = update_tag(
+            self.runner.as_ref(),
+            &params.tag_name_or_id,
+            params.name.as_deref(),
+            params.status.as_deref(),
+        )
+        .await
+        .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 

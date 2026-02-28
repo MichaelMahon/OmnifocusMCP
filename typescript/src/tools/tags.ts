@@ -145,4 +145,76 @@ return {
       }
     }
   );
+
+  server.tool(
+    "update_tag",
+    "update a tag by id or name.",
+    {
+      tag_name_or_id: z.string().min(1),
+      name: z.string().nullable().optional(),
+      status: z.enum(["active", "on_hold", "dropped"]).nullable().optional(),
+    },
+    async ({ tag_name_or_id, name, status }) => {
+      try {
+        if (tag_name_or_id.trim() === "") {
+          throw new Error("tag_name_or_id must not be empty.");
+        }
+        if (name !== undefined && name !== null && name.trim() === "") {
+          throw new Error("name must not be empty when provided.");
+        }
+        if (name == null && status == null) {
+          throw new Error("at least one field must be provided: name or status.");
+        }
+
+        const tagFilter = escapeForJxa(tag_name_or_id.trim());
+        const newName = name == null ? "null" : escapeForJxa(name.trim());
+        const statusValue = status == null ? "null" : escapeForJxa(status);
+        const script = `
+const tagFilter = ${tagFilter};
+const newName = ${newName};
+const statusValue = ${statusValue};
+
+const tag = document.flattenedTags.find(
+  t => t.id.primaryKey === tagFilter || t.name === tagFilter
+);
+if (!tag) {
+  throw new Error(\`Tag not found: \${tagFilter}\`);
+}
+
+if (newName !== null) {
+  tag.name = newName;
+}
+
+if (statusValue !== null) {
+  let targetStatus;
+  if (statusValue === "active") {
+    targetStatus = Tag.Status.Active;
+  } else if (statusValue === "on_hold") {
+    targetStatus = Tag.Status.OnHold;
+  } else if (statusValue === "dropped") {
+    targetStatus = Tag.Status.Dropped;
+  } else {
+    throw new Error(\`Invalid status: \${statusValue}\`);
+  }
+  tag.status = targetStatus;
+}
+
+const normalizeTagStatus = (tag) => {
+  const rawStatus = String(tag.status || "").toLowerCase().trim();
+  if (rawStatus === "") return "active";
+  return rawStatus.replace(/\\s+/g, "_");
+};
+
+return {
+  id: tag.id.primaryKey,
+  name: tag.name,
+  status: normalizeTagStatus(tag)
+};
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
 }

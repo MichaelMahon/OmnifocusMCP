@@ -12,7 +12,7 @@ use omnifocus_mcp::{
             complete_project, create_project, delete_project, move_project, set_project_status,
             uncomplete_project, update_project,
         },
-        tags::create_tag,
+        tags::{create_tag, update_tag},
         tasks::{
             complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
             delete_tasks_batch, move_task, set_task_repetition, uncomplete_task, update_task,
@@ -225,6 +225,11 @@ async fn write_project_and_tag_tools_happy_path() {
         .await
         .expect("create_tag should succeed");
     assert_eq!(created_tag["id"], "p1");
+
+    let updated_tag = update_tag(&runner, "p1", Some("next"), Some("on_hold"))
+        .await
+        .expect("update_tag should succeed");
+    assert_eq!(updated_tag["id"], "p1");
 }
 
 #[tokio::test]
@@ -359,6 +364,18 @@ async fn validation_errors_for_write_tools() {
     ));
     assert!(matches!(
         create_tag(&runner, "name", Some("   ")).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        update_tag(&runner, "   ", Some("name"), None).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        update_tag(&runner, "tag-id", None, None).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        update_tag(&runner, "tag-id", None, Some("inactive")).await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
@@ -689,6 +706,31 @@ async fn move_project_script_moves_to_folder_or_library() {
     assert!(folder_script.contains("moveSections([project], destination);"));
     assert!(top_level_script.contains("const folderName = null;"));
     assert!(top_level_script.contains("if (folderName === null) return library.ending;"));
+}
+
+#[tokio::test]
+async fn update_tag_script_sets_name_and_status() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "tag-1", "name": "Next", "status": "on_hold"}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = update_tag(&runner, "tag-1", Some("Next"), Some("on_hold")).await;
+    assert!(result.is_ok());
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains("const tagFilter = \"tag-1\";"));
+    assert!(captured.contains("const newName = \"Next\";"));
+    assert!(captured.contains("const statusValue = \"on_hold\";"));
+    assert!(captured.contains("Tag.Status.OnHold"));
+    assert!(captured.contains("tag.status = targetStatus;"));
 }
 
 #[tokio::test]

@@ -208,7 +208,7 @@ Reference implementations:
 
 ### Success Criteria
 
-13. [ ] **`update_tag`** — all 3 implementations.
+13. [x] **`update_tag`** — all 3 implementations.
         - **Input:** `tag_name_or_id: str` (non-empty),
           `name: str | null` (new name), `status: str | null`
           (one of: "active", "on_hold", "dropped")

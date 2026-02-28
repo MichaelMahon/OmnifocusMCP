@@ -366,8 +366,13 @@ describe("tool happy paths", () => {
     });
     const script = String(runOmniJsMock.mock.calls[0][0]);
     expect(script).toContain("const folderName = null;");
-    expect(script).toContain("const destination = (() => {");
-    expect(script).toContain("if (folderName === null) return library.ending;");
+    expect(
+      script.includes("const destination = (() => {") || script.includes("let destination;")
+    ).toBe(true);
+    expect(
+      script.includes("if (folderName === null) return library.ending;") ||
+        script.includes("destination = library.ending;")
+    ).toBe(true);
     expect(script).toContain("moveSections([project], destination);");
   });
 

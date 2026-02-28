@@ -1418,3 +1418,22 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 12:52:43
 **Session 32 started** (model: auto)
+
+### 2026-02-28 15:25:00
+- completed criterion 13 (`update_tag`) across Python -> TypeScript -> Rust with aligned input contract (`tag_name_or_id`, optional `name`, optional `status`) and status enum mapping (`active`, `on_hold`, `dropped`)
+- added `update_tag` implementations and wiring:
+  - Python: `python/src/omnifocus_mcp/tools/tags.py` + export in `python/src/omnifocus_mcp/server.py`
+  - TypeScript: `typescript/src/tools/tags.ts` registration with handler-level validation parity
+  - Rust: `rust/src/tools/tags.rs` + server wiring in `rust/src/server.rs` (`UpdateTagParams` + tool handler)
+- added criterion-specific tests:
+  - `python/tests/test_tools_write.py` (`update_tag` happy path + validation)
+  - `typescript/tests/tools-happy.test.ts` (`update_tag` happy path + missing-fields error)
+  - `rust/tests/tools_write_test.rs` (`update_tag` happy path, validation, script assertions)
+- marked criterion 13 complete in `RALPH_TASK.md`
+- next focus: criterion 14 (`delete_tag` in Python -> TypeScript -> Rust)
+
+### 2026-02-28 12:53:12
+**Session 32 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 12:53:14
+**Session 33 started** (model: auto)
