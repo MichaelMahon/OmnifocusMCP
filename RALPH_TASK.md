@@ -308,7 +308,7 @@ distribution.
 37. [x] `cargo build --release` produces a working binary at
         `rust/target/release/omnifocus-mcp`. Verify it starts and
         responds to `--version`.
-38. [ ] Create `.github/workflows/release-rust.yml`:
+38. [x] Create `.github/workflows/release-rust.yml`:
         - Trigger: push tag matching `rust-v*`
         - Jobs: build on `macos-latest` (Apple Silicon) and
           `macos-13` (Intel) — or use cross-compilation with

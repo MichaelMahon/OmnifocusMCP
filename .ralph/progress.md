@@ -666,3 +666,10 @@ This is how Ralph maintains continuity across iterations.
 - retained explicit teardown strategy (cleanup at test start and end) in integration tests for criterion 36
 - reran required rust task command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
 - next focus: begin Phase 5 criterion 37 (`cargo build --release` and release binary verification)
+
+### 2026-02-28 12:06:00
+- revalidated criterion 34 with `cd rust && cargo test --features integration` (`5 passed` with real OmniFocus)
+- confirmed criterion 37 release binary behavior: `cd rust && cargo build --release`, `./target/release/omnifocus-mcp --version`, and `echo '{}' | ./target/release/omnifocus-mcp` (clean startup/shutdown)
+- completed criterion 38 by adding `.github/workflows/release-rust.yml` for `rust-v*` tags, dual macOS builds (arm64 + x86_64), tarball packaging, SHA256 generation, and GitHub Release publishing
+- marked criterion 38 complete in `RALPH_TASK.md`
+- next focus: criterion 39 (`homebrew/omnifocus-mcp.rb`)
