@@ -5,9 +5,9 @@
 ## Summary
 
 - Current task: OmniFocus MCP — Superior read-side filtering, sorting, and aggregation
-- Current status: Phase 1 complete. Phase 2 criteria 7-9 complete; moving to Phase 3.
-- Next criterion: **10** — add `completionDate` and `hasChildren` to `get_inbox`
-- Remaining: criteria 10-36 (27 criteria across Phases 3-11)
+- Current status: Phase 1 complete. Phase 2 complete. Phase 3 criterion 10 complete; continuing Phase 3.
+- Next criterion: **11** — add status filter and sorting to `list_tags`
+- Remaining: criteria 11-36 (26 criteria across Phases 3-11)
 
 ## How This Works
 
@@ -21,7 +21,7 @@ This is how Ralph maintains continuity across iterations.
 |-------|------------------------------------|----------|------|
 | 1     | Enhanced list_tasks                | 1–6      | 6/6  |
 | 2     | Enhanced list_projects/get_project | 7–9      | 3/3  |
-| 3     | Enhanced get_inbox/list_tags/search| 10–13    | 0/4  |
+| 3     | Enhanced get_inbox/list_tags/search| 10–13    | 1/4  |
 | 4     | Aggregate Count Tools              | 14–16    | 0/3  |
 | 5     | Enhanced get_forecast              | 17–18    | 0/2  |
 | 6     | Tests and Parity Verification      | 19–20    | 0/2  |
@@ -31,7 +31,7 @@ This is how Ralph maintains continuity across iterations.
 | 10    | Duplicate Task                     | 32–33    | 0/2  |
 | 11    | Final Parity & Docs                | 34–36    | 0/3  |
 
-**Total: 9 / 36 criteria complete**
+**Total: 10 / 36 criteria complete**
 
 ## Key Context
 
@@ -145,3 +145,16 @@ This is how Ralph maintains continuity across iterations.
 - reran full gate successfully: python lint+format+mypy+pytest, typescript typecheck+tests, rust fmt+clippy+tests
 - marked criterion 9 complete in `RALPH_TASK.md`
 - next: criterion 10 (`get_inbox` response fields `completionDate` and `hasChildren`)
+
+### 2026-02-28 15:00:05
+- verified criterion 10 implementation parity: `get_inbox` returns `completionDate` and `hasChildren` in python/typescript/rust
+- verified criterion-10 test coverage exists in all three implementations
+- reused fresh full-gate pass from this session (all python/typescript/rust checks green)
+- marked criterion 10 complete in `RALPH_TASK.md`
+- next: criterion 11 (`list_tags` status filter, sorting, and `totalTaskCount`)
+
+### 2026-02-28 14:58:19
+**Session 10 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 14:58:21
+**Session 11 started** (model: auto)

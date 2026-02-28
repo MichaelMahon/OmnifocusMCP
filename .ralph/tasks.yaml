@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772311988
-generated_at: 2026-02-28T20:53:09Z
+source_mtime: 1772312284
+generated_at: 2026-02-28T20:58:17Z
 
 tasks:
   - id: "line_108"
@@ -58,21 +58,21 @@ tasks:
     raw_marker: 7.
   - id: "line_231"
     line_number: 231
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **Add completion date filters and sorting to `list_projects`** —
     indent_level: 0
     raw_marker: 8.
   - id: "line_255"
     line_number: 255
-    status: pending
+    status: completed
     parallel_group: 999999
     description: All lint and test commands pass for Phase 2 (same as criterion 6).
     indent_level: 0
     raw_marker: 9.
   - id: "line_263"
     line_number: 263
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **Add `completionDate` and `hasChildren` to `get_inbox` response** —
     indent_level: 0
