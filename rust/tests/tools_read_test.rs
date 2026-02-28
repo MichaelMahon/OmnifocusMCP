@@ -1,4 +1,8 @@
-use std::{future::Future, pin::Pin};
+use std::{
+    future::Future,
+    pin::Pin,
+    sync::{Arc, Mutex},
+};
 
 use omnifocus_mcp::{
     error::OmniFocusError,
@@ -24,6 +28,24 @@ impl JxaRunner for MockRunner {
         &'a self,
         _script: &'a str,
     ) -> Pin<Box<dyn Future<Output = omnifocus_mcp::error::Result<Value>> + Send + 'a>> {
+        Box::pin(async move { Ok(self.payload.clone()) })
+    }
+}
+
+#[derive(Clone)]
+struct CapturingRunner {
+    payload: Value,
+    last_script: Arc<Mutex<String>>,
+}
+
+impl JxaRunner for CapturingRunner {
+    fn run_omnijs<'a>(
+        &'a self,
+        script: &'a str,
+    ) -> Pin<Box<dyn Future<Output = omnifocus_mcp::error::Result<Value>> + Send + 'a>> {
+        if let Ok(mut slot) = self.last_script.lock() {
+            *slot = script.to_string();
+        }
         Box::pin(async move { Ok(self.payload.clone()) })
     }
 }
@@ -75,8 +97,8 @@ async fn read_task_tools_happy_path() {
         None,
         100,
     )
-        .await
-        .expect("tasks should parse");
+    .await
+    .expect("tasks should parse");
     assert_eq!(listed.len(), 1);
     assert_eq!(listed[0].name, "listed task");
 
@@ -203,8 +225,8 @@ async fn empty_results_return_empty_vec() {
         None,
         100,
     )
-        .await
-        .expect("list tasks should parse");
+    .await
+    .expect("list tasks should parse");
     assert!(listed.is_empty());
 
     let searched = search_tasks(&empty_runner, "x", 100)
@@ -243,8 +265,8 @@ async fn malformed_json_from_jxa_produces_json_parse_error() {
         None,
         100,
     )
-        .await
-        .expect_err("invalid list payload should fail");
+    .await
+    .expect_err("invalid list payload should fail");
     assert!(matches!(list_err, OmniFocusError::JsonParse(_)));
 }
 
@@ -338,4 +360,43 @@ async fn validation_errors_for_read_tools() {
         list_perspectives(&runner, 0).await,
         Err(OmniFocusError::Validation(_))
     ));
+}
+
+#[tokio::test]
+async fn list_tasks_date_filter_script_contains_expected_logic() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-date", "dated task")]),
+        last_script: last_script.clone(),
+    };
+
+    let listed = list_tasks(
+        &runner,
+        Some("Errands"),
+        Some("Home"),
+        Some(true),
+        "available",
+        Some("2026-03-10T00:00:00Z"),
+        Some("2026-03-01T00:00:00Z"),
+        Some("2026-03-08T00:00:00Z"),
+        Some("2026-02-25T00:00:00Z"),
+        Some("2026-03-09T00:00:00Z"),
+        Some("2026-02-20T00:00:00Z"),
+        9,
+    )
+    .await
+    .expect("list tasks with date filters should parse");
+
+    assert_eq!(listed.len(), 1);
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains("const dueBeforeRaw = \"2026-03-10T00:00:00Z\";"));
+    assert!(script.contains("const completedAfterRaw = \"2026-02-20T00:00:00Z\";"));
+    assert!(script.contains(
+        "const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;"
+    ));
+    assert!(script.contains("statusMatches = includeCompletedForDateFilter;"));
+    assert!(script.contains("must be a valid ISO 8601 date string."));
 }

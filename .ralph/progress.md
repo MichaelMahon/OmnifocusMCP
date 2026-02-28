@@ -118,6 +118,18 @@ Reading even two full files will blow your budget and trigger rotation.
 ### 2026-02-28 14:24:04
 **Session 1 started** (model: auto)
 
+### 2026-02-28 14:31:00
+- started from `RALPH_TASK.md` unchecked state and completed criterion 1
+- implemented `list_tasks` date range filters in python/typescript/rust: `dueBefore`, `dueAfter`, `deferBefore`, `deferAfter`, `completedBefore`, `completedAfter`
+- added jxa-level date parsing and invalid-date errors (`must be a valid ISO 8601 date string`)
+- added auto-include-completed behavior when completion-date filters are present
+- updated tests for new script logic and invalid-date path in all three implementations
+- ran full task `test_command` successfully:
+  - python: `ruff`, `mypy`, `pytest` passed
+  - typescript: `tsc`, `vitest` passed
+  - rust: `cargo fmt --check`, `cargo clippy`, `cargo test` passed
+- next criterion: 2 (multi-tag filtering for `list_tasks`)
+
 ### 2026-02-28 14:24:36
 **Session 1 ended** - 🔄 Context rotation (token limit reached)
 

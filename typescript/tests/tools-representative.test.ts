@@ -97,6 +97,42 @@ describe("representative read and write tool handlers", () => {
     expect(JSON.parse(result.content[0].text)).toEqual([{ id: "task-2", name: "filtered" }]);
   });
 
+  test("list_tasks includes date filters and completed-date status override logic", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-date", name: "dated filter" }]);
+    const result = await getTool("list_tasks")({
+      project: "Errands",
+      tag: "Home",
+      flagged: true,
+      status: "available",
+      dueBefore: "2026-03-10T00:00:00Z",
+      dueAfter: "2026-03-01T00:00:00Z",
+      deferBefore: "2026-03-08T00:00:00Z",
+      deferAfter: "2026-02-25T00:00:00Z",
+      completedBefore: "2026-03-09T00:00:00Z",
+      completedAfter: "2026-02-20T00:00:00Z",
+      limit: 9,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const dueBeforeRaw = "2026-03-10T00:00:00Z";');
+    expect(script).toContain('const completedAfterRaw = "2026-02-20T00:00:00Z";');
+    expect(script).toContain("const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;");
+    expect(script).toContain("statusMatches = includeCompletedForDateFilter;");
+    expect(script).toContain("task.completionDate !== null && task.completionDate > completedAfter");
+    expect(script).toContain("must be a valid ISO 8601 date string.");
+    expect(JSON.parse(result.content[0].text)).toEqual([{ id: "task-date", name: "dated filter" }]);
+  });
+
+  test("list_tasks surfaces invalid date validation errors", async () => {
+    runOmniJsMock.mockRejectedValueOnce(new Error("dueBefore must be a valid ISO 8601 date string."));
+    const result = await getTool("list_tasks")({
+      dueBefore: "bad-date",
+      limit: 5,
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "dueBefore must be a valid ISO 8601 date string.",
+    });
+  });
+
   test("list_subtasks generates child query script with limit", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "sub-1", name: "child" }]);
     const result = await getTool("list_subtasks")({

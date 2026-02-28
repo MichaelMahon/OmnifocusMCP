@@ -725,8 +725,8 @@ const tasks = document.flattenedTasks
       if (projectName !== projectFilter) return false;
     }
     if (tagFilter !== null) {
-      const taskTags = task.tags.map(taskTag => taskTag.name);
-      if (!taskTags.includes(tagFilter)) return false;
+      const hasTag = task.tags.some(taskTag => taskTag.name === tagFilter);
+      if (!hasTag) return false;
     }
     if (flaggedFilter !== null && task.flagged !== flaggedFilter) return false;
     let statusMatches = false;
@@ -737,12 +737,13 @@ const tasks = document.flattenedTasks
     } else if (task.completed) {
       statusMatches = includeCompletedForDateFilter;
     } else {
+      const dueDate = task.dueDate;
       if (statusFilter === "available") {
         statusMatches = true;
-      } else {
-        const dueDate = task.dueDate;
-        if (statusFilter === "overdue") statusMatches = dueDate !== null && dueDate < now;
-        if (statusFilter === "due_soon") statusMatches = dueDate !== null && dueDate >= now && dueDate <= soon;
+      } else if (statusFilter === "overdue") {
+        statusMatches = dueDate !== null && dueDate < now;
+      } else if (statusFilter === "due_soon") {
+        statusMatches = dueDate !== null && dueDate >= now && dueDate <= soon;
       }
     }
     if (!statusMatches) return false;

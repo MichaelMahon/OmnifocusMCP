@@ -16,9 +16,21 @@ pub async fn daily_review<R: JxaRunner>(runner: &R) -> Result<String> {
         runner, None, None, None, "overdue", None, None, None, None, None, None, 25,
     )
     .await?;
-    let flagged =
-        list_tasks(runner, None, None, Some(true), "all", None, None, None, None, None, None, 25)
-            .await?;
+    let flagged = list_tasks(
+        runner,
+        None,
+        None,
+        Some(true),
+        "all",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        25,
+    )
+    .await?;
 
     let due_soon_json = serde_json::to_string(&due_soon)?;
     let overdue_json = serde_json::to_string(&overdue)?;

@@ -105,7 +105,7 @@ See individual phase criteria below.
 
 ### Success Criteria
 
-1. [ ] **Add date range filter params to `list_tasks`** — all 3 implementations.
+1. [x] **Add date range filter params to `list_tasks`** — all 3 implementations.
        - New optional params: `dueBefore`, `dueAfter`, `deferBefore`,
          `deferAfter`, `completedBefore`, `completedAfter` (all ISO 8601
          strings, all nullable).

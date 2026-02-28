@@ -79,8 +79,12 @@ async def list_tasks(
     due_after_filter = "null" if dueAfter is None else escape_for_jxa(dueAfter)
     defer_before_filter = "null" if deferBefore is None else escape_for_jxa(deferBefore)
     defer_after_filter = "null" if deferAfter is None else escape_for_jxa(deferAfter)
-    completed_before_filter = "null" if completedBefore is None else escape_for_jxa(completedBefore)
-    completed_after_filter = "null" if completedAfter is None else escape_for_jxa(completedAfter)
+    completed_before_filter = (
+        "null" if completedBefore is None else escape_for_jxa(completedBefore)
+    )
+    completed_after_filter = (
+        "null" if completedAfter is None else escape_for_jxa(completedAfter)
+    )
 
     script = f"""
 const projectFilter = {project_filter};
