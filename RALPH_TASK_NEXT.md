@@ -33,7 +33,7 @@ files. Do NOT modify `RALPH_TASK.md`. This task is docs/config only.
        The Omni Group. This is an independent, non-commercial
        open-source project."
 
-3. [ ] Update license metadata in all package manifests to `MIT`:
+3. [x] Update license metadata in all package manifests to `MIT`:
        - `python/pyproject.toml` — add `license = "MIT"` under
          `[project]` if missing.
        - `typescript/package.json` — add `"license": "MIT"` if missing
