@@ -90,6 +90,96 @@ pub async fn get_folder<R: JxaRunner>(runner: &R, folder_name_or_id: &str) -> Re
     let folder_filter = escape_for_jxa(folder_name_or_id.trim());
     let script = format!(
         r#"const folderFilter = {folder_filter};
+const folder = document.flattenedFolders.find(item => {{
+  return item.id.primaryKey === folderFilter || item.name === folderFilter;
+}});
+if (!folder) {{
+  throw new Error(`Folder not found: ${{folderFilter}}`);
+}}
+
+const normalizeStatus = (value) => {{
+  const raw = String(value || "").split(".").pop() || "";
+  return raw.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+}};
+
+return {{
+  id: folder.id.primaryKey,
+  name: folder.name,
+  status: normalizeStatus(folder.status),
+  parentName: folder.parent ? folder.parent.name : null,
+  projects: folder.projects.map(project => {{
+    return {{
+      id: project.id.primaryKey,
+      name: project.name,
+      status: normalizeStatus(project.status)
+    }};
+  }}),
+  subfolders: folder.folders.map(subfolder => {{
+    return {{
+      id: subfolder.id.primaryKey,
+      name: subfolder.name
+    }};
+  }})
+}};"#
+    );
+
+    runner.run_omnijs(&script).await
+}
+
+pub async fn get_folder<R: JxaRunner>(runner: &R, folder_name_or_id: &str) -> Result<Value> {
+    if folder_name_or_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "folder_name_or_id must not be empty.".to_string(),
+        ));
+    }
+
+    let folder_filter = escape_for_jxa(folder_name_or_id.trim());
+    let script = format!(
+        r#"const folderFilter = {folder_filter};
+
+const folder = document.flattenedFolders.find(
+  f => f.id.primaryKey === folderFilter || f.name === folderFilter
+);
+if (!folder) {{
+  throw new Error(`Folder not found: ${{folderFilter}}`);
+}}
+
+const normalizeStatus = (value) => {{
+  const rawStatus = String(value || "").toLowerCase().trim();
+  if (rawStatus === "") return "active";
+  return rawStatus.replace(/\s+/g, "_");
+}};
+
+return {{
+  id: folder.id.primaryKey,
+  name: folder.name,
+  status: normalizeStatus(folder.status),
+  parentName: folder.parent ? folder.parent.name : null,
+  projects: folder.projects.map(project => ({{
+    id: project.id.primaryKey,
+    name: project.name,
+    status: normalizeStatus(project.status)
+  }})),
+  subfolders: folder.folders.map(subfolder => ({{
+    id: subfolder.id.primaryKey,
+    name: subfolder.name
+  }}))
+}};"#
+    );
+
+    runner.run_omnijs(&script).await
+}
+
+pub async fn get_folder<R: JxaRunner>(runner: &R, folder_name_or_id: &str) -> Result<Value> {
+    if folder_name_or_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "folder_name_or_id must not be empty.".to_string(),
+        ));
+    }
+
+    let folder_filter = escape_for_jxa(folder_name_or_id.trim());
+    let script = format!(
+        r#"const folderFilter = {folder_filter};
 
 const folder = document.flattenedFolders.find(item => {{
   return item.id.primaryKey === folderFilter || item.name === folderFilter;

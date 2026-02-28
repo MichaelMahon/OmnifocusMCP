@@ -4,7 +4,7 @@ use omnifocus_mcp::{
     error::OmniFocusError,
     jxa::JxaRunner,
     tools::{
-        folders::list_folders,
+        folders::{get_folder, list_folders},
         forecast::get_forecast,
         perspectives::list_perspectives,
         projects::{get_project, list_projects},
@@ -126,6 +126,14 @@ async fn read_non_task_tools_happy_path() {
         .expect("folders should load");
     assert!(folders.is_array());
 
+    let folder_runner = MockRunner {
+        payload: json!({"id": "f1", "name": "work", "projects": [], "subfolders": []}),
+    };
+    let folder = get_folder(&folder_runner, "f1")
+        .await
+        .expect("folder should load");
+    assert_eq!(folder["id"], "f1");
+
     let forecast_runner = MockRunner {
         payload: json!({"overdue": [], "dueToday": [], "flagged": []}),
     };
@@ -231,6 +239,10 @@ async fn validation_errors_for_read_tools() {
     ));
     assert!(matches!(
         list_folders(&runner, 0).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        get_folder(&runner, "   ").await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(

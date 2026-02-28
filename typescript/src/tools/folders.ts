@@ -15,16 +15,20 @@ const folderProjectCounts = new Map();
 document.flattenedProjects.forEach(project => {
   const folder = project.folder;
   if (!folder) return;
-  const current = folderProjectCounts.get(folder.id.primaryKey) || 0;
-  folderProjectCounts.set(folder.id.primaryKey, current + 1);
+  const folderId = folder.id.primaryKey;
+  const current = folderProjectCounts.get(folderId) || 0;
+  folderProjectCounts.set(folderId, current + 1);
 });
+
 const folders = document.flattenedFolders.slice(0, ${limit});
-return folders.map(folder => ({
-  id: folder.id.primaryKey,
-  name: folder.name,
-  parentName: folder.parent ? folder.parent.name : null,
-  projectCount: folderProjectCounts.get(folder.id.primaryKey) || 0
-}));
+return folders.map(folder => {
+  return {
+    id: folder.id.primaryKey,
+    name: folder.name,
+    parentName: folder.parent ? folder.parent.name : null,
+    projectCount: folderProjectCounts.get(folder.id.primaryKey) || 0
+  };
+});
 `.trim();
         return textResult(await runOmniJs(script));
       } catch (error: unknown) {
@@ -84,63 +88,10 @@ return {
     },
     async ({ folder_name_or_id }) => {
       try {
-        const folderFilter = folder_name_or_id.trim();
-        if (!folderFilter) {
-          throw new Error("folder_name_or_id must not be empty.");
-        }
-        const escapedFolderFilter = escapeForJxa(folderFilter);
-        const script = `
-const folderFilter = ${escapedFolderFilter};
-
-const folder = document.flattenedFolders.find(
-  f => f.id.primaryKey === folderFilter || f.name === folderFilter
-);
-if (!folder) {
-  throw new Error(\`Folder not found: \${folderFilter}\`);
-}
-
-const normalizeStatus = (value) => {
-  const rawStatus = String(value || "").toLowerCase().trim();
-  if (rawStatus === "") return "active";
-  return rawStatus.replace(/\\s+/g, "_");
-};
-
-return {
-  id: folder.id.primaryKey,
-  name: folder.name,
-  status: normalizeStatus(folder.status),
-  parentName: folder.parent ? folder.parent.name : null,
-  projects: folder.projects.map(project => ({
-    id: project.id.primaryKey,
-    name: project.name,
-    status: normalizeStatus(project.status)
-  })),
-  subfolders: folder.folders.map(subfolder => ({
-    id: subfolder.id.primaryKey,
-    name: subfolder.name
-  }))
-};
-`.trim();
-        return textResult(await runOmniJs(script));
-      } catch (error: unknown) {
-        return errorResult(normalizeError(error));
-      }
-    }
-  );
-
-  server.tool(
-    "get_folder",
-    "get folder details by id or name, including direct projects and subfolders.",
-    {
-      folder_name_or_id: z.string().min(1).describe("folder id or exact folder name"),
-    },
-    async ({ folder_name_or_id }) => {
-      try {
         const folderFilterValue = folder_name_or_id.trim();
-        if (folderFilterValue === "") {
+        if (!folderFilterValue) {
           throw new Error("folder_name_or_id must not be empty.");
         }
-
         const folderFilter = escapeForJxa(folderFilterValue);
         const script = `
 const folderFilter = ${folderFilter};
@@ -178,60 +129,6 @@ return {
       id: project.id.primaryKey,
       name: project.name,
       status: normalizeProjectStatus(project)
-    };
-  }),
-  subfolders: folder.folders.map(subfolder => {
-    return {
-      id: subfolder.id.primaryKey,
-      name: subfolder.name
-    };
-  })
-};
-`.trim();
-        return textResult(await runOmniJs(script));
-      } catch (error: unknown) {
-        return errorResult(normalizeError(error));
-      }
-    }
-  );
-
-  server.tool(
-    "get_folder",
-    "get folder details with direct child projects and subfolders.",
-    {
-      folder_name_or_id: z.string().min(1).describe("folder name or id"),
-    },
-    async ({ folder_name_or_id }) => {
-      try {
-        const normalizedFolderFilter = folder_name_or_id.trim();
-        if (normalizedFolderFilter === "") {
-          throw new Error("folder_name_or_id must not be empty.");
-        }
-        const folderFilter = escapeForJxa(normalizedFolderFilter);
-        const script = `
-const folderFilter = ${folderFilter};
-const folder = document.flattenedFolders.find(item => {
-  return item.id.primaryKey === folderFilter || item.name === folderFilter;
-});
-if (!folder) {
-  throw new Error(\`Folder not found: \${folderFilter}\`);
-}
-
-const normalizeStatus = (value) => {
-  const raw = String(value || "").split(".").pop() || "";
-  return raw.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
-};
-
-return {
-  id: folder.id.primaryKey,
-  name: folder.name,
-  status: normalizeStatus(folder.status),
-  parentName: folder.parent ? folder.parent.name : null,
-  projects: folder.projects.map(project => {
-    return {
-      id: project.id.primaryKey,
-      name: project.name,
-      status: normalizeStatus(project.status)
     };
   }),
   subfolders: folder.folders.map(subfolder => {
