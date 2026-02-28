@@ -186,6 +186,20 @@ describe("tool happy paths", () => {
     expect(script).toContain("task.repetitionRule = null;");
   });
 
+  test("set_task_repetition rejects none schedule when rule is provided", async () => {
+    const handler = registeredTools.get("set_task_repetition");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      task_id: "t10",
+      rule_string: "FREQ=WEEKLY",
+      schedule_type: "none",
+    });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "schedule_type must be regularly or from_completion when rule_string is provided.",
+    });
+  });
+
   test("delete_tasks_batch returns batch deletion summary payload", async () => {
     runOmniJsMock.mockResolvedValueOnce({
       deleted_count: 2,

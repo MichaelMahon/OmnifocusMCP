@@ -490,7 +490,7 @@ async def test_uncomplete_task_happy_path(mock_server_run_omnijs: Callable[[Any]
 
 
 @pytest.mark.asyncio
-async def test_set_task_repetition_happy_path(
+async def test_set_task_repetition_happy_path_criterion5(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
     payload = {"id": "t5", "name": "Weekly task", "repetitionRule": "FREQ=WEEKLY"}
@@ -848,12 +848,13 @@ async def test_set_task_repetition_happy_path(
     script = state["calls"][0]["script"]
     assert 'const taskId = "task-1";' in script
     assert 'const ruleString = "FREQ=WEEKLY";' in script
-    assert 'const scheduleType = "regularly";' in script
-    assert "new Task.RepetitionRule(" in script
+    assert 'const scheduleTypeInput = "regularly";' in script
+    assert "Task.RepetitionScheduleType.Regularly" in script
+    assert "new Task.RepetitionRule(ruleString, null, scheduleType, null, false);" in script
 
 
 @pytest.mark.asyncio
-async def test_set_task_repetition_clear_rule(
+async def test_set_task_repetition_clear_rule_criterion5(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
     payload = {"id": "task-1", "name": "Repeating", "repetitionRule": None}
@@ -870,14 +871,14 @@ async def test_set_task_repetition_clear_rule(
 
 
 @pytest.mark.asyncio
-async def test_set_task_repetition_validation_error(server_module: Any) -> None:
+async def test_set_task_repetition_validation_error_criterion5(server_module: Any) -> None:
     with pytest.raises(
         ValueError,
-        match="schedule_type must be regularly or from_completion when rule_string is provided.",
+        match="schedule_type must be one of: regularly, from_completion, none.",
     ):
         await server_module.set_task_repetition(
             task_id="task-1",
             rule_string="FREQ=WEEKLY",
-            schedule_type="none",
+            schedule_type="invalid",
         )
 
