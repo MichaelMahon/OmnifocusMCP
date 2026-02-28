@@ -584,29 +584,26 @@ return { id: task.id.primaryKey, name: task.name, projectName: task.containingPr
 
         const objectType = escapeForJxa(object_type);
         const objectId = escapeForJxa(normalizedObjectId);
-        const textToAppend = escapeForJxa(text);
+        const textValue = escapeForJxa(text);
         const script = `
 const objectType = ${objectType};
 const objectId = ${objectId};
-const textToAppend = ${textToAppend};
+const textValue = ${textValue};
 
 let obj;
-
 if (objectType === "task") {
   obj = document.flattenedTasks.find(item => item.id.primaryKey === objectId);
-  if (!obj) {
-    throw new Error(\`Task not found: \${objectId}\`);
-  }
 } else if (objectType === "project") {
   obj = document.flattenedProjects.find(item => item.id.primaryKey === objectId);
-  if (!obj) {
-    throw new Error(\`Project not found: \${objectId}\`);
-  }
 } else {
   throw new Error(\`Invalid object_type: \${objectType}\`);
 }
 
-obj.appendStringToNote(textToAppend);
+if (!obj) {
+  throw new Error(\`\${objectType} not found: \${objectId}\`);
+}
+
+obj.appendStringToNote(textValue);
 
 return {
   id: obj.id.primaryKey,
