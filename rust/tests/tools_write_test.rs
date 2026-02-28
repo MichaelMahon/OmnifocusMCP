@@ -1,4 +1,8 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    future::Future,
+    pin::Pin,
+    sync::{Arc, Mutex},
+};
 
 use omnifocus_mcp::{
     error::OmniFocusError,
@@ -20,8 +24,11 @@ struct MockRunner {
 }
 
 impl JxaRunner for MockRunner {
-    async fn run_omnijs(&self, _script: &str) -> omnifocus_mcp::error::Result<Value> {
-        Ok(self.payload.clone())
+    fn run_omnijs<'a>(
+        &'a self,
+        _script: &'a str,
+    ) -> Pin<Box<dyn Future<Output = omnifocus_mcp::error::Result<Value>> + Send + 'a>> {
+        Box::pin(async move { Ok(self.payload.clone()) })
     }
 }
 
@@ -33,15 +40,20 @@ struct RecordingRunner {
 }
 
 impl JxaRunner for RecordingRunner {
-    async fn run_omnijs(&self, script: &str) -> omnifocus_mcp::error::Result<Value> {
-        self.scripts
-            .lock()
-            .expect("scripts lock should succeed")
-            .push(script.to_string());
-        if let Some(message) = &self.error_message {
-            return Err(OmniFocusError::OmniFocus(message.clone()));
-        }
-        Ok(self.payload.clone())
+    fn run_omnijs<'a>(
+        &'a self,
+        script: &'a str,
+    ) -> Pin<Box<dyn Future<Output = omnifocus_mcp::error::Result<Value>> + Send + 'a>> {
+        Box::pin(async move {
+            self.scripts
+                .lock()
+                .expect("scripts lock should succeed")
+                .push(script.to_string());
+            if let Some(message) = &self.error_message {
+                return Err(OmniFocusError::OmniFocus(message.clone()));
+            }
+            Ok(self.payload.clone())
+        })
     }
 }
 

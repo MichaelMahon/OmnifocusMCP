@@ -237,7 +237,7 @@ Connect everything into a working MCP server.
           `get_project(project_id_or_name)` and
           `list_tasks(project, status="available", limit=500)`.
         Prompt text must match Python output format.
-25. [ ] Create `rust/src/server.rs`:
+25. [x] Create `rust/src/server.rs`:
         - Implement MCP server using `rmcp` patterns (see SDK notes
           in preamble): `#[tool_router]` impl, `#[tool_handler]`
           impl ServerHandler, `ServerCapabilities::builder()

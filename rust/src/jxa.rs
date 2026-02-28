@@ -1,4 +1,4 @@
-use std::{sync::OnceLock, time::Duration};
+use std::{future::Future, pin::Pin, sync::OnceLock, time::Duration};
 
 use serde_json::Value;
 use tokio::{process::Command, sync::Mutex, time::timeout};
@@ -187,9 +187,11 @@ pub fn unwrap_omnijs_envelope(envelope: Value) -> Result<Value> {
     Ok(envelope_obj.get("data").cloned().unwrap_or(Value::Null))
 }
 
-#[allow(async_fn_in_trait)]
 pub trait JxaRunner: Send + Sync {
-    async fn run_omnijs(&self, script: &str) -> Result<Value>;
+    fn run_omnijs<'a>(
+        &'a self,
+        script: &'a str,
+    ) -> Pin<Box<dyn Future<Output = Result<Value>> + Send + 'a>>;
 }
 
 #[derive(Debug, Clone, Default)]
@@ -202,8 +204,11 @@ impl RealJxaRunner {
 }
 
 impl JxaRunner for RealJxaRunner {
-    async fn run_omnijs(&self, script: &str) -> Result<Value> {
-        run_omnijs(script).await
+    fn run_omnijs<'a>(
+        &'a self,
+        script: &'a str,
+    ) -> Pin<Box<dyn Future<Output = Result<Value>> + Send + 'a>> {
+        Box::pin(async move { run_omnijs(script).await })
     }
 }
 

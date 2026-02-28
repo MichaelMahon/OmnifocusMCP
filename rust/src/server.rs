@@ -5,16 +5,17 @@ use rmcp::{
     },
     model::{
         CallToolResult, Content, GetPromptRequestParams, GetPromptResult, ListPromptsResult,
-        ListResourcesResult, PaginatedRequestParams, PromptMessage, PromptMessageRole,
-        RawResource, ReadResourceRequestParams, ReadResourceResult, ResourceContents,
-        ServerCapabilities, ServerInfo,
+        ListResourcesResult, PaginatedRequestParams, PromptMessage, PromptMessageRole, RawResource,
+        ReadResourceRequestParams, ReadResourceResult, ResourceContents, ServerCapabilities,
+        ServerInfo,
     },
     prompt, prompt_handler, prompt_router, tool, tool_handler, tool_router, ErrorData as McpError,
     ServerHandler,
 };
-use rmcp::{RoleServer, service::RequestContext};
+use rmcp::{service::RequestContext, RoleServer};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::{
     error::OmniFocusError,
@@ -143,16 +144,16 @@ struct ProjectPlanningPromptParams {
 }
 
 #[derive(Clone)]
-pub struct OmniFocusServer<R: JxaRunner + Clone + Send + Sync + 'static> {
-    runner: R,
+pub struct OmniFocusServer<R: JxaRunner + Send + Sync + 'static> {
+    runner: Arc<R>,
     tool_router: ToolRouter<Self>,
     prompt_router: PromptRouter<Self>,
 }
 
-impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
+impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     pub fn new(runner: R) -> Self {
         Self {
-            runner,
+            runner: Arc::new(runner),
             tool_router: Self::tool_router(),
             prompt_router: Self::prompt_router(),
         }
@@ -173,13 +174,13 @@ fn as_call_tool_result<T: Serialize>(value: &T) -> std::result::Result<CallToolR
 }
 
 #[tool_router(router = tool_router)]
-impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
+impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     #[tool(description = "get inbox tasks from omnifocus.")]
     async fn get_inbox(
         &self,
         Parameters(params): Parameters<LimitParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = get_inbox(&self.runner, params.limit.unwrap_or(100))
+        let result = get_inbox(self.runner.as_ref(), params.limit.unwrap_or(100))
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
@@ -191,7 +192,7 @@ impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
         Parameters(params): Parameters<ListTasksParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = list_tasks(
-            &self.runner,
+            self.runner.as_ref(),
             params.project.as_deref(),
             params.tag.as_deref(),
             params.flagged,
@@ -208,7 +209,7 @@ impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<TaskIdParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = get_task(&self.runner, &params.task_id)
+        let result = get_task(self.runner.as_ref(), &params.task_id)
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
@@ -219,7 +220,7 @@ impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<SearchTasksParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = search_tasks(&self.runner, &params.query, params.limit.unwrap_or(100))
+        let result = search_tasks(self.runner.as_ref(), &params.query, params.limit.unwrap_or(100))
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
@@ -231,7 +232,7 @@ impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
         Parameters(params): Parameters<CreateTaskParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = create_task(
-            &self.runner,
+            self.runner.as_ref(),
             &params.name,
             params.project.as_deref(),
             params.note.as_deref(),
@@ -265,7 +266,7 @@ impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
                 estimated_minutes: task.estimated_minutes,
             })
             .collect();
-        let result = create_tasks_batch(&self.runner, tasks)
+        let result = create_tasks_batch(self.runner.as_ref(), tasks)
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
@@ -276,7 +277,7 @@ impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<TaskIdParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = complete_task(&self.runner, &params.task_id)
+        let result = complete_task(self.runner.as_ref(), &params.task_id)
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
@@ -288,7 +289,7 @@ impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
         Parameters(params): Parameters<UpdateTaskParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = update_task(
-            &self.runner,
+            self.runner.as_ref(),
             &params.task_id,
             params.name.as_deref(),
             params.note.as_deref(),
@@ -308,7 +309,7 @@ impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<TaskIdParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = delete_task(&self.runner, &params.task_id)
+        let result = delete_task(self.runner.as_ref(), &params.task_id)
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
@@ -319,7 +320,7 @@ impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<MoveTaskParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = move_task(&self.runner, &params.task_id, params.project.as_deref())
+        let result = move_task(self.runner.as_ref(), &params.task_id, params.project.as_deref())
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
@@ -331,7 +332,7 @@ impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
         Parameters(params): Parameters<ListProjectsParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = list_projects(
-            &self.runner,
+            self.runner.as_ref(),
             params.folder.as_deref(),
             params.status.as_deref().unwrap_or("active"),
             params.limit.unwrap_or(100),
@@ -346,7 +347,7 @@ impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<ProjectIdOrNameParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = get_project(&self.runner, &params.project_id_or_name)
+        let result = get_project(self.runner.as_ref(), &params.project_id_or_name)
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
@@ -358,7 +359,7 @@ impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
         Parameters(params): Parameters<CreateProjectParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = create_project(
-            &self.runner,
+            self.runner.as_ref(),
             &params.name,
             params.folder.as_deref(),
             params.note.as_deref(),
@@ -376,7 +377,7 @@ impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<ProjectIdOrNameParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = complete_project(&self.runner, &params.project_id_or_name)
+        let result = complete_project(self.runner.as_ref(), &params.project_id_or_name)
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
@@ -387,7 +388,7 @@ impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<LimitParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = list_tags(&self.runner, params.limit.unwrap_or(100))
+        let result = list_tags(self.runner.as_ref(), params.limit.unwrap_or(100))
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
@@ -398,7 +399,7 @@ impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<CreateTagParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = create_tag(&self.runner, &params.name, params.parent.as_deref())
+        let result = create_tag(self.runner.as_ref(), &params.name, params.parent.as_deref())
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
@@ -409,7 +410,7 @@ impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<LimitParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = list_folders(&self.runner, params.limit.unwrap_or(100))
+        let result = list_folders(self.runner.as_ref(), params.limit.unwrap_or(100))
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
@@ -420,7 +421,7 @@ impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<LimitParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = get_forecast(&self.runner, params.limit.unwrap_or(100))
+        let result = get_forecast(self.runner.as_ref(), params.limit.unwrap_or(100))
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
@@ -431,24 +432,28 @@ impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<LimitParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = list_perspectives(&self.runner, params.limit.unwrap_or(100))
+        let result = list_perspectives(self.runner.as_ref(), params.limit.unwrap_or(100))
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 }
 
-#[prompt_router(router = prompt_router)]
-impl OmniFocusServer {
+#[prompt_router]
+impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     #[prompt(description = "daily planning prompt with due-soon, overdue, and flagged tasks.")]
     async fn daily_review(&self) -> std::result::Result<Vec<PromptMessage>, McpError> {
-        let text = daily_review(&self.runner).await.map_err(to_mcp_error)?;
+        let text = daily_review(self.runner.as_ref())
+            .await
+            .map_err(to_mcp_error)?;
         Ok(vec![PromptMessage::new_text(PromptMessageRole::User, text)])
     }
 
     #[prompt(description = "weekly review prompt with active projects and next-action coverage.")]
     async fn weekly_review(&self) -> std::result::Result<Vec<PromptMessage>, McpError> {
-        let text = weekly_review(&self.runner).await.map_err(to_mcp_error)?;
+        let text = weekly_review(self.runner.as_ref())
+            .await
+            .map_err(to_mcp_error)?;
         Ok(vec![PromptMessage::new_text(PromptMessageRole::User, text)])
     }
 
@@ -456,7 +461,9 @@ impl OmniFocusServer {
         description = "inbox processing prompt that drives one-by-one clarification decisions."
     )]
     async fn inbox_processing(&self) -> std::result::Result<Vec<PromptMessage>, McpError> {
-        let text = inbox_processing(&self.runner).await.map_err(to_mcp_error)?;
+        let text = inbox_processing(self.runner.as_ref())
+            .await
+            .map_err(to_mcp_error)?;
         Ok(vec![PromptMessage::new_text(PromptMessageRole::User, text)])
     }
 
@@ -467,7 +474,7 @@ impl OmniFocusServer {
         &self,
         Parameters(params): Parameters<ProjectPlanningPromptParams>,
     ) -> std::result::Result<Vec<PromptMessage>, McpError> {
-        let text = project_planning(&self.runner, &params.project)
+        let text = project_planning(self.runner.as_ref(), &params.project)
             .await
             .map_err(to_mcp_error)?;
         Ok(vec![PromptMessage::new_text(PromptMessageRole::User, text)])
@@ -476,7 +483,7 @@ impl OmniFocusServer {
 
 #[tool_handler(router = self.tool_router)]
 #[prompt_handler(router = self.prompt_router)]
-impl ServerHandler for OmniFocusServer {
+impl<R: JxaRunner + Send + Sync + 'static> ServerHandler for OmniFocusServer<R> {
     fn get_info(&self) -> ServerInfo {
         ServerInfo {
             instructions: Some(
@@ -512,9 +519,13 @@ impl ServerHandler for OmniFocusServer {
     ) -> std::result::Result<ReadResourceResult, McpError> {
         let uri = request.uri;
         let content = match uri.as_str() {
-            INBOX_RESOURCE_URI => inbox_resource(&self.runner).await.map_err(to_mcp_error)?,
-            TODAY_RESOURCE_URI => today_resource(&self.runner).await.map_err(to_mcp_error)?,
-            PROJECTS_RESOURCE_URI => projects_resource(&self.runner)
+            INBOX_RESOURCE_URI => inbox_resource(self.runner.as_ref())
+                .await
+                .map_err(to_mcp_error)?,
+            TODAY_RESOURCE_URI => today_resource(self.runner.as_ref())
+                .await
+                .map_err(to_mcp_error)?,
+            PROJECTS_RESOURCE_URI => projects_resource(self.runner.as_ref())
                 .await
                 .map_err(to_mcp_error)?,
             _ => {

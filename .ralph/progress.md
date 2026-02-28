@@ -469,3 +469,14 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 11:16:41
 **Session 9 started** (model: auto)
+
+### 2026-02-28 11:20:00
+- completed criterion 25 by implementing `rust/src/server.rs` with `rmcp` routing and handler wiring:
+  - `#[tool_router]` + `#[tool_handler]` registration for all 19 tools
+  - `#[prompt_router]` + `#[prompt_handler]` registration for 4 prompts
+  - resource support via `list_resources` and `read_resource` for `omnifocus://inbox`, `omnifocus://today`, and `omnifocus://projects`
+- added strict MCP parameter schemas for tool/prompt inputs and JSON MCP tool responses via `CallToolResult::success(vec![Content::text(...)])`
+- updated `jxa::JxaRunner` to return boxed `Send` futures to satisfy `rmcp` macro requirements and kept all mocked test runners aligned
+- ran the Rust task test command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 25 complete in `RALPH_TASK.md`
+- next focus: criterion 26 (`rust/src/main.rs`)

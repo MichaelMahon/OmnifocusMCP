@@ -1,3 +1,5 @@
+use std::{future::Future, pin::Pin};
+
 use omnifocus_mcp::{
     error::OmniFocusError,
     jxa::JxaRunner,
@@ -18,8 +20,11 @@ struct MockRunner {
 }
 
 impl JxaRunner for MockRunner {
-    async fn run_omnijs(&self, _script: &str) -> omnifocus_mcp::error::Result<Value> {
-        Ok(self.payload.clone())
+    fn run_omnijs<'a>(
+        &'a self,
+        _script: &'a str,
+    ) -> Pin<Box<dyn Future<Output = omnifocus_mcp::error::Result<Value>> + Send + 'a>> {
+        Box::pin(async move { Ok(self.payload.clone()) })
     }
 }
 
