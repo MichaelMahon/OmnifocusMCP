@@ -1716,6 +1716,15 @@ This is how Ralph maintains continuity across iterations.
 ### 2026-02-28 13:11:21
 **Session 65 started** (model: auto)
 
+### 2026-02-28 13:14:30
+- completed criterion 17 (`update_folder`) by implementing missing rust parity in `rust/src/tools/folders.rs` with `list_folders`, `create_folder`, `get_folder`, and `update_folder` using python/typescript-matching validation and omnijs script bodies
+- confirmed rust wiring/tests already present in `rust/src/server.rs` and `rust/tests/tools_write_test.rs`; ran `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 17 complete in `RALPH_TASK.md`
+- ran criterion-focused verification for unchanged implementations:
+  - `cd python && pytest tests/test_tools_write.py -k "update_folder_happy_path_criterion17 or update_folder_validation_error_criterion17" -v` (`2 passed`)
+  - `cd typescript && npx tsc --noEmit && npm test -- --run tests/tools-happy.test.ts -t "update_folder"` (`3 passed`)
+- full cross-implementation `test_command` currently blocked by pre-existing duplicate `delete_folder` definition in `python/src/omnifocus_mcp/tools/folders.py` (ruff `F811`), which is the next criterion scope (18)
+
 ### 2026-02-28 13:12:02
 **Session 65 ended** - 🔄 Context rotation (token limit reached)
 
@@ -1745,3 +1754,9 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 13:14:07
 **Session 70 started** (model: auto)
+
+### 2026-02-28 13:14:34
+**Session 70 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 13:14:36
+**Session 71 started** (model: auto)
