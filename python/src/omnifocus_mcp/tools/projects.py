@@ -247,61 +247,6 @@ return counts;
 
 
 @typed_tool(mcp)
-async def get_project_counts(folder: str | None = None) -> str:
-    """get aggregate project counts by status without listing individual projects."""
-    if folder is not None and folder.strip() == "":
-        raise ValueError("folder must not be empty when provided.")
-
-    folder_filter = "null" if folder is None else escape_for_jxa(folder.strip())
-    script = f"""
-const folderFilter = {folder_filter};
-const counts = {{
-  total: 0,
-  active: 0,
-  onHold: 0,
-  completed: 0,
-  dropped: 0,
-  stalled: 0
-}};
-
-const normalizeProjectStatus = (project) => {{
-  const rawStatus = String(project.status || "").toLowerCase();
-  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {{
-    return "on_hold";
-  }}
-  if (rawStatus.includes("completed")) return "completed";
-  if (rawStatus.includes("dropped")) return "dropped";
-  return "active";
-}};
-
-for (const project of document.flattenedProjects) {{
-  if (folderFilter !== null) {{
-    const folderName = project.folder ? project.folder.name : null;
-    if (folderName !== folderFilter) continue;
-  }}
-
-  counts.total += 1;
-  const normalizedStatus = normalizeProjectStatus(project);
-  if (normalizedStatus === "active") {{
-    counts.active += 1;
-    const isStalled = project.flattenedTasks.some(t => !t.completed) && project.nextTask === null;
-    if (isStalled) counts.stalled += 1;
-  }} else if (normalizedStatus === "on_hold") {{
-    counts.onHold += 1;
-  }} else if (normalizedStatus === "completed") {{
-    counts.completed += 1;
-  }} else if (normalizedStatus === "dropped") {{
-    counts.dropped += 1;
-  }}
-}}
-
-return counts;
-""".strip()
-    result = await run_omnijs(script)
-    return json.dumps(result)
-
-
-@typed_tool(mcp)
 async def search_projects(query: str, limit: int = 100) -> str:
     """search projects using omnifocus matching and return project summaries."""
     if query.strip() == "":

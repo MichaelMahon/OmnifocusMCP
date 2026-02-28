@@ -290,6 +290,70 @@ return projectsMatching(queryValue)
   );
 
   server.tool(
+    "get_project_counts",
+    "get aggregate project counts by status without listing individual projects.",
+    {
+      folder: z.string().min(1).optional().describe("optional folder name filter"),
+    },
+    async ({ folder }) => {
+      try {
+        if (folder !== undefined && folder.trim() === "") {
+          throw new Error("folder must not be empty when provided.");
+        }
+        const folderFilter = folder === undefined ? "null" : escapeForJxa(folder.trim());
+        const script = `
+const folderFilter = ${folderFilter};
+const counts = {
+  total: 0,
+  active: 0,
+  onHold: 0,
+  completed: 0,
+  dropped: 0,
+  stalled: 0
+};
+
+const normalizeProjectStatus = (project) => {
+  const rawStatus = String(project.status || "").toLowerCase();
+  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {
+    return "on_hold";
+  }
+  if (rawStatus.includes("completed")) return "completed";
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+};
+
+for (const project of document.flattenedProjects) {
+  if (folderFilter !== null) {
+    const folderName = project.folder ? project.folder.name : null;
+    if (folderName !== folderFilter) continue;
+  }
+
+  counts.total += 1;
+  const normalizedStatus = normalizeProjectStatus(project);
+  if (normalizedStatus === "active") {
+    counts.active += 1;
+    const isStalled = project.flattenedTasks.some(t => !t.completed) && project.nextTask === null;
+    if (isStalled) counts.stalled += 1;
+  } else if (normalizedStatus === "on_hold") {
+    counts.onHold += 1;
+  } else if (normalizedStatus === "completed") {
+    counts.completed += 1;
+  } else if (normalizedStatus === "dropped") {
+    counts.dropped += 1;
+  }
+}
+
+return counts;
+`.trim();
+        const result = await runOmniJs(script);
+        return textResult(result);
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
     "get_project",
     "get full details for one project by id or name.",
     { project_id_or_name: z.string().min(1).describe("project id primaryKey or exact name") },

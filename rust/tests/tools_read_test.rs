@@ -11,7 +11,7 @@ use omnifocus_mcp::{
         folders::{get_folder, list_folders},
         forecast::get_forecast,
         perspectives::list_perspectives,
-        projects::{get_project, list_projects, search_projects},
+        projects::{get_project, get_project_counts, list_projects, search_projects},
         tags::{list_tags, search_tags},
         tasks::{
             get_inbox, get_task, get_task_counts, list_subtasks,
@@ -533,6 +533,10 @@ async fn validation_errors_for_read_tools() {
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
+        get_project_counts(&runner, Some("   ")).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
         get_project(&runner, "").await,
         Err(OmniFocusError::Validation(_))
     ));
@@ -1011,6 +1015,38 @@ async fn get_project_script_includes_stalled_and_count_fields() {
     assert!(script.contains(
         "completionDate: project.completionDate ? project.completionDate.toISOString() : null,"
     ));
+}
+
+#[tokio::test]
+async fn get_project_counts_script_includes_status_counters_and_stalled_logic() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!({
+            "total": 5,
+            "active": 2,
+            "onHold": 1,
+            "completed": 1,
+            "dropped": 1,
+            "stalled": 1
+        }),
+        last_script: last_script.clone(),
+    };
+
+    let counts = get_project_counts(&runner, Some("Work"))
+        .await
+        .expect("project counts should parse");
+    assert_eq!(counts.total, 5);
+    assert_eq!(counts.on_hold, 1);
+    assert_eq!(counts.stalled, 1);
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const folderFilter = "Work";"#));
+    assert!(script.contains("const counts = {"));
+    assert!(script.contains(r#"if (status === "on_hold") counts.onHold += 1;"#));
+    assert!(script.contains("if (isStalled) counts.stalled += 1;"));
 }
 
 #[tokio::test]

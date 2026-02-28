@@ -614,6 +614,39 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain('const sortOrder = "desc";');
   });
 
+  test("get_project_counts returns aggregate project counters", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      total: 5,
+      active: 2,
+      onHold: 1,
+      completed: 1,
+      dropped: 1,
+      stalled: 1,
+    });
+    const result = await getTool("get_project_counts")({ folder: "Work" });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const folderFilter = "Work";');
+    expect(script).toContain("const counts = {");
+    expect(script).toContain("counts.onHold += 1;");
+    expect(script).toContain("counts.stalled += 1;");
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      total: 5,
+      active: 2,
+      onHold: 1,
+      completed: 1,
+      dropped: 1,
+      stalled: 1,
+    });
+  });
+
+  test("get_project_counts rejects empty folder filter", async () => {
+    const result = await getTool("get_project_counts")({ folder: "   " });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "folder must not be empty when provided.",
+    });
+  });
+
   test("list_tags includes status filter and totalTaskCount mapping", async () => {
     runOmniJsMock.mockResolvedValueOnce([
       { id: "tag-1", name: "Errands", availableTaskCount: 3, totalTaskCount: 5 },
