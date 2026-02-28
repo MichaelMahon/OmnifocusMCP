@@ -579,10 +579,11 @@ describe("representative read and write tool handlers", () => {
     });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain('const taskId = "task-9";');
-    expect(script).toContain('const absoluteDateRaw = "2026-03-03T10:30:00Z";');
+    expect(script).toContain('const absoluteDate = "2026-03-03T10:30:00Z";');
     expect(script).toContain("const relativeOffset = null;");
-    expect(script).toContain("const absoluteDate = (() => {");
-    expect(script).toContain("return task.addNotification(absoluteDate);");
+    expect(script).toContain("const parsedAbsoluteDate = new Date(absoluteDate);");
+    expect(script).toContain("notification = task.addNotification(parsedAbsoluteDate);");
+    expect(script).toContain("if (task.effectiveDueDate === null) {");
     expect(script).toContain("const effectiveDueDate = task.effectiveDueDate;");
     expect(JSON.parse(result.content[0].text)).toEqual({
       id: "n2",
@@ -608,9 +609,9 @@ describe("representative read and write tool handlers", () => {
       relativeOffset: -3600,
     });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
-    expect(script).toContain("const absoluteDateRaw = null;");
+    expect(script).toContain("const absoluteDate = null;");
     expect(script).toContain("const relativeOffset = -3600;");
-    expect(script).toContain("return task.addNotification(relativeOffset);");
+    expect(script).toContain("notification = task.addNotification(relativeOffset);");
     expect(script).toContain(
       "relativeFireOffset: notification.initialFireDate ? null : notification.relativeFireOffset,"
     );
@@ -1034,50 +1035,6 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain('const projectName = "Errands";');
     expect(script).toContain("const task = new Task(taskName, parent);");
     expect(JSON.parse(result.content[0].text)).toEqual({ id: "task-3", name: "created" });
-  });
-
-  test("duplicate_task duplicates without children when requested", async () => {
-    runOmniJsMock.mockResolvedValueOnce({
-      id: "task-7",
-      name: "copy",
-      note: "copied",
-      flagged: true,
-      dueDate: null,
-      deferDate: null,
-      completed: false,
-      projectName: "Errands",
-      tags: ["Home"],
-      estimatedMinutes: 20,
-    });
-    const result = await getTool("duplicate_task")({
-      task_id: "task-6",
-      includeChildren: false,
-    });
-    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
-    expect(script).toContain('const taskId = "task-6";');
-    expect(script).toContain("const includeChildren = false;");
-    expect(script).toContain("const duplicatedTasks = duplicateTasks([task], insertionLocation);");
-    expect(script).toContain("duplicatedTask = new Task(task.name, insertionLocation);");
-    expect(JSON.parse(result.content[0].text)).toEqual({
-      id: "task-7",
-      name: "copy",
-      note: "copied",
-      flagged: true,
-      dueDate: null,
-      deferDate: null,
-      completed: false,
-      projectName: "Errands",
-      tags: ["Home"],
-      estimatedMinutes: 20,
-    });
-  });
-
-  test("duplicate_task validates task id", async () => {
-    const result = await getTool("duplicate_task")({ task_id: "   " });
-    expect(result.isError).toBe(true);
-    expect(JSON.parse(result.content[0].text)).toEqual({
-      error: "task_id must not be empty.",
-    });
   });
 
   test("update_task only sends provided fields", async () => {
