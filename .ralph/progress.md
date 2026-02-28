@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 32
-- Current status: Phase 7 in progress (criterion 64 complete; next 65).
+- Current status: Phase 7 in progress (criterion 65 complete; next 66).
 
 ## How This Works
 
@@ -23,10 +23,10 @@ This is how Ralph maintains continuity across iterations.
 | 4     | Python: Write Tools + Tests       | 29–43     | 15/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 10/10 |
 | 6     | Python: Polish                    | 54–59     | 6/6  |
-| 7     | TypeScript: Full Port + Tests     | 60–71     | 5/12 |
+| 7     | TypeScript: Full Port + Tests     | 60–71     | 6/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 64 / 75 criteria complete**
+**Total: 65 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -916,3 +916,19 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-27 23:26:52
 **Session 36 started** (model: auto)
+
+### 2026-02-27 23:26:56
+**Session 36 update**
+- completed phase 7 criterion 65 by porting resources and prompts in `typescript/src/index.ts`:
+  - resources: `omnifocus://inbox`, `omnifocus://today`, `omnifocus://projects`
+  - prompts: `daily_review`, `weekly_review`, `inbox_processing`, `project_planning`
+- verified TypeScript build and checks:
+  - `cd typescript && npm run build`
+  - `cd typescript && npx tsc --noEmit && npm test`
+- next up: phase 7 criterion 66 (`typescript/README.md` install and client config docs)
+
+### 2026-02-27 23:27:44
+**Session 36 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-27 23:27:46
+**Session 37 started** (model: auto)

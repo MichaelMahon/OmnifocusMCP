@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -30,6 +32,276 @@ function normalizeError(error: unknown): string {
     return error.message;
   }
   return "Unknown OmniFocus error.";
+}
+
+function jsonResourceResult(uri: string, value: unknown): { contents: [{ uri: string; mimeType: string; text: string }] } {
+  return {
+    contents: [
+      {
+        uri,
+        mimeType: "application/json",
+        text: JSON.stringify(value),
+      },
+    ],
+  };
+}
+
+async function getInboxData(limit: number): Promise<unknown> {
+  const script = `
+const tasks = inbox
+  .filter(task => !task.completed)
+  .slice(0, ${limit});
+
+return tasks.map(task => {
+  const tags = task.tags.map(tag => tag.name);
+  return {
+    id: task.id.primaryKey,
+    name: task.name,
+    note: task.note,
+    flagged: task.flagged,
+    dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+    deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+    tags: tags,
+    estimatedMinutes: task.estimatedMinutes
+  };
+});
+`.trim();
+  return runOmniJs(script);
+}
+
+async function listTasksData(
+  project: string | undefined,
+  tag: string | undefined,
+  flagged: boolean | undefined,
+  status: "available" | "due_soon" | "overdue" | "completed" | "all",
+  limit: number
+): Promise<unknown> {
+  const projectFilter = project === undefined ? "null" : escapeForJxa(project);
+  const tagFilter = tag === undefined ? "null" : escapeForJxa(tag);
+  const flaggedFilter = flagged === undefined ? "null" : flagged ? "true" : "false";
+  const statusFilter = escapeForJxa(status);
+  const script = `
+const projectFilter = ${projectFilter};
+const tagFilter = ${tagFilter};
+const flaggedFilter = ${flaggedFilter};
+const statusFilter = ${statusFilter};
+const now = new Date();
+const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
+
+const tasks = document.flattenedTasks
+  .filter(task => {
+    if (projectFilter !== null) {
+      const projectName = task.containingProject ? task.containingProject.name : null;
+      if (projectName !== projectFilter) return false;
+    }
+
+    if (tagFilter !== null) {
+      const hasTag = task.tags.some(taskTag => taskTag.name === tagFilter);
+      if (!hasTag) return false;
+    }
+
+    if (flaggedFilter !== null && task.flagged !== flaggedFilter) return false;
+
+    if (statusFilter === "all") return true;
+    if (statusFilter === "completed") return task.completed;
+    if (task.completed) return false;
+
+    const dueDate = task.dueDate;
+    if (statusFilter === "available") return true;
+    if (statusFilter === "overdue") return dueDate !== null && dueDate < now;
+    if (statusFilter === "due_soon") {
+      return dueDate !== null && dueDate >= now && dueDate <= soon;
+    }
+    return false;
+  })
+  .slice(0, ${limit});
+
+return tasks.map(task => {
+  const tags = task.tags.map(taskTag => taskTag.name);
+  return {
+    id: task.id.primaryKey,
+    name: task.name,
+    note: task.note,
+    flagged: task.flagged,
+    dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+    deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+    completed: task.completed,
+    projectName: task.containingProject ? task.containingProject.name : null,
+    tags: tags,
+    estimatedMinutes: task.estimatedMinutes
+  };
+});
+`.trim();
+  return runOmniJs(script);
+}
+
+async function listProjectsData(
+  folder: string | undefined,
+  status: "active" | "on_hold" | "completed" | "dropped",
+  limit: number
+): Promise<unknown> {
+  const folderFilter = folder === undefined ? "null" : escapeForJxa(folder);
+  const statusFilter = escapeForJxa(status);
+  const script = `
+const folderFilter = ${folderFilter};
+const statusFilter = ${statusFilter};
+
+const projectCounts = new Map();
+document.flattenedTasks.forEach(task => {
+  const project = task.containingProject;
+  if (!project) return;
+  const projectId = project.id.primaryKey;
+  const current = projectCounts.get(projectId) || { taskCount: 0, remainingTaskCount: 0 };
+  current.taskCount += 1;
+  if (!task.completed) current.remainingTaskCount += 1;
+  projectCounts.set(projectId, current);
+});
+
+const normalizeProjectStatus = (project) => {
+  const rawStatus = String(project.status || "").toLowerCase();
+  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {
+    return "on_hold";
+  }
+  if (rawStatus.includes("completed")) return "completed";
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+};
+
+const projects = document.flattenedProjects
+  .filter(project => {
+    if (folderFilter !== null) {
+      const folderName = project.folder ? project.folder.name : null;
+      if (folderName !== folderFilter) return false;
+    }
+    return normalizeProjectStatus(project) === statusFilter;
+  })
+  .slice(0, ${limit});
+
+return projects.map(project => {
+  const projectId = project.id.primaryKey;
+  const counts = projectCounts.get(projectId) || { taskCount: 0, remainingTaskCount: 0 };
+  const reviewInterval = project.reviewInterval;
+  return {
+    id: projectId,
+    name: project.name,
+    status: normalizeProjectStatus(project),
+    folderName: project.folder ? project.folder.name : null,
+    taskCount: counts.taskCount,
+    remainingTaskCount: counts.remainingTaskCount,
+    deferDate: project.deferDate ? project.deferDate.toISOString() : null,
+    dueDate: project.dueDate ? project.dueDate.toISOString() : null,
+    note: project.note,
+    sequential: project.sequential,
+    reviewInterval: reviewInterval === null || reviewInterval === undefined ? null : String(reviewInterval)
+  };
+});
+`.trim();
+  return runOmniJs(script);
+}
+
+async function getProjectData(projectIdOrName: string): Promise<unknown> {
+  const projectFilter = escapeForJxa(projectIdOrName.trim());
+  const script = `
+const projectFilter = ${projectFilter};
+const project = document.flattenedProjects.find(item => {
+  return item.id.primaryKey === projectFilter || item.name === projectFilter;
+});
+if (!project) {
+  throw new Error(\`Project not found: \${projectFilter}\`);
+}
+
+const normalizeProjectStatus = (item) => {
+  const rawStatus = String(item.status || "").toLowerCase();
+  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {
+    return "on_hold";
+  }
+  if (rawStatus.includes("completed")) return "completed";
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+};
+
+const allProjectTasks = document.flattenedTasks.filter(task => {
+  return task.containingProject && task.containingProject.id.primaryKey === project.id.primaryKey;
+});
+
+const rootTasks = project.tasks.map(task => {
+  return {
+    id: task.id.primaryKey,
+    name: task.name,
+    note: task.note,
+    flagged: task.flagged,
+    dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+    deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+    completed: task.completed,
+    tags: task.tags.map(tag => tag.name),
+    estimatedMinutes: task.estimatedMinutes
+  };
+});
+
+const reviewInterval = project.reviewInterval;
+return {
+  id: project.id.primaryKey,
+  name: project.name,
+  status: normalizeProjectStatus(project),
+  folderName: project.folder ? project.folder.name : null,
+  taskCount: allProjectTasks.length,
+  remainingTaskCount: allProjectTasks.filter(task => !task.completed).length,
+  deferDate: project.deferDate ? project.deferDate.toISOString() : null,
+  dueDate: project.dueDate ? project.dueDate.toISOString() : null,
+  note: project.note,
+  sequential: project.sequential,
+  reviewInterval: reviewInterval === null || reviewInterval === undefined ? null : String(reviewInterval),
+  rootTasks: rootTasks
+};
+`.trim();
+  return runOmniJs(script);
+}
+
+async function getForecastData(limit: number): Promise<unknown> {
+  const script = `
+const now = new Date();
+const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+const endOfToday = new Date(startOfToday.getTime() + (24 * 60 * 60 * 1000));
+
+const toTaskSummary = (task) => {
+  return {
+    id: task.id.primaryKey,
+    name: task.name,
+    note: task.note,
+    flagged: task.flagged,
+    completed: task.completed,
+    dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+    deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+    projectName: task.containingProject ? task.containingProject.name : null,
+    tags: task.tags.map(tag => tag.name),
+    estimatedMinutes: task.estimatedMinutes
+  };
+};
+
+const openTasks = document.flattenedTasks.filter(task => !task.completed);
+
+const overdue = openTasks
+  .filter(task => task.dueDate !== null && task.dueDate < startOfToday)
+  .slice(0, ${limit})
+  .map(toTaskSummary);
+
+const dueToday = openTasks
+  .filter(task => task.dueDate !== null && task.dueDate >= startOfToday && task.dueDate < endOfToday)
+  .slice(0, ${limit})
+  .map(toTaskSummary);
+
+const flagged = openTasks
+  .filter(task => task.flagged)
+  .slice(0, ${limit})
+  .map(toTaskSummary);
+
+return {
+  overdue: overdue,
+  dueToday: dueToday,
+  flagged: flagged
+};
+`.trim();
+  return runOmniJs(script);
 }
 
 server.tool(
@@ -568,7 +840,214 @@ return unique.slice(0, ${limit});
   }
 );
 
-if (false) {
+server.registerResource(
+  "omnifocus_inbox",
+  "omnifocus://inbox",
+  {
+    description: "current inbox tasks as json",
+    mimeType: "application/json",
+  },
+  async () => {
+    const data = await getInboxData(100);
+    return jsonResourceResult("omnifocus://inbox", data);
+  }
+);
+
+server.registerResource(
+  "omnifocus_today",
+  "omnifocus://today",
+  {
+    description: "today forecast sections as json",
+    mimeType: "application/json",
+  },
+  async () => {
+    const data = await getForecastData(100);
+    return jsonResourceResult("omnifocus://today", data);
+  }
+);
+
+server.registerResource(
+  "omnifocus_projects",
+  "omnifocus://projects",
+  {
+    description: "active project summaries as json",
+    mimeType: "application/json",
+  },
+  async () => {
+    const data = await listProjectsData(undefined, "active", 100);
+    return jsonResourceResult("omnifocus://projects", data);
+  }
+);
+
+server.registerPrompt(
+  "daily_review",
+  {
+    description: "daily planning prompt with due-soon, overdue, and flagged tasks",
+  },
+  async () => {
+    const dueSoon = await listTasksData(undefined, undefined, undefined, "due_soon", 25);
+    const overdue = await listTasksData(undefined, undefined, undefined, "overdue", 25);
+    const flagged = await listTasksData(undefined, undefined, true, "all", 25);
+    return {
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: `run a focused daily review using the task data below.
+
+1) identify the highest-risk overdue items.
+2) review due-soon tasks and sequence today's execution.
+3) evaluate flagged work and confirm urgency.
+4) produce exactly three top priorities for today with short rationale.
+5) call out anything that should be deferred, delegated, or dropped.
+
+overdue_tasks_json:
+${JSON.stringify(overdue)}
+
+due_soon_tasks_json:
+${JSON.stringify(dueSoon)}
+
+flagged_tasks_json:
+${JSON.stringify(flagged)}
+`,
+          },
+        },
+      ],
+    };
+  }
+);
+
+server.registerPrompt(
+  "weekly_review",
+  {
+    description: "weekly review prompt with active projects and next-action coverage",
+  },
+  async () => {
+    const activeProjects = await listProjectsData(undefined, "active", 500);
+    const availableTasks = await listTasksData(undefined, undefined, undefined, "available", 1000);
+    return {
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: `run a gtd-style weekly review using the data below.
+
+1) review all active projects and classify each as:
+   - on track
+   - at risk
+   - stalled (no clear next action)
+2) identify stalled projects by checking whether each project has at least one available next action.
+3) propose the next concrete action for every stalled project.
+4) highlight projects that need defer/due date updates or scope adjustments.
+5) produce a concise weekly plan:
+   - top 5 project priorities
+   - key risks/blockers
+   - cleanup actions (drop, defer, delegate, or someday/maybe)
+
+active_projects_json:
+${JSON.stringify(activeProjects)}
+
+available_tasks_json:
+${JSON.stringify(availableTasks)}
+`,
+          },
+        },
+      ],
+    };
+  }
+);
+
+server.registerPrompt(
+  "inbox_processing",
+  {
+    description: "inbox processing prompt that drives one-by-one clarification decisions",
+  },
+  async () => {
+    const inboxItems = await getInboxData(200);
+    return {
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: `run a gtd inbox processing session using the inbox data below.
+
+for each inbox item, guide a decision in this order:
+1) clarify desired outcome and next action.
+2) decide if it should be deleted, deferred, delegated, or kept.
+3) if kept, assign the best target project (or keep in inbox if truly unassigned).
+4) propose relevant tags and whether it should be flagged.
+5) suggest due/defer dates only when there is a real deadline or start date.
+6) suggest estimated minutes when the task is actionable.
+
+respond with:
+- a prioritized processing queue
+- concrete update recommendations per item
+- a short batch action plan for the first 5 items
+
+inbox_items_json:
+${JSON.stringify(inboxItems)}
+`,
+          },
+        },
+      ],
+    };
+  }
+);
+
+server.registerPrompt(
+  "project_planning",
+  {
+    description: "project planning prompt that turns a project into actionable next steps",
+    argsSchema: {
+      project: z.string().min(1),
+    },
+  },
+  async ({ project }) => {
+    const projectName = project.trim();
+    const projectDetails = await getProjectData(projectName);
+    const availableTasks = await listTasksData(projectName, undefined, undefined, "available", 500);
+    return {
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: `plan this project into clear executable work.
+
+project name:
+${projectName}
+
+planning goals:
+1) summarize the project outcome in one concise sentence.
+2) evaluate current task coverage and identify missing steps.
+3) convert vague items into concrete next actions (verb-first, observable).
+4) sequence work logically (dependencies first, then parallelizable actions).
+5) estimate effort (minutes/hours) for each next action and flag high-risk items.
+6) recommend what to do now, next, later, and what to defer/drop.
+
+output format:
+- project summary
+- work breakdown with columns:
+  action, estimate, priority, dependency, suggested tags, due/defer recommendation, rationale
+- first 3 actions to execute immediately
+- risk/blocker list with mitigation ideas
+
+project_details_json:
+${JSON.stringify(projectDetails)}
+
+project_available_tasks_json:
+${JSON.stringify(availableTasks)}
+`,
+          },
+        },
+      ],
+    };
+  }
+);
+
 server.tool(
   "create_task",
   "create a new task in inbox or a named project. accepts required name and optional project, note, dates, flagged state, tags, and estimated minutes. returns the created task id and name.",
@@ -2827,7 +3306,6 @@ ${JSON.stringify(availableTasks)}`,
     };
   }
 );
-}
 
 const transport = new StdioServerTransport();
 await server.connect(transport);

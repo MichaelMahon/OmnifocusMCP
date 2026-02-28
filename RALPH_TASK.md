@@ -322,7 +322,7 @@ identical — only the server framework and subprocess calls change.
 63. [x] All 10 read tools ported and `npm run build` passes with no errors.
 64. [x] All 9 write tools ported and build passes.
 65. [x] Resources (3) and prompts (4) ported.
-66. [ ] `typescript/README.md` with install instructions, MCP client config
+66. [x] `typescript/README.md` with install instructions, MCP client config
         examples (Claude Desktop, Cursor, Cline, generic stdio).
 67. [ ] `package.json` has `"bin"` entry; server runs via `npx`.
 

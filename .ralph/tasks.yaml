@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772256319
-generated_at: 2026-02-28T05:25:52Z
+source_mtime: 1772256452
+generated_at: 2026-02-28T05:27:42Z
 
 tasks:
   - id: "line_109"
@@ -457,14 +457,14 @@ tasks:
     raw_marker: 64.
   - id: "line_324"
     line_number: 324
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Resources (3) and prompts (4) ported.
     indent_level: 0
     raw_marker: 65.
   - id: "line_325"
     line_number: 325
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `typescript/README.md` with install instructions, MCP client config
     indent_level: 0
