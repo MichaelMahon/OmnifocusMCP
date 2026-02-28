@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772299225
-generated_at: 2026-02-28T17:20:41Z
+source_mtime: 1772299329
+generated_at: 2026-02-28T17:22:26Z
 
 tasks:
   - id: "line_44"
@@ -205,7 +205,7 @@ tasks:
     raw_marker: 28.
   - id: "line_260"
     line_number: 260
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Create `rust/tests/resources_test.rs` — verify resource content
     indent_level: 0

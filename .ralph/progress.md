@@ -495,6 +495,13 @@ This is how Ralph maintains continuity across iterations.
 - marked criterion 27 complete in `RALPH_TASK.md`
 - next focus: criterion 28 (`cargo run -- --version`)
 
+### 2026-02-28 11:39:00
+- verified criterion 28 with `cd rust && cargo run -- --version`; output: `omnifocus-mcp 0.1.0`
+- completed criterion 29 by finalizing `rust/tests/resources_test.rs` and `rust/tests/prompts_test.rs` with mocked `JxaRunner` coverage for expected content keywords, prompt section structure, and `project_planning` empty-project validation
+- ran the Rust task test command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 29 complete in `RALPH_TASK.md`
+- next focus: criterion 30 (`cargo test && cargo clippy -- -D warnings && cargo fmt --check`)
+
 ### 2026-02-28 11:20:42
 **Session 9 ended** - 🔄 Context rotation (token limit reached)
 
@@ -506,3 +513,9 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 11:21:22
 **Session 11 started** (model: auto)
+
+### 2026-02-28 11:22:27
+**Session 11 ended** - Agent finished naturally (18 criteria remaining)
+
+### 2026-02-28 11:22:29
+**Session 12 started** (model: auto)

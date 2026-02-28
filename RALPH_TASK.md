@@ -257,7 +257,7 @@ Connect everything into a working MCP server.
         (handles invalid JSON-RPC without crashing).
 28. [x] `cargo run -- --version` prints `omnifocus-mcp` followed by
         the version from Cargo.toml.
-29. [ ] Create `rust/tests/resources_test.rs` — verify resource content
+29. [x] Create `rust/tests/resources_test.rs` — verify resource content
         strings contain expected keywords.
         Create `rust/tests/prompts_test.rs` — verify prompt rendering
         with mocked JxaRunner returns expected structure. Verify
