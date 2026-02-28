@@ -1,4 +1,4 @@
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
+from mcp.server.fastmcp import FastMCP
 
 
 mcp = FastMCP("omnifocus-mcp")

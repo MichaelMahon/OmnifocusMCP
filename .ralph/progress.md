@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 0
-- Current status: Phase 5 in progress. Integration criteria 22-24 are complete with explicit TypeScript integration pass and teardown cleanup coverage.
+- Current status: All phases complete. Final cleanup criteria 25-28 are done.
 - Previous task: v1 completed (75/75), archived at `.ralph/RALPH_TASK_v1_complete.md`.
 
 ## How This Works
@@ -22,9 +22,9 @@ This is how Ralph maintains continuity across iterations.
 | 2     | Fix JXA Bugs                   | 6–9       | 4/4  |
 | 3     | Split Monolith Files           | 10–17     | 8/8  |
 | 4     | Integration Tests              | 18–24     | 7/7  |
-| 5     | Final Cleanup                  | 25–28     | 0/4  |
+| 5     | Final Cleanup                  | 25–28     | 4/4  |
 
-**Total: 24 / 28 criteria complete**
+**Total: 28 / 28 criteria complete**
 
 ## Key Context
 
@@ -241,3 +241,10 @@ This is how Ralph maintains continuity across iterations.
 - cleanup now executes regardless of assertion outcomes in each test, preventing `[TEST-MCP]` data leakage after partial failures
 - marked criterion 24 complete in `RALPH_TASK.md`
 - next focus: begin Phase 5 criterion 25 (startup/shutdown checks)
+
+### 2026-02-28 09:41:30
+- rebuilt TypeScript artifacts and verified startup probe succeeds with `echo '{}' | node typescript/dist/index.js`
+- verified Python startup probe in project runtime with `cd python && echo '{}' | uv run python -m omnifocus_mcp` (process exits cleanly after invalid JSON-RPC payload handling)
+- ran full cross-implementation verification command from `RALPH_TASK.md`: `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test` (all passing; integration tests skipped by default)
+- confirmed `v1.0.0` tag already exists and left unchanged
+- marked criteria 25-28 complete in `RALPH_TASK.md`

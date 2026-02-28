@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 
-import { afterEach, describe, expect, test } from "vitest";
+import { afterAll, afterEach, describe, expect, test } from "vitest";
 
 import { runOmniJs } from "../src/jxa.js";
 import { register as registerFolders } from "../src/tools/folders.js";
@@ -44,7 +44,7 @@ function isOmniFocusRunning(): boolean {
 const runIntegration = process.env.OMNIFOCUS_INTEGRATION === "1";
 const integrationDescribe = describe.skipIf(!runIntegration || !isOmniFocusRunning());
 const INTEGRATION_TIMEOUT_MS = 60_000;
-const TEST_PREFIX = "[TEST-MCP][TS-INTEGRATION]";
+const TEST_PREFIX = `[TEST-MCP][TS-INTEGRATION-${Date.now()}]`;
 
 const server = new IntegrationServer();
 const cleanupTaskIds: string[] = [];
@@ -65,26 +65,12 @@ registerFolders(server as never);
 registerForecast(server as never);
 registerPerspectives(server as never);
 
-afterEach(async () => {
-  try {
-    const deleteTask = getHandler("delete_task");
-    while (cleanupTaskIds.length > 0) {
-      const taskId = cleanupTaskIds.pop();
-      if (!taskId) {
-        continue;
-      }
-      try {
-        await deleteTask({ task_id: taskId });
-      } catch {
-        continue;
-      }
-    }
-
-    const projectIds = JSON.stringify(cleanupProjectIds);
-    const prefix = JSON.stringify(TEST_PREFIX);
-    await runOmniJs(
-      `
-const projectIds = ${projectIds};
+async function sweepArtifacts(projectIds: string[]): Promise<void> {
+  const encodedProjectIds = JSON.stringify(projectIds);
+  const prefix = JSON.stringify(TEST_PREFIX);
+  await runOmniJs(
+    `
+const projectIds = ${encodedProjectIds};
 const prefix = ${prefix};
 const projectIdSet = new Set(projectIds);
 
@@ -112,11 +98,58 @@ document.flattenedProjects
 
 return true;
 `.trim()
-    );
+  );
+}
+
+afterEach(async () => {
+  try {
+    const deleteTask = getHandler("delete_task");
+    while (cleanupTaskIds.length > 0) {
+      const taskId = cleanupTaskIds.pop();
+      if (!taskId) {
+        continue;
+      }
+      try {
+        await deleteTask({ task_id: taskId });
+      } catch {
+        continue;
+      }
+    }
+
+    await sweepArtifacts(cleanupProjectIds);
   } catch {
     return;
   } finally {
     cleanupProjectIds.length = 0;
+  }
+});
+
+afterAll(async () => {
+  try {
+    await sweepArtifacts([]);
+    const validation = (await runOmniJs(
+      `
+const prefix = ${JSON.stringify(TEST_PREFIX)};
+const taskLeakCount = document.flattenedTasks.filter(task => {
+  if (!(task.name || "").startsWith(prefix)) return false;
+  const status = String(task.taskStatus || task.status || "").toLowerCase();
+  return !status.includes("dropped");
+}).length;
+const projectLeakCount = document.flattenedProjects.filter(project => {
+  if (!(project.name || "").startsWith(prefix)) return false;
+  const status = String(project.status || "").toLowerCase();
+  return !status.includes("dropped");
+}).length;
+return { taskLeakCount, projectLeakCount };
+`.trim()
+    )) as { taskLeakCount?: unknown; projectLeakCount?: unknown };
+    const taskLeakCount = Number(validation.taskLeakCount ?? 0);
+    const projectLeakCount = Number(validation.projectLeakCount ?? 0);
+    if (taskLeakCount > 0 || projectLeakCount > 0) {
+      throw new Error(`teardown leaked test artifacts: tasks=${taskLeakCount}, projects=${projectLeakCount}`);
+    }
+  } catch {
+    return;
   }
 });
 
