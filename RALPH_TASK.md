@@ -220,7 +220,7 @@ Connect everything into a working MCP server.
           (calls `get_forecast()` internally)
         - `omnifocus://projects` — returns active project summaries as JSON
           (calls `list_projects(status="active")` internally)
-24. [ ] Create `rust/src/prompts.rs` with 4 prompt handlers matching
+24. [x] Create `rust/src/prompts.rs` with 4 prompt handlers matching
         Python's `prompts.py` exactly. Read the Python file first.
         - `daily_review` (underscore, not hyphen) — no arguments.
           Calls `list_tasks(status="due_soon")`,
