@@ -274,13 +274,13 @@ patterns as `python/tests/test_integration.py`.
 
 ### Success Criteria
 
-30. [ ] Create `rust/examples/smoke_test.rs` — standalone async binary
+31. [ ] Create `rust/examples/smoke_test.rs` — standalone async binary
         that calls every tool function against real OmniFocus and prints
         pass/fail. Pattern: same as `python/scripts/smoke_test.py`.
-31. [ ] Smoke test passes against real OmniFocus with zero failures.
+32. [ ] Smoke test passes against real OmniFocus with zero failures.
         Any bugs discovered are documented with `// BUG:` and fixed
         before proceeding.
-32. [ ] Create `rust/tests/integration_test.rs` gated by
+33. [ ] Create `rust/tests/integration_test.rs` gated by
         `#[cfg(feature = "integration")]`. Tests:
         - `test_jxa_bridge_connectivity` — basic run_omnijs call
         - `test_read_tools_return_valid_json` — calls each read tool,
@@ -289,10 +289,10 @@ patterns as `python/tests/test_integration.py`.
           complete → delete. Cleanup in Drop impl or explicit teardown.
         - `test_search_finds_created_task` — create, search, assert found
         - `test_project_lifecycle` — create → get → complete
-33. [ ] Integration tests pass: `cargo test --features integration`
+34. [ ] Integration tests pass: `cargo test --features integration`
         (with OmniFocus running).
-34. [ ] Integration tests are excluded from normal `cargo test`.
-35. [ ] No test data leaks — all `[TEST-MCP]` items cleaned up by
+35. [ ] Integration tests are excluded from normal `cargo test`.
+36. [ ] No test data leaks — all `[TEST-MCP]` items cleaned up by
         teardown even if assertions panic (use `Drop` or explicit
         cleanup at start of each test).
 
@@ -305,19 +305,20 @@ distribution.
 
 ### Success Criteria
 
-36. [ ] `cargo build --release` produces a working binary at
+37. [ ] `cargo build --release` produces a working binary at
         `rust/target/release/omnifocus-mcp`. Verify it starts and
         responds to `--version`.
-37. [ ] Create `.github/workflows/release-rust.yml`:
+38. [ ] Create `.github/workflows/release-rust.yml`:
         - Trigger: push tag matching `rust-v*`
-        - Jobs: build on `macos-latest` for `aarch64-apple-darwin` and
-          `x86_64-apple-darwin`
+        - Jobs: build on `macos-latest` (Apple Silicon) and
+          `macos-13` (Intel) — or use cross-compilation with
+          `rustup target add x86_64-apple-darwin` on ARM runner
         - Steps: checkout, install Rust, `cargo build --release --target $TARGET`,
           create tarball `omnifocus-mcp-$VERSION-$TARGET.tar.gz`,
-          compute SHA256
+          compute SHA256 (`shasum -a 256`)
         - Create GitHub Release with both tarballs attached
         - Output SHA256 values in release notes for Homebrew formula
-38. [ ] Create `homebrew/omnifocus-mcp.rb` — Homebrew formula template:
+39. [ ] Create `homebrew/omnifocus-mcp.rb` — Homebrew formula template:
         - `desc`, `homepage`, `version`, `license`
         - `depends_on :macos`
         - `on_arm` / `on_intel` blocks with URL and sha256 placeholders
@@ -325,7 +326,7 @@ distribution.
         - `test` block that verifies `--version` output
         Include a comment header explaining how to use: create a tap
         repo, copy this formula, update SHAs from release.
-39. [ ] Create `docs/install-rust.md` with:
+40. [ ] Create `docs/install-rust.md` with:
         - Two install methods: **Homebrew** (preferred) and **from source**
         - Homebrew: `brew tap user/omnifocus-mcp && brew install omnifocus-mcp`
         - From source: prerequisites (macOS, Rust toolchain), `git clone`,
@@ -334,14 +335,21 @@ distribution.
         - MCP client configuration snippets for Claude Desktop, Cursor,
           and generic stdio. Command: `omnifocus-mcp` (Homebrew) or
           full path to binary (source)
-        - Troubleshooting: OmniFocus not running, permission denied,
-          Rust version mismatch, binary architecture mismatch
-40. [ ] Update top-level `README.md`:
+        - Troubleshooting section covering:
+          - OmniFocus not running
+          - macOS Automation permission denied
+          - Rust version mismatch
+          - Binary architecture mismatch (ARM vs Intel)
+          - **macOS Gatekeeper blocking unsigned binary**: instruct users
+            to run `xattr -cr /path/to/omnifocus-mcp` if downloaded
+            outside Homebrew, or note that Homebrew-installed binaries
+            are not affected
+41. [ ] Update top-level `README.md`:
         - Add Rust to the implementation comparison table
         - Add Rust quick-start section linking to `docs/install-rust.md`
         - Note Homebrew as the recommended install method
         - Update feature count if the Rust implementation has parity
-41. [ ] Release binary smoke test: build release binary, run the
+42. [ ] Release binary smoke test: build release binary, run the
         `smoke_test` example against real OmniFocus, verify zero failures.
 
 ---
@@ -350,10 +358,12 @@ distribution.
 
 ### Success Criteria
 
-42. [ ] `cargo fmt --check` is clean (no formatting issues).
-43. [ ] `cargo clippy -- -D warnings` is clean (no lint warnings).
-44. [ ] `cargo test` passes (all mocked tests, integration skipped).
-45. [ ] Git status is clean — no untracked source files, no uncommitted
+43. [ ] `cargo fmt --check` is clean (no formatting issues).
+44. [ ] `cargo clippy -- -D warnings` is clean (no lint warnings).
+45. [ ] `cargo test` passes (all mocked tests, integration skipped).
+46. [ ] `.gitignore` updated to exclude `rust/target/`.
+        `rust/Cargo.lock` is committed (Rust convention for binaries).
+47. [ ] Git status is clean — no untracked source files, no uncommitted
         changes. Commit all work with a descriptive message.
 
 ---
