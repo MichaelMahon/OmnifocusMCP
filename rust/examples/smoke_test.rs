@@ -243,7 +243,11 @@ impl SmokeTest {
         self.created_task_ids.push(subtask_id.clone());
 
         let subtasks = list_subtasks(runner, &task_id, 50).await?;
-        if !subtasks.iter().any(|item| item.id == subtask_id) {
+        let subtasks_array = require_array(&subtasks, "list_subtasks result")?;
+        if !subtasks_array
+            .iter()
+            .any(|item| item.get("id").and_then(Value::as_str) == Some(subtask_id.as_str()))
+        {
             return Err(OmniFocusError::Validation(
                 "list_subtasks did not include the created subtask.".to_string(),
             ));
@@ -288,8 +292,7 @@ impl SmokeTest {
             runner,
             "task",
             &task_id,
-            "
-smoke append line",
+            "\nsmoke append line",
         )
         .await?;
         if appended
@@ -300,6 +303,16 @@ smoke append line",
         {
             return Err(OmniFocusError::Validation(
                 "append_to_note returned invalid note length.".to_string(),
+            ));
+        }
+        let appended_task = get_task(runner, &task_id).await?;
+        let appended_note = appended_task
+            .get("note")
+            .and_then(Value::as_str)
+            .unwrap_or_default();
+        if !appended_note.contains("smoke append line") {
+            return Err(OmniFocusError::Validation(
+                "append_to_note did not persist task note text.".to_string(),
             ));
         }
 
@@ -433,6 +446,11 @@ smoke append line",
                 "delete_project did not confirm deletion.".to_string(),
             ));
         }
+        if get_project(runner, &temp_project_id).await.is_ok() {
+            return Err(OmniFocusError::Validation(
+                "get_project succeeded after delete_project.".to_string(),
+            ));
+        }
         self.created_project_ids.retain(|id| id != &temp_project_id);
 
         let batch_result = create_tasks_batch(
@@ -521,7 +539,7 @@ smoke append line",
         self.created_task_ids.clear();
 
         for project_id in self.created_project_ids.clone() {
-            let _ = complete_project(runner, &project_id).await;
+            let _ = delete_project(runner, &project_id).await;
         }
         self.created_project_ids.clear();
 
@@ -530,30 +548,10 @@ smoke append line",
         }
         self.created_folder_ids.clear();
 
-        if !self.created_tag_ids.is_empty() {
-            let ids_json = match serde_json::to_string(&self.created_tag_ids) {
-                Ok(value) => value,
-                Err(_) => {
-                    self.created_tag_ids.clear();
-                    return;
-                }
-            };
-            let cleanup_script = format!(
-                r#"const ids = {ids_json};
-ids.forEach(id => {{
-  const tag = document.flattenedTags.find(item => item.id.primaryKey === id);
-  if (tag) {{
-    try {{
-      tag.drop(false);
-    }} catch (_) {{
-    }}
-  }}
-}});
-return true;"#
-            );
-            let _ = runner.run_omnijs(&cleanup_script).await;
-            self.created_tag_ids.clear();
+        for tag_id in self.created_tag_ids.clone() {
+            let _ = delete_tag(runner, &tag_id).await;
         }
+        self.created_tag_ids.clear();
     }
 
     async fn run(&mut self, runner: &RealJxaRunner) -> i32 {

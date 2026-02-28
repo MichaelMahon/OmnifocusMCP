@@ -16,7 +16,10 @@ week?" the LLM must fetch ALL completed tasks and filter client-side.
 To answer "what projects are stalled?" there is no way at all.
 
 This task closes every read-side gap and goes beyond by adding sorting,
-duration filtering, aggregate count tools, and an enriched forecast.
+duration filtering, aggregate count tools, an enriched forecast, native
+OmniFocus `taskStatus` and effective dates, planned date support,
+notification management, and task duplication — achieving near-complete
+OmniFocus Omni Automation API coverage.
 
 **All three implementations** (Python, TypeScript, Rust) must be updated
 for every change. Parameter names, types, and response shapes must be
