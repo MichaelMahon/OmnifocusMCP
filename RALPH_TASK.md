@@ -542,7 +542,7 @@ set reminders without the user opening OmniFocus.
 
 ### Success Criteria
 
-32. [ ] **`duplicate_task`** — all 3 implementations (NEW TOOL).
+32. [x] **`duplicate_task`** — all 3 implementations (NEW TOOL).
         - **Input:** `task_id: str` (required, non-empty),
           `includeChildren: bool = true` (whether to clone subtasks)
         - **JXA:** find task by ID. Determine the insertion location
@@ -559,7 +559,7 @@ set reminders without the user opening OmniFocus.
           by default."
         - Implement and test in all 3 implementations.
 
-33. [ ] All lint and test commands pass for Phase 10 (same as criterion 6).
+33. [x] All lint and test commands pass for Phase 10 (same as criterion 6).
 
 ---
 

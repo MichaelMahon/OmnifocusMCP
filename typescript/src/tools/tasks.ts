@@ -434,6 +434,7 @@ const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId)
 if (!task) {
   throw new Error(\`Task not found: \${taskId}\`);
 }
+
 const insertionLocation = (() => {
   if (task.containingTask) return task.containingTask.ending;
   if (task.containingProject) return task.containingProject.ending;

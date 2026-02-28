@@ -708,6 +708,7 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain("const includeChildren = true;");
     expect(script).toContain("const duplicated = duplicateTasks([task], insertionLocation);");
     expect(script).toContain("const taskStatusValue = (taskItem) => {");
+    expect(script).toContain("taskStatus: taskStatusValue(duplicatedTask)");
     expect(JSON.parse(result.content[0].text)).toEqual({
       id: "copy-1",
       name: "Copied task",
