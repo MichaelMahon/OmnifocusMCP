@@ -441,6 +441,22 @@ async def test_complete_task_happy_path(mock_server_run_omnijs: Callable[[Any], 
 
 
 @pytest.mark.asyncio
+async def test_uncomplete_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    payload = {"id": "t4", "name": "Done", "completed": False}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.uncomplete_task("t4")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const taskId = "t4";' in script
+    assert "if (!task.completed) {" in script
+    assert "task.markIncomplete();" in script
+
+
+@pytest.mark.asyncio
 async def test_update_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = {
         "id": "t5",
@@ -718,3 +734,22 @@ async def test_delete_tasks_batch_empty_array_validation_error(server_module: An
 async def test_delete_tasks_batch_empty_string_validation_error(server_module: Any) -> None:
     with pytest.raises(ValueError, match="each task id must be a non-empty string."):
         await server_module.delete_tasks_batch(["task-1", "   "])
+
+
+@pytest.mark.asyncio
+async def test_uncomplete_task_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "t8", "name": "Reopen me", "completed": False}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.uncomplete_task("t8")
+
+    assert json.loads(result) == payload
+    assert len(state["calls"]) == 1
+    script = state["calls"][0]["script"]
+    assert 'const taskId = "t8";' in script
+    assert "if (!task.completed) {" in script
+    assert "task.markIncomplete();" in script

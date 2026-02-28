@@ -104,6 +104,18 @@ describe("tool happy paths", () => {
     expect(script).toContain("const updates = {\"name\":\"Updated task\",\"flagged\":true};");
   });
 
+  test("uncomplete_task marks completed task incomplete", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "t9", name: "Done", completed: false });
+    const handler = registeredTools.get("uncomplete_task");
+    expect(handler).toBeDefined();
+    const result = await handler!({ task_id: "t9" });
+    expect(JSON.parse(result.content[0].text)).toEqual({ id: "t9", name: "Done", completed: false });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const taskId = "t9";');
+    expect(script).toContain("if (!task.completed) {");
+    expect(script).toContain("task.markIncomplete();");
+  });
+
   test("delete_tasks_batch returns batch deletion summary payload", async () => {
     runOmniJsMock.mockResolvedValueOnce({
       deleted_count: 2,

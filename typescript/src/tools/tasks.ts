@@ -203,6 +203,42 @@ return { id: task.id.primaryKey, name: task.name, completed: task.completed };
   });
 
   server.tool(
+    "uncomplete_task",
+    "mark a completed task incomplete by id.",
+    { task_id: z.string().min(1) },
+    async ({ task_id }) => {
+      try {
+        const normalizedTaskId = task_id.trim();
+        if (normalizedTaskId === "") {
+          throw new Error("task_id must not be empty.");
+        }
+        const taskId = escapeForJxa(normalizedTaskId);
+        const script = `
+const taskId = ${taskId};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {
+  throw new Error(\`Task not found: \${taskId}\`);
+}
+if (!task.completed) {
+  throw new Error(\`Task is not completed: \${taskId}\`);
+}
+
+task.markIncomplete();
+
+return {
+  id: task.id.primaryKey,
+  name: task.name,
+  completed: task.completed
+};
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
     "update_task",
     "update one task with partial fields and return the updated task payload.",
     {
