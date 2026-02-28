@@ -53,6 +53,7 @@ from omnifocus_mcp.resources import (  # noqa: E402,F401
 )
 
 create_folder = folders_tools.create_folder
+delete_folder = folders_tools.delete_folder
 get_folder = folders_tools.get_folder
 list_folders = folders_tools.list_folders
 update_folder = folders_tools.update_folder

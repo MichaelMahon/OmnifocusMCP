@@ -212,4 +212,53 @@ return {
     }
   );
 
+  server.tool(
+    "delete_folder",
+    "delete a folder by id or name. warning: deleting a folder may move contained projects and subfolders to top level in omnifocus.",
+    {
+      folder_name_or_id: z.string().min(1),
+    },
+    async ({ folder_name_or_id }) => {
+      try {
+        const folderFilterValue = folder_name_or_id.trim();
+        if (!folderFilterValue) {
+          throw new Error("folder_name_or_id must not be empty.");
+        }
+        const folderFilter = escapeForJxa(folderFilterValue);
+        const script = `
+const folderFilter = ${folderFilter};
+
+const folder = document.flattenedFolders.find(item => {
+  return item.id.primaryKey === folderFilter || item.name === folderFilter;
+});
+if (!folder) {
+  throw new Error(\`Folder not found: \${folderFilter}\`);
+}
+
+const folderId = folder.id.primaryKey;
+const folderName = folder.name;
+const projectCount = document.flattenedProjects.filter(project => {
+  return project.folder && project.folder.id.primaryKey === folderId;
+}).length;
+const subfolderCount = document.flattenedFolders.filter(item => {
+  return item.parent && item.parent.id.primaryKey === folderId;
+}).length;
+
+deleteObject(folder);
+
+return {
+  id: folderId,
+  name: folderName,
+  deleted: true,
+  projectCount: projectCount,
+  subfolderCount: subfolderCount
+};
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
 }

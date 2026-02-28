@@ -537,6 +537,38 @@ async def test_update_folder_validation_error_criterion17(server_module: Any) ->
         await server_module.update_folder(folder_name_or_id="folder-1")
 
 
+@pytest.mark.asyncio
+async def test_delete_folder_happy_path_criterion18(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "id": "folder-1",
+        "name": "Areas",
+        "deleted": True,
+        "projectCount": 2,
+        "subfolderCount": 1,
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.delete_folder(folder_name_or_id="folder-1")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const folderFilter = "folder-1";' in script
+    assert "const projectCount = document.flattenedProjects.filter" in script
+    assert "const subfolderCount = document.flattenedFolders.filter" in script
+    assert "deleteObject(folder);" in script
+    assert "subfolderCount: subfolderCount" in script
+
+
+@pytest.mark.asyncio
+async def test_delete_folder_validation_error_criterion18(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="folder_name_or_id must not be empty."):
+        await server_module.delete_folder(folder_name_or_id="   ")
+
+
 @pytest.fixture
 def server_module(monkeypatch: pytest.MonkeyPatch) -> Any:
     class FakeFastMCP:
