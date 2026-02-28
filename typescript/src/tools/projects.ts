@@ -294,7 +294,6 @@ const project = document.flattenedProjects.find(item => {
 if (!project) {
   throw new Error(\`Project not found: \${projectFilter}\`);
 }
-
 let targetStatus;
 if (statusValue === "active") {
   targetStatus = Project.Status.Active;
@@ -305,9 +304,7 @@ if (statusValue === "active") {
 } else {
   throw new Error(\`Invalid status: \${statusValue}\`);
 }
-
 project.status = targetStatus;
-
 return {
   id: project.id.primaryKey,
   name: project.name,

@@ -284,7 +284,7 @@ async def set_project_status(
     status_value = escape_for_jxa(status)
     script = f"""
 const projectFilter = {project_filter};
-const statusInput = {status_value};
+const statusValue = {status_value};
 const project = document.flattenedProjects.find(item => {{
   return item.id.primaryKey === projectFilter || item.name === projectFilter;
 }});
@@ -292,19 +292,23 @@ if (!project) {{
   throw new Error(`Project not found: ${{projectFilter}}`);
 }}
 
-const statusValue = (() => {{
-  if (statusInput === "active") return Project.Status.Active;
-  if (statusInput === "on_hold") return Project.Status.OnHold;
-  if (statusInput === "dropped") return Project.Status.Dropped;
-  throw new Error(`Invalid status: ${{statusInput}}`);
-}})();
+let targetStatus;
+if (statusValue === "active") {{
+  targetStatus = Project.Status.Active;
+}} else if (statusValue === "on_hold") {{
+  targetStatus = Project.Status.OnHold;
+}} else if (statusValue === "dropped") {{
+  targetStatus = Project.Status.Dropped;
+}} else {{
+  throw new Error(`Invalid status: ${{statusValue}}`);
+}}
 
-project.status = statusValue;
+project.status = targetStatus;
 
 return {{
   id: project.id.primaryKey,
   name: project.name,
-  status: statusInput
+  status: statusValue
 }};
 """.strip()
     result = await run_omnijs(script)

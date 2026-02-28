@@ -323,9 +323,9 @@ describe("tool happy paths", () => {
     });
     const script = String(runOmniJsMock.mock.calls[0][0]);
     expect(script).toContain('const projectFilter = "p4";');
-    expect(script).toContain('const statusInput = "on_hold";');
+    expect(script).toContain('const statusValue = "on_hold";');
     expect(script).toContain("Project.Status.OnHold");
-    expect(script).toContain("project.status = statusValue;");
+    expect(script).toContain("project.status = targetStatus;");
   });
 
   test("update_project updates provided fields and returns project summary", async () => {

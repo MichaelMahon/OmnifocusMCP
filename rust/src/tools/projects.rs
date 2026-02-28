@@ -322,20 +322,16 @@ const project = document.flattenedProjects.find(item => {{
 if (!project) {{
   throw new Error(`Project not found: ${{projectFilter}}`);
 }}
-
-let targetStatus;
-if (statusValue === "active") {{
-  targetStatus = Project.Status.Active;
-}} else if (statusValue === "on_hold") {{
-  targetStatus = Project.Status.OnHold;
-}} else if (statusValue === "dropped") {{
-  targetStatus = Project.Status.Dropped;
-}} else {{
+const statusMap = {{
+  active: Project.Status.Active,
+  on_hold: Project.Status.OnHold,
+  dropped: Project.Status.Dropped
+}};
+const targetStatus = statusMap[statusValue];
+if (!targetStatus) {{
   throw new Error(`Invalid status: ${{statusValue}}`);
 }}
-
 project.status = targetStatus;
-
 return {{
   id: project.id.primaryKey,
   name: project.name,

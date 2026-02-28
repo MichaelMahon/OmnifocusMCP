@@ -948,9 +948,9 @@ async def test_set_project_status_happy_path_criterion9(
     assert json.loads(result) == payload
     script = state["calls"][0]["script"]
     assert 'const projectFilter = "p4";' in script
-    assert 'const statusInput = "on_hold";' in script
+    assert 'const statusValue = "on_hold";' in script
     assert "Project.Status.OnHold" in script
-    assert "project.status = statusValue;" in script
+    assert "project.status = targetStatus;" in script
 
 
 @pytest.mark.asyncio
