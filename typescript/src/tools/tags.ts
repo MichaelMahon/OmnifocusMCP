@@ -15,6 +15,7 @@ export function register(server: Server): void {
       try {
         const statusFilter = escapeForJxa(status);
         const script = `
+const statusFilter = ${statusFilter};
 const normalizeTagStatus = (tag) => tag.active ? "active" : "inactive";
 const tagCounts = new Map();
 document.flattenedTasks.forEach(task => {

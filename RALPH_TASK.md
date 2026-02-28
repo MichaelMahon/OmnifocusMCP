@@ -169,8 +169,8 @@ default and only run when explicitly requested.
 22. [x] TypeScript: `typescript/tests/integration.test.ts` created with
         equivalent tests. Uses `describe.skipIf()` or environment variable
         to skip when OmniFocus is unavailable.
-23. [ ] TypeScript integration tests pass when run explicitly.
-24. [ ] No test data leaks — all `[TEST-MCP]` items are cleaned up by
+23. [x] TypeScript integration tests pass when run explicitly.
+24. [x] No test data leaks — all `[TEST-MCP]` items are cleaned up by
         test teardown, even if assertions fail mid-test.
 
 ---
