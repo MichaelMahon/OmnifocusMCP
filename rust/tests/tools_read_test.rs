@@ -14,7 +14,7 @@ use omnifocus_mcp::{
         projects::{get_project, get_project_counts, list_projects, search_projects},
         tags::{list_tags, search_tags},
         tasks::{
-            get_inbox, get_task, get_task_counts, list_notifications, list_subtasks,
+            add_notification, get_inbox, get_task, get_task_counts, list_notifications, list_subtasks,
             list_tasks as list_tasks_with_duration, list_tasks_with_planned, search_tasks,
             search_tasks_with_planned,
         },
@@ -522,6 +522,22 @@ async fn validation_errors_for_read_tools() {
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
+        add_notification(&runner, "   ", Some("2026-03-03T10:30:00Z"), None).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        add_notification(&runner, "t3", None, None).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        add_notification(&runner, "t3", Some("2026-03-03T10:30:00Z"), Some(-60.0)).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        add_notification(&runner, "t3", Some("   "), None).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
         search_tasks(
             &runner,
             "   ",
@@ -841,6 +857,65 @@ async fn list_notifications_script_maps_notification_fields() {
     assert!(script.contains(r#"kind: n.initialFireDate ? "absolute" : "relative","#));
     assert!(script.contains("relativeFireOffset: n.initialFireDate ? null : n.relativeFireOffset,"));
     assert!(script.contains("isSnoozed: n.isSnoozed"));
+}
+
+#[tokio::test]
+async fn add_notification_script_handles_absolute_and_relative_modes() {
+    let absolute_script = Arc::new(Mutex::new(String::new()));
+    let absolute_runner = CapturingRunner {
+        payload: json!({
+            "id": "n2",
+            "kind": "absolute",
+            "absoluteFireDate": "2026-03-03T10:30:00Z",
+            "relativeFireOffset": null,
+            "nextFireDate": "2026-03-03T10:30:00Z",
+            "isSnoozed": false
+        }),
+        last_script: absolute_script.clone(),
+    };
+    let absolute_notification =
+        add_notification(&absolute_runner, "t3", Some("2026-03-03T10:30:00Z"), None)
+            .await
+            .expect("absolute add_notification should parse");
+    assert!(absolute_notification.is_object());
+    let absolute_script_text = absolute_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(absolute_script_text.contains(r#"const taskId = "t3";"#));
+    assert!(absolute_script_text.contains(
+        r#"const absoluteDateValue = "2026-03-03T10:30:00Z";"#
+    ));
+    assert!(absolute_script_text.contains("const relativeOffsetValue = null;"));
+    assert!(absolute_script_text.contains("task.addNotification(new Date(absoluteDateValue))"));
+    assert!(absolute_script_text.contains("task.effectiveDueDate"));
+
+    let relative_script = Arc::new(Mutex::new(String::new()));
+    let relative_runner = CapturingRunner {
+        payload: json!({
+            "id": "n3",
+            "kind": "relative",
+            "absoluteFireDate": null,
+            "relativeFireOffset": -3600,
+            "nextFireDate": "2026-03-03T09:00:00Z",
+            "isSnoozed": false
+        }),
+        last_script: relative_script.clone(),
+    };
+    let relative_notification = add_notification(&relative_runner, "t3", None, Some(-3600.0))
+        .await
+        .expect("relative add_notification should parse");
+    assert!(relative_notification.is_object());
+    let relative_script_text = relative_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(relative_script_text.contains("const absoluteDateValue = null;"));
+    assert!(relative_script_text.contains("const relativeOffsetValue = -3600;"));
+    assert!(relative_script_text.contains("task.addNotification(relativeOffsetValue)"));
+    assert!(relative_script_text.contains(
+        "relativeFireOffset: notification.initialFireDate ? null : notification.relativeFireOffset,"
+    ));
 }
 
 #[tokio::test]

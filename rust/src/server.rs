@@ -39,10 +39,11 @@ use crate::{
         },
         tags::{create_tag, delete_tag, list_tags, search_tags, update_tag},
         tasks::{
-            complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
-            delete_tasks_batch, get_inbox, get_task, get_task_counts, list_notifications,
-            list_subtasks, list_tasks_with_planned, move_task, search_tasks_with_planned,
-            set_task_repetition, uncomplete_task, update_task, CreateTaskInput,
+            add_notification, complete_task, create_subtask, create_task, create_tasks_batch,
+            delete_task, delete_tasks_batch, get_inbox, get_task, get_task_counts,
+            list_notifications, list_subtasks, list_tasks_with_planned, move_task,
+            search_tasks_with_planned, set_task_repetition, uncomplete_task, update_task,
+            CreateTaskInput,
         },
         utility::append_to_note as append_to_note_tool,
     },
@@ -124,6 +125,15 @@ struct TaskIdParams {
 struct TaskIdLimitParams {
     task_id: String,
     limit: Option<i32>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct AddNotificationParams {
+    task_id: String,
+    #[serde(rename = "absoluteDate")]
+    absolute_date: Option<String>,
+    #[serde(rename = "relativeOffset")]
+    relative_offset: Option<f64>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -534,6 +544,22 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         let result = list_notifications(self.runner.as_ref(), &params.task_id)
             .await
             .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "add one notification to a task by id.")]
+    async fn add_notification(
+        &self,
+        Parameters(params): Parameters<AddNotificationParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = add_notification(
+            self.runner.as_ref(),
+            &params.task_id,
+            params.absolute_date.as_deref(),
+            params.relative_offset,
+        )
+        .await
+        .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 
