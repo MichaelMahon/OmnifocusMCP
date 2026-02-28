@@ -136,7 +136,12 @@ async def list_tasks(
     )
     tag_filter_mode_filter = escape_for_jxa(tagFilterMode)
     flagged_filter = "null" if flagged is None else ("true" if flagged else "false")
-    status_filter = escape_for_jxa(status)
+    effective_status = status
+    if (
+        completedBefore is not None or completedAfter is not None
+    ) and status != "completed":
+        effective_status = "all"
+    status_filter = escape_for_jxa(effective_status)
     due_before_filter = "null" if dueBefore is None else escape_for_jxa(dueBefore)
     due_after_filter = "null" if dueAfter is None else escape_for_jxa(dueAfter)
     defer_before_filter = "null" if deferBefore is None else escape_for_jxa(deferBefore)

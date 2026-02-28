@@ -5,9 +5,9 @@
 ## Summary
 
 - Current task: OmniFocus MCP — Superior read-side filtering, sorting, and aggregation
-- Current status: Phase 1 complete. Phase 2 complete. Phase 3 criteria 10-11 complete; continuing Phase 3.
-- Next criterion: **12** — add filter params to `search_tasks`
-- Remaining: criteria 12-36 (25 criteria across Phases 3-11)
+- Current status: Phase 1, Phase 2, and Phase 3 complete; moving to Phase 4.
+- Next criterion: **14** — add new `get_task_counts` tool across all 3 implementations
+- Remaining: criteria 14-36 (23 criteria across Phases 4-11)
 
 ## How This Works
 
@@ -21,7 +21,7 @@ This is how Ralph maintains continuity across iterations.
 |-------|------------------------------------|----------|------|
 | 1     | Enhanced list_tasks                | 1–6      | 6/6  |
 | 2     | Enhanced list_projects/get_project | 7–9      | 3/3  |
-| 3     | Enhanced get_inbox/list_tags/search| 10–13    | 2/4  |
+| 3     | Enhanced get_inbox/list_tags/search| 10–13    | 4/4  |
 | 4     | Aggregate Count Tools              | 14–16    | 0/3  |
 | 5     | Enhanced get_forecast              | 17–18    | 0/2  |
 | 6     | Tests and Parity Verification      | 19–20    | 0/2  |
@@ -31,7 +31,7 @@ This is how Ralph maintains continuity across iterations.
 | 10    | Duplicate Task                     | 32–33    | 0/2  |
 | 11    | Final Parity & Docs                | 34–36    | 0/3  |
 
-**Total: 11 / 36 criteria complete**
+**Total: 13 / 36 criteria complete**
 
 ## Key Context
 
@@ -237,3 +237,15 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 15:06:13
 **Session 23 started** (model: auto)
+
+### 2026-02-28 15:07:40
+- verified criterion 12 (`search_tasks` filter params) is implemented across python/typescript/rust and covered by representative tests
+- ran full gate successfully: python lint+format+mypy+pytest, typescript typecheck+tests, rust fmt+clippy+tests
+- marked criteria 12 and 13 complete in `RALPH_TASK.md`
+- next: criterion 14 (`get_task_counts` new tool)
+
+### 2026-02-28 15:06:47
+**Session 23 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 15:06:49
+**Session 24 started** (model: auto)

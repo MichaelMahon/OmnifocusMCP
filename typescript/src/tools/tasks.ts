@@ -800,7 +800,11 @@ export async function listTasksData(
   const tagNamesFilter = mergedTagNames.length === 0 ? "null" : JSON.stringify(mergedTagNames);
   const tagFilterModeFilter = escapeForJxa(tagFilterMode);
   const flaggedFilter = flagged === undefined ? "null" : flagged ? "true" : "false";
-  const statusFilter = escapeForJxa(status);
+  const effectiveStatus =
+    (completedBefore !== undefined || completedAfter !== undefined) && status !== "completed"
+      ? "all"
+      : status;
+  const statusFilter = escapeForJxa(effectiveStatus);
   const dueBeforeFilter = dueBefore === undefined ? "null" : escapeForJxa(dueBefore);
   const dueAfterFilter = dueAfter === undefined ? "null" : escapeForJxa(dueAfter);
   const deferBeforeFilter = deferBefore === undefined ? "null" : escapeForJxa(deferBefore);
@@ -1000,7 +1004,11 @@ export async function searchTasksData(
   const tagNamesFilter = mergedTagNames.length === 0 ? "null" : JSON.stringify(mergedTagNames);
   const tagFilterModeFilter = escapeForJxa(tagFilterMode);
   const flaggedFilter = flagged === undefined ? "null" : flagged ? "true" : "false";
-  const statusFilter = escapeForJxa(status);
+  const effectiveStatus =
+    (completedBefore !== undefined || completedAfter !== undefined) && status !== "completed"
+      ? "all"
+      : status;
+  const statusFilter = escapeForJxa(effectiveStatus);
   const dueBeforeFilter = dueBefore === undefined ? "null" : escapeForJxa(dueBefore);
   const dueAfterFilter = dueAfter === undefined ? "null" : escapeForJxa(dueAfter);
   const deferBeforeFilter = deferBefore === undefined ? "null" : escapeForJxa(deferBefore);

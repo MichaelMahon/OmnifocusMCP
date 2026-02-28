@@ -630,6 +630,18 @@ async def test_search_tasks_with_status_filter_and_sorting(
 
 
 @pytest.mark.asyncio
+async def test_search_tasks_validation_errors(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="query must not be empty."):
+        await server_module.search_tasks("   ")
+    with pytest.raises(ValueError, match="limit must be greater than 0."):
+        await server_module.search_tasks("shape", limit=0)
+    with pytest.raises(
+        ValueError, match="maxEstimatedMinutes must be greater than or equal to 0."
+    ):
+        await server_module.search_tasks("shape", maxEstimatedMinutes=-1)
+
+
+@pytest.mark.asyncio
 async def test_list_projects_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = [
         {
