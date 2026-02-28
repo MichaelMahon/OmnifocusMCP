@@ -96,6 +96,22 @@ async def test_inbox_resource_returns_inbox_json(
 
 
 @pytest.mark.asyncio
+async def test_projects_resource_returns_active_projects_json(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = [{"id": "p-resource", "name": "Resource project", "status": "active"}]
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.projects_resource()
+
+    assert json.loads(result) == payload
+    assert len(state["calls"]) == 1
+    assert 'const statusFilter = "active";' in state["calls"][0]["script"]
+
+
+@pytest.mark.asyncio
 async def test_list_tasks_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = [
         {

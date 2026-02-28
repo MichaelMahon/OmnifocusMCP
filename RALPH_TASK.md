@@ -260,8 +260,8 @@ encoding GTD workflows.
 ### Success Criteria
 
 44. [x] Resource `omnifocus://inbox` — current inbox tasks as JSON.
-45. [x] Resource `omnifocus://today` — forecast: overdue + due today + flagged.
-46. [ ] Resource `omnifocus://projects` — all active projects summary.
+45. [ ] Resource `omnifocus://today` — forecast: overdue + due today + flagged.
+46. [x] Resource `omnifocus://projects` — all active projects summary.
 47. [ ] Prompt `daily_review` — fetches due-soon, overdue, flagged tasks;
         helps prioritize the day and identify top 3 items.
 48. [ ] Prompt `weekly_review` — fetches all active projects, identifies

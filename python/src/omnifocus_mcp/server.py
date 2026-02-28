@@ -73,6 +73,12 @@ async def today_resource() -> str:
     return await get_forecast()
 
 
+@_typed_resource(mcp, "omnifocus://projects")
+async def projects_resource() -> str:
+    """resource for active project summaries as json."""
+    return await list_projects(status="active")
+
+
 @_typed_tool(mcp)
 async def list_tasks(
     project: str | None = None,
