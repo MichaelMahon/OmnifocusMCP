@@ -187,7 +187,7 @@ parameter (default 100).
         `reviewInterval`.
 21. [x] Tool `get_project` — accepts project `id` or `name`. Returns full
         project detail with root-level tasks.
-22. [ ] Tool `list_tags` — returns all tags: `id`, `name`, `parent` (for
+22. [x] Tool `list_tags` — returns all tags: `id`, `name`, `parent` (for
         nested), `availableTaskCount`, `status`.
 23. [ ] Tool `list_folders` — returns folder hierarchy: `id`, `name`,
         `parentName`, `projectCount`.

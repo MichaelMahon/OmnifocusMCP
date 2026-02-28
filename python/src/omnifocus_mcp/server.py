@@ -364,3 +364,44 @@ return {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@_typed_tool(mcp)
+async def list_tags(limit: int = 100) -> str:
+    """list tags with hierarchy, task availability counts, and status.
+
+    returns tag id, name, parent tag name, available task count, and status.
+    """
+    if limit < 1:
+        raise ValueError("limit must be greater than 0.")
+
+    script = f"""
+const tagCounts = new Map();
+document.flattenedTasks.forEach(task => {{
+  if (task.completed) return;
+  task.tags.forEach(tag => {{
+    const tagId = tag.id.primaryKey;
+    const current = tagCounts.get(tagId) || 0;
+    tagCounts.set(tagId, current + 1);
+  }});
+}});
+
+const normalizeTagStatus = (tag) => {{
+  const rawStatus = String(tag.status || "").toLowerCase().trim();
+  if (rawStatus === "") return "active";
+  return rawStatus.replace(/\\s+/g, "_");
+}};
+
+const tags = document.flattenedTags.slice(0, {limit});
+return tags.map(tag => {{
+  return {{
+    id: tag.id.primaryKey,
+    name: tag.name,
+    parent: tag.parent ? tag.parent.name : null,
+    availableTaskCount: tagCounts.get(tag.id.primaryKey) || 0,
+    status: normalizeTagStatus(tag)
+  }};
+}});
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)

@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 2
-- Current status: Phase 3 in progress (criteria 16-21 complete).
+- Current status: Phase 3 in progress (criteria 16-22 complete).
 
 ## How This Works
 
@@ -19,14 +19,14 @@ This is how Ralph maintains continuity across iterations.
 |-------|-----------------------------------|-----------|------|
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
-| 3     | Python: Read Tools + Tests        | 16–28     | 6/13 |
+| 3     | Python: Read Tools + Tests        | 16–28     | 7/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 0/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 21 / 75 criteria complete**
+**Total: 22 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -191,3 +191,13 @@ This is how Ralph maintains continuity across iterations.
   - includes `taskCount` and `remainingTaskCount` for the whole project
 - re-ran full command from `RALPH_TASK.md`; all checks passed
 - next up: phase 3 criterion 22 (`list_tags`)
+
+### 2026-02-27 22:52:58
+**Session 3 update**
+- completed phase 3 criterion 22 (`list_tags`)
+- extended `python/src/omnifocus_mcp/server.py` with `list_tags(limit=100)`:
+  - validates positive `limit`
+  - returns required fields: `id`, `name`, `parent`, `availableTaskCount`, `status`
+  - computes `availableTaskCount` from non-completed tasks carrying each tag
+- re-ran full command from `RALPH_TASK.md`; all checks passed
+- next up: phase 3 criterion 23 (`list_folders`)
