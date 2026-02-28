@@ -328,7 +328,7 @@ identical — only the server framework and subprocess calls change.
 
 ### Tests (Phase 7)
 
-68. [ ] Tests for `escapeForJxa`: same adversarial inputs as Python tests
+68. [x] Tests for `escapeForJxa`: same adversarial inputs as Python tests
         (quotes, backslashes, newlines, unicode, emoji, empty, long).
 69. [ ] Tests for `runJxa` / `runOmniJs` error paths (mocked subprocess):
         non-zero exit, timeout, malformed JSON.

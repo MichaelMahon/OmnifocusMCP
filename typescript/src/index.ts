@@ -4146,7 +4146,11 @@ ${JSON.stringify(availableTasks)}
   }
 );
 
-server.resource("inbox_resource", "omnifocus://inbox", async (uri) => {
+server.registerResource(
+  "inbox_resource",
+  "omnifocus://inbox",
+  { description: "resource for current inbox tasks as json.", mimeType: "application/json" },
+  async (uri) => {
   try {
     const data = await fetchInboxData(100);
     return {
@@ -4170,9 +4174,14 @@ server.resource("inbox_resource", "omnifocus://inbox", async (uri) => {
       ],
     };
   }
-});
+  }
+);
 
-server.resource("today_resource", "omnifocus://today", async (uri) => {
+server.registerResource(
+  "today_resource",
+  "omnifocus://today",
+  { description: "resource for forecast sections as json.", mimeType: "application/json" },
+  async (uri) => {
   try {
     const data = await fetchForecastData(100);
     return {
@@ -4196,9 +4205,14 @@ server.resource("today_resource", "omnifocus://today", async (uri) => {
       ],
     };
   }
-});
+  }
+);
 
-server.resource("projects_resource", "omnifocus://projects", async (uri) => {
+server.registerResource(
+  "projects_resource",
+  "omnifocus://projects",
+  { description: "resource for active project summaries as json.", mimeType: "application/json" },
+  async (uri) => {
   try {
     const data = await fetchProjectsData(100);
     return {
@@ -4222,11 +4236,12 @@ server.resource("projects_resource", "omnifocus://projects", async (uri) => {
       ],
     };
   }
-});
+  }
+);
 
-server.prompt(
+server.registerPrompt(
   "daily_review",
-  "daily planning prompt with due-soon, overdue, and flagged tasks.",
+  { description: "daily planning prompt with due-soon, overdue, and flagged tasks." },
   async () => {
     const dueSoon = await fetchTasksData({ status: "due_soon", limit: 25 });
     const overdue = await fetchTasksData({ status: "overdue", limit: 25 });
@@ -4256,9 +4271,9 @@ ${JSON.stringify(flagged)}
   }
 );
 
-server.prompt(
+server.registerPrompt(
   "weekly_review",
-  "weekly review prompt with active projects and next-action coverage.",
+  { description: "weekly review prompt with active projects and next-action coverage." },
   async () => {
     const activeProjects = await fetchProjectsData(500);
     const availableTasks = await fetchTasksData({ status: "available", limit: 1000 });
@@ -4290,9 +4305,9 @@ ${JSON.stringify(availableTasks)}
   }
 );
 
-server.prompt(
+server.registerPrompt(
   "inbox_processing",
-  "inbox processing prompt that drives one-by-one clarification decisions.",
+  { description: "inbox processing prompt that drives one-by-one clarification decisions." },
   async () => {
     const inboxItems = await fetchInboxData(200);
     const text = `run a gtd inbox processing session using the inbox data below.
@@ -4320,10 +4335,12 @@ ${JSON.stringify(inboxItems)}
   }
 );
 
-server.prompt(
+server.registerPrompt(
   "project_planning",
-  "project planning prompt that turns a project into actionable next steps.",
-  { project: z.string().min(1) },
+  {
+    description: "project planning prompt that turns a project into actionable next steps.",
+    argsSchema: { project: z.string().min(1) },
+  },
   async ({ project }) => {
     const projectName = project.trim();
     if (projectName === "") {
