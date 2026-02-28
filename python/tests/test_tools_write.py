@@ -383,6 +383,32 @@ async def test_create_tasks_batch_happy_path(mock_server_run_omnijs: Callable[[A
 
 
 @pytest.mark.asyncio
+async def test_create_tasks_batch_uses_single_omnijs_call_for_multiple_tasks(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = [{"id": "t10", "name": "one"}, {"id": "t11", "name": "two"}, {"id": "t12", "name": "three"}]
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.create_tasks_batch(
+        [
+            {"name": "one", "project": "Work"},
+            {"name": "two", "tags": ["home"]},
+            {"name": "three", "flagged": True},
+        ]
+    )
+
+    assert json.loads(result) == payload
+    assert len(state["calls"]) == 1
+    script = state["calls"][0]["script"]
+    assert "const taskInputs = " in script
+    assert '"name": "one"' in script
+    assert '"name": "two"' in script
+    assert '"name": "three"' in script
+
+
+@pytest.mark.asyncio
 async def test_complete_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = {"id": "t4", "name": "Done", "completed": True}
     configured = mock_server_run_omnijs(payload)

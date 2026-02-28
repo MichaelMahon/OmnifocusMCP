@@ -240,9 +240,9 @@ write tools return confirmation with the affected item's current state.
 38. [x] Happy-path tests for every write tool (mocked `run_omnijs`): verify
         the generated JXA script contains correct parameters (e.g.,
         `create_task` sets name, project, tags). Verify return shape.
-39. [ ] Test `create_task` with all optional fields set and with only
+39. [x] Test `create_task` with all optional fields set and with only
         required fields. Verify JXA script differs correctly.
-40. [ ] Test `create_tasks_batch` creates N tasks in a single JXA call
+40. [x] Test `create_tasks_batch` creates N tasks in a single JXA call
         (verify single `run_omnijs` invocation, not N calls).
 41. [ ] Test `update_task` only modifies provided fields (omitted fields
         must NOT be nulled out in the JXA script).

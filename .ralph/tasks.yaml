@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772255170
-generated_at: 2026-02-28T05:06:47Z
+source_mtime: 1772255285
+generated_at: 2026-02-28T05:08:12Z
 
 tasks:
   - id: "line_109"
@@ -275,14 +275,14 @@ tasks:
     raw_marker: 38.
   - id: "line_243"
     line_number: 243
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Test `create_task` with all optional fields set and with only
     indent_level: 0
     raw_marker: 39.
   - id: "line_245"
     line_number: 245
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Test `create_tasks_batch` creates N tasks in a single JXA call
     indent_level: 0

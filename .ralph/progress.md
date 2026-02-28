@@ -4,8 +4,8 @@
 
 ## Summary
 
-- Iterations completed: 5
-- Current status: Phase 4 in progress (criterion 38 complete; next 39).
+- Iterations completed: 6
+- Current status: Phase 4 in progress (criterion 39 complete; next 40).
 
 ## How This Works
 
@@ -20,13 +20,13 @@ This is how Ralph maintains continuity across iterations.
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
 | 3     | Python: Read Tools + Tests        | 16–28     | 13/13 |
-| 4     | Python: Write Tools + Tests       | 29–43     | 10/15 |
+| 4     | Python: Write Tools + Tests       | 29–43     | 11/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 38 / 75 criteria complete**
+**Total: 39 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -432,8 +432,25 @@ This is how Ralph maintains continuity across iterations.
 ### 2026-02-27 23:06:50
 **Session 8 started** (model: auto)
 
+### 2026-02-27 23:07:38
+**Session 8 update**
+- completed phase 4 criterion 39 (`create_task` optional-field matrix)
+- verified `python/tests/test_tools_write.py` covers both cases:
+  - `test_create_task_optional_field_matrix` and `test_create_task_optional_fields_vs_required_only`
+  - assertions confirm generated JXA assignments differ correctly (`"value"` vs `null`)
+- re-ran full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 4 criterion 40 (`create_tasks_batch` single-call verification)
+
 ### 2026-02-27 23:07:35
 **Session 8 ended** - 🔄 Context rotation (token limit reached)
 
 ### 2026-02-27 23:07:37
 **Session 9 started** (model: auto)
+
+### 2026-02-27 23:08:13
+**Session 9 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-27 23:08:15
+**Session 10 started** (model: auto)
