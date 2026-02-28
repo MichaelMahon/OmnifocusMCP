@@ -59,46 +59,6 @@ struct ErrorRunner {
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn list_tasks_with_max<R: JxaRunner>(
-    runner: &R,
-    project: Option<&str>,
-    tag: Option<&str>,
-    tags: Option<Vec<String>>,
-    tag_filter_mode: &str,
-    flagged: Option<bool>,
-    status: &str,
-    due_before: Option<&str>,
-    due_after: Option<&str>,
-    defer_before: Option<&str>,
-    defer_after: Option<&str>,
-    completed_before: Option<&str>,
-    completed_after: Option<&str>,
-    max_estimated_minutes: Option<i32>,
-    limit: i32,
-) -> Result<Vec<omnifocus_mcp::types::TaskResult>, OmniFocusError> {
-    list_tasks_with_duration(
-        runner,
-        project,
-        tag,
-        tags,
-        tag_filter_mode,
-        flagged,
-        status,
-        due_before,
-        due_after,
-        defer_before,
-        defer_after,
-        completed_before,
-        completed_after,
-        max_estimated_minutes,
-        None,
-        "asc",
-        limit,
-    )
-    .await
-}
-
-#[allow(clippy::too_many_arguments)]
 async fn list_tasks<R: JxaRunner>(
     runner: &R,
     project: Option<&str>,
@@ -115,7 +75,7 @@ async fn list_tasks<R: JxaRunner>(
     completed_after: Option<&str>,
     limit: i32,
 ) -> Result<Vec<omnifocus_mcp::types::TaskResult>, OmniFocusError> {
-    list_tasks_with_max(
+    list_tasks_with_duration(
         runner,
         project,
         tag,
@@ -130,6 +90,8 @@ async fn list_tasks<R: JxaRunner>(
         completed_before,
         completed_after,
         None,
+        None,
+        "asc",
         limit,
     )
     .await
@@ -549,7 +511,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
-        None,
         5,
     )
     .await
@@ -574,6 +535,10 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
+        None,
         5,
     )
     .await
@@ -594,6 +559,7 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         "all",
         None,
         "available",
+        None,
         None,
         None,
         None,
@@ -625,6 +591,8 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
+        None,
+        None,
         5,
     )
     .await
@@ -644,6 +612,7 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         "any",
         None,
         "available",
+        None,
         None,
         None,
         None,
@@ -770,7 +739,7 @@ async fn list_tasks_duration_filter_script_contains_expected_logic() {
         last_script: last_script.clone(),
     };
 
-    let listed_15 = list_tasks_with_max(
+    let listed_15 = list_tasks_with_duration(
         &runner,
         None,
         None,
@@ -785,6 +754,8 @@ async fn list_tasks_duration_filter_script_contains_expected_logic() {
         None,
         None,
         Some(15),
+        None,
+        "asc",
         5,
     )
     .await
@@ -799,7 +770,7 @@ async fn list_tasks_duration_filter_script_contains_expected_logic() {
         "if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;"
     ));
 
-    let listed_60 = list_tasks_with_max(
+    let listed_60 = list_tasks_with_duration(
         &runner,
         None,
         None,
@@ -814,6 +785,8 @@ async fn list_tasks_duration_filter_script_contains_expected_logic() {
         None,
         None,
         Some(60),
+        None,
+        "asc",
         5,
     )
     .await
@@ -1008,7 +981,6 @@ async fn list_tasks_invalid_date_error_bubbles_up() {
         None,
         None,
         None,
-        None,
         5,
     )
     .await
@@ -1043,6 +1015,7 @@ async fn list_tasks_tag_filters_support_any_all_merge_and_empty_array() {
         None,
         None,
         None,
+        None,
         5,
     )
     .await
@@ -1071,6 +1044,7 @@ async fn list_tasks_tag_filters_support_any_all_merge_and_empty_array() {
         None,
         None,
         None,
+        None,
         5,
     )
     .await
@@ -1092,6 +1066,7 @@ async fn list_tasks_tag_filters_support_any_all_merge_and_empty_array() {
         "any",
         None,
         "available",
+        None,
         None,
         None,
         None,
