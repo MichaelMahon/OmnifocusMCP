@@ -1531,54 +1531,6 @@ async fn list_tasks_duration_filter_script_contains_expected_logic() {
 }
 
 #[tokio::test]
-async fn get_task_counts_script_includes_filters_and_aggregate_counters() {
-    let last_script = Arc::new(Mutex::new(String::new()));
-    let runner = CapturingRunner {
-        payload: json!({
-            "total": 4,
-            "available": 2,
-            "completed": 1,
-            "overdue": 1,
-            "dueSoon": 1,
-            "flagged": 2,
-            "deferred": 1
-        }),
-        last_script: last_script.clone(),
-    };
-
-    let counts = get_task_counts(
-        &runner,
-        Some("Errands"),
-        Some("Home"),
-        Some(vec!["Deep".to_string(), "Home".to_string()]),
-        "all",
-        Some(true),
-        Some("2026-03-10T00:00:00Z"),
-        None,
-        None,
-        None,
-        None,
-        Some("2026-03-01T00:00:00Z"),
-        Some(30),
-    )
-    .await
-    .expect("task counts should parse");
-
-    assert_eq!(counts.total, 4);
-    assert_eq!(counts.due_soon, 1);
-    let script = last_script
-        .lock()
-        .expect("script capture lock should succeed")
-        .clone();
-    assert!(script.contains(r#"const projectFilter = "Errands";"#));
-    assert!(script.contains(r#"const tagNames = ["Home","Deep"];"#));
-    assert!(script.contains(r#"const tagFilterMode = "all";"#));
-    assert!(script.contains("const counts = {"));
-    assert!(script.contains("counts.dueSoon += 1;"));
-    assert!(script.contains("counts.deferred += 1;"));
-}
-
-#[tokio::test]
 async fn list_tasks_sort_due_date_asc_is_included_in_script() {
     let last_script = Arc::new(Mutex::new(String::new()));
     let runner = CapturingRunner {

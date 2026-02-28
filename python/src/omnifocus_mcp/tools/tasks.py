@@ -692,30 +692,6 @@ const deferBefore = parseOptionalDate(deferBeforeRaw, "deferBefore");
 const deferAfter = parseOptionalDate(deferAfterRaw, "deferAfter");
 const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
 const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
-const filteredTasks = document.flattenedTasks.filter(task => {{
-  if (projectFilter !== null) {{
-    const projectName = task.containingProject ? task.containingProject.name : null;
-    if (projectName !== projectFilter) return false;
-  }}
-  if (tagNames !== null && tagNames.length > 0) {{
-    let tagMatches = false;
-    if (tagFilterMode === "all") {{
-      tagMatches = tagNames.every(tn => task.tags.some(t => t.name === tn));
-    }} else {{
-      tagMatches = task.tags.some(t => tagNames.includes(t.name));
-    }}
-    if (!tagMatches) return false;
-  }}
-  if (flaggedFilter !== null && task.flagged !== flaggedFilter) return false;
-  if (dueBefore !== null && !(task.dueDate !== null && task.dueDate < dueBefore)) return false;
-  if (dueAfter !== null && !(task.dueDate !== null && task.dueDate > dueAfter)) return false;
-  if (deferBefore !== null && !(task.deferDate !== null && task.deferDate < deferBefore)) return false;
-  if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
-  if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
-  if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
-  if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;
-  return true;
-}});
 const counts = {{
   total: 0,
   available: 0,
@@ -725,15 +701,47 @@ const counts = {{
   flagged: 0,
   deferred: 0
 }};
-filteredTasks.forEach(task => {{
+
+for (const task of document.flattenedTasks) {{
+  if (projectFilter !== null) {{
+    const projectName = task.containingProject ? task.containingProject.name : null;
+    if (projectName !== projectFilter) continue;
+  }}
+
+  if (tagNames !== null && tagNames.length > 0) {{
+    let tagMatches = false;
+    if (tagFilterMode === "all") {{
+      tagMatches = tagNames.every(tn => task.tags.some(t => t.name === tn));
+    }} else {{
+      tagMatches = task.tags.some(t => tagNames.includes(t.name));
+    }}
+    if (!tagMatches) continue;
+  }}
+
+  if (flaggedFilter !== null && task.flagged !== flaggedFilter) continue;
+  if (dueBefore !== null && !(task.dueDate !== null && task.dueDate < dueBefore)) continue;
+  if (dueAfter !== null && !(task.dueDate !== null && task.dueDate > dueAfter)) continue;
+  if (deferBefore !== null && !(task.deferDate !== null && task.deferDate < deferBefore)) continue;
+  if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) continue;
+  if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) continue;
+  if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) continue;
+  if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) continue;
+
   counts.total += 1;
-  if (!task.completed && (task.deferDate === null || task.deferDate <= now)) counts.available += 1;
-  if (task.completed) counts.completed += 1;
-  if (!task.completed && task.dueDate !== null && task.dueDate < now) counts.overdue += 1;
-  if (!task.completed && task.dueDate !== null && task.dueDate >= now && task.dueDate <= soon) counts.dueSoon += 1;
   if (task.flagged) counts.flagged += 1;
-  if (!task.completed && task.deferDate !== null && task.deferDate > now) counts.deferred += 1;
-}});
+
+  if (task.completed) {{
+    counts.completed += 1;
+    continue;
+  }}
+
+  const isAvailable = task.deferDate === null || task.deferDate <= now;
+  if (isAvailable) counts.available += 1;
+
+  if (task.deferDate !== null && task.deferDate > now) counts.deferred += 1;
+  if (task.dueDate !== null && task.dueDate < now) counts.overdue += 1;
+  if (task.dueDate !== null && task.dueDate >= now && task.dueDate <= soon) counts.dueSoon += 1;
+}}
 return counts;
 """.strip()
     result = await run_omnijs(script)

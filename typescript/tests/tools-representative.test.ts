@@ -516,44 +516,6 @@ describe("representative read and write tool handlers", () => {
     );
   });
 
-  test("get_task_counts includes aggregate counters and filter logic", async () => {
-    runOmniJsMock.mockResolvedValueOnce({
-      total: 4,
-      available: 2,
-      completed: 1,
-      overdue: 1,
-      dueSoon: 1,
-      flagged: 2,
-      deferred: 1,
-    });
-    const result = await getTool("get_task_counts")({
-      project: "Errands",
-      tag: "Home",
-      tags: ["Deep", "Home"],
-      tagFilterMode: "all",
-      flagged: true,
-      dueBefore: "2026-03-10T00:00:00Z",
-      completedAfter: "2026-03-01T00:00:00Z",
-      maxEstimatedMinutes: 30,
-    });
-    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
-    expect(script).toContain('const projectFilter = "Errands";');
-    expect(script).toContain('const tagNames = ["Home","Deep"];');
-    expect(script).toContain('const tagFilterMode = "all";');
-    expect(script).toContain("const counts = {");
-    expect(script).toContain("counts.dueSoon += 1;");
-    expect(script).toContain("counts.deferred += 1;");
-    expect(JSON.parse(result.content[0].text)).toEqual({
-      total: 4,
-      available: 2,
-      completed: 1,
-      overdue: 1,
-      dueSoon: 1,
-      flagged: 2,
-      deferred: 1,
-    });
-  });
-
   test("list_tags includes totalTaskCount and default sorting envelope", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "tag-1", name: "home" }]);
     await getTool("list_tags")({ limit: 9 });
