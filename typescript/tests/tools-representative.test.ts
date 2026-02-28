@@ -78,14 +78,26 @@ describe("representative read and write tool handlers", () => {
   });
 
   test("get_inbox generates script with limit and parses response", async () => {
-    runOmniJsMock.mockResolvedValueOnce([{ id: "task-1", name: "inbox item" }]);
+    runOmniJsMock.mockResolvedValueOnce([
+      { id: "task-1", name: "inbox item", taskStatus: "available" },
+    ]);
     const result = await getTool("get_inbox")({ limit: 5 });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain(".slice(0, 5)");
     expect(script).toContain("completionDate: task.completionDate ? task.completionDate.toISOString() : null,");
     expect(script).toContain("hasChildren: task.hasChildren");
     expect(script).toContain("taskStatus: (() => {");
-    expect(JSON.parse(result.content[0].text)).toEqual([{ id: "task-1", name: "inbox item" }]);
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed).toEqual([{ id: "task-1", name: "inbox item", taskStatus: "available" }]);
+    expect([
+      "available",
+      "blocked",
+      "next",
+      "due_soon",
+      "overdue",
+      "completed",
+      "dropped",
+    ]).toContain(parsed[0].taskStatus);
   });
 
   test("list_tasks uses provided filters in generated script", async () => {

@@ -122,6 +122,7 @@ fn task_value(id: &str, name: &str) -> Value {
         "estimatedMinutes": null,
         "inInbox": true,
         "hasChildren": false,
+        "taskStatus": "available",
         "sequential": false
     })
 }
@@ -628,6 +629,8 @@ async fn get_inbox_script_includes_completion_and_children_fields() {
     ));
     assert!(script.contains("hasChildren: task.hasChildren"));
     assert!(script.contains("taskStatus: (() => {"));
+    assert!(script.contains("if (s.includes(\"Available\")) return \"available\";"));
+    assert!(script.contains("taskStatus: (() => {"));
 }
 
 #[tokio::test]
@@ -635,11 +638,11 @@ async fn get_forecast_script_includes_deferred_due_this_week_counts_and_enriched
     let last_script = Arc::new(Mutex::new(String::new()));
     let runner = CapturingRunner {
         payload: json!({
-            "overdue": [{"id": "t-over", "name": "Overdue", "completionDate": null, "hasChildren": false}],
-            "dueToday": [{"id": "t-today", "name": "Today", "completionDate": null, "hasChildren": true}],
-            "flagged": [{"id": "t-flag", "name": "Flagged", "completionDate": null, "hasChildren": false}],
-            "deferred": [{"id": "t-def", "name": "Deferred", "completionDate": null, "hasChildren": false}],
-            "dueThisWeek": [{"id": "t-week", "name": "This week", "completionDate": null, "hasChildren": false}],
+            "overdue": [{"id": "t-over", "name": "Overdue", "completionDate": null, "hasChildren": false, "taskStatus": "overdue"}],
+            "dueToday": [{"id": "t-today", "name": "Today", "completionDate": null, "hasChildren": true, "taskStatus": "due_soon"}],
+            "flagged": [{"id": "t-flag", "name": "Flagged", "completionDate": null, "hasChildren": false, "taskStatus": "available"}],
+            "deferred": [{"id": "t-def", "name": "Deferred", "completionDate": null, "hasChildren": false, "taskStatus": "blocked"}],
+            "dueThisWeek": [{"id": "t-week", "name": "This week", "completionDate": null, "hasChildren": false, "taskStatus": "next"}],
             "counts": {
                 "overdueCount": 2,
                 "dueTodayCount": 3,
@@ -671,7 +674,59 @@ async fn get_forecast_script_includes_deferred_due_this_week_counts_and_enriched
         "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
     ));
     assert!(script.contains("hasChildren: task.hasChildren"));
+    assert!(script.contains("taskStatus: (() => {"));
     assert!(script.contains("if (s.includes(\"Dropped\")) return \"dropped\";"));
+    assert!(script.contains("if (s.includes(\"Dropped\")) return \"dropped\";"));
+}
+
+#[tokio::test]
+async fn get_task_and_list_subtasks_scripts_include_task_status_mapper() {
+    let get_task_script = Arc::new(Mutex::new(String::new()));
+    let get_task_runner = CapturingRunner {
+        payload: json!({
+            "id": "t3",
+            "name": "task 3",
+            "note": null,
+            "flagged": false,
+            "dueDate": null,
+            "deferDate": null,
+            "completed": false,
+            "completionDate": null,
+            "taskStatus": "available",
+            "projectName": null,
+            "tags": [],
+            "estimatedMinutes": null,
+            "children": [],
+            "parentName": null,
+            "sequential": false,
+            "repetitionRule": null
+        }),
+        last_script: get_task_script.clone(),
+    };
+    let _ = get_task(&get_task_runner, "t3")
+        .await
+        .expect("get_task should parse");
+    let get_task_script_text = get_task_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(get_task_script_text.contains("taskStatus: (() => {"));
+    assert!(get_task_script_text.contains("String(task.taskStatus)"));
+
+    let list_subtasks_script = Arc::new(Mutex::new(String::new()));
+    let list_subtasks_runner = CapturingRunner {
+        payload: json!([task_value("st-1", "child")]),
+        last_script: list_subtasks_script.clone(),
+    };
+    let _ = list_subtasks(&list_subtasks_runner, "t3", 2)
+        .await
+        .expect("list_subtasks should parse");
+    let list_subtasks_script_text = list_subtasks_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(list_subtasks_script_text.contains("taskStatus: (() => {"));
+    assert!(list_subtasks_script_text.contains("String(subtask.taskStatus)"));
 }
 
 #[tokio::test]
@@ -1152,6 +1207,8 @@ async fn list_tasks_date_filter_script_contains_expected_logic() {
         "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
     ));
     assert!(script.contains("hasChildren: task.hasChildren"));
+    assert!(script.contains("taskStatus: (() => {"));
+    assert!(script.contains("if (s.includes(\"Available\")) return \"available\";"));
     assert!(script.contains("if (s.includes(\"Available\")) return \"available\";"));
     assert!(script.contains("must be a valid ISO 8601 date string."));
 }
@@ -1196,6 +1253,8 @@ async fn search_tasks_script_includes_completion_and_children_fields() {
         "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
     ));
     assert!(script.contains("hasChildren: task.hasChildren"));
+    assert!(script.contains("taskStatus: (() => {"));
+    assert!(script.contains("if (s.includes(\"Overdue\")) return \"overdue\";"));
     assert!(script.contains("if (s.includes(\"Overdue\")) return \"overdue\";"));
 }
 

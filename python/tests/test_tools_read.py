@@ -99,7 +99,17 @@ async def test_get_inbox_happy_path(
 
     result = await server.get_inbox(limit=5)
 
-    assert json.loads(result) == payload
+    parsed = json.loads(result)
+    assert parsed == payload
+    assert parsed[0]["taskStatus"] in {
+        "available",
+        "blocked",
+        "next",
+        "due_soon",
+        "overdue",
+        "completed",
+        "dropped",
+    }
     assert len(state["calls"]) == 1
     assert ".slice(0, 5)" in state["calls"][0]["script"]
     assert (
@@ -107,9 +117,8 @@ async def test_get_inbox_happy_path(
         in state["calls"][0]["script"]
     )
     assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
-    assert 'if (s.includes("Available")) return "available";' in state["calls"][0]["script"]
     assert "taskStatus: (() => {" in state["calls"][0]["script"]
-    assert 'if (s.includes("Available")) return "available";' in state["calls"][0]["script"]
+    assert 'if (s.includes("Dropped")) return "dropped";' in state["calls"][0]["script"]
     assert "taskStatus: (() => {" in state["calls"][0]["script"]
     assert 'if (s.includes("Available")) return "available";' in state["calls"][0]["script"]
 
@@ -617,6 +626,8 @@ async def test_get_task_happy_path(
     assert len(state["calls"]) == 1
     assert 'const taskId = "t3";' in state["calls"][0]["script"]
     assert "taskStatus: (() => {" in state["calls"][0]["script"]
+    assert 'if (s.includes("Overdue")) return "overdue";' in state["calls"][0]["script"]
+    assert "taskStatus: (() => {" in state["calls"][0]["script"]
     assert 'if (s.includes("Completed")) return "completed";' in state["calls"][0]["script"]
 
 
@@ -692,6 +703,8 @@ async def test_list_subtasks_happy_path(
     assert len(state["calls"]) == 1
     assert 'const taskId = "t3";' in state["calls"][0]["script"]
     assert "const subtasks = task.children.slice(0, 4);" in state["calls"][0]["script"]
+    assert "taskStatus: (() => {" in state["calls"][0]["script"]
+    assert 'if (s.includes("Blocked")) return "blocked";' in state["calls"][0]["script"]
     assert "const s = String(subtask.taskStatus);" in state["calls"][0]["script"]
     assert "taskStatus: (() => {" in state["calls"][0]["script"]
     assert 'if (s.includes("Next")) return "next";' in state["calls"][0]["script"]
@@ -732,6 +745,8 @@ async def test_search_tasks_happy_path(
         in state["calls"][0]["script"]
     )
     assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
+    assert "taskStatus: (() => {" in state["calls"][0]["script"]
+    assert 'if (s.includes("DueSoon")) return "due_soon";' in state["calls"][0]["script"]
     assert 'if (s.includes("Available")) return "available";' in state["calls"][0]["script"]
     assert "taskStatus: (() => {" in state["calls"][0]["script"]
     assert 'if (s.includes("Overdue")) return "overdue";' in state["calls"][0]["script"]
@@ -1177,6 +1192,8 @@ async def test_get_forecast_happy_path(
     assert "const counts = {" in state["calls"][0]["script"]
     assert "completionDate: task.completionDate ? task.completionDate.toISOString() : null," in state["calls"][0]["script"]
     assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
+    assert "taskStatus: (() => {" in state["calls"][0]["script"]
+    assert 'if (s.includes("Completed")) return "completed";' in state["calls"][0]["script"]
     assert "taskStatus: (() => {" in state["calls"][0]["script"]
     assert "taskStatus: (() => {" in state["calls"][0]["script"]
     assert 'if (s.includes("Dropped")) return "dropped";' in state["calls"][0]["script"]

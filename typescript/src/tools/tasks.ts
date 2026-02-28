@@ -218,17 +218,6 @@ return subtasks.map(subtask => {
     dueDate: subtask.dueDate ? subtask.dueDate.toISOString() : null,
     deferDate: subtask.deferDate ? subtask.deferDate.toISOString() : null,
     completed: subtask.completed,
-    taskStatus: (() => {
-      const s = String(subtask.taskStatus);
-      if (s.includes("Available")) return "available";
-      if (s.includes("Blocked")) return "blocked";
-      if (s.includes("Next")) return "next";
-      if (s.includes("DueSoon")) return "due_soon";
-      if (s.includes("Overdue")) return "overdue";
-      if (s.includes("Completed")) return "completed";
-      if (s.includes("Dropped")) return "dropped";
-      return "unknown";
-    })(),
     tags: tags,
     estimatedMinutes: subtask.estimatedMinutes,
     hasChildren: subtask.hasChildren,
@@ -1156,32 +1145,10 @@ return tasks.map(task => ({
   deferDate: task.deferDate ? task.deferDate.toISOString() : null,
   completed: task.completed,
   completionDate: task.completionDate ? task.completionDate.toISOString() : null,
-  taskStatus: (() => {
-    const s = String(task.taskStatus);
-    if (s.includes("Available")) return "available";
-    if (s.includes("Blocked")) return "blocked";
-    if (s.includes("Next")) return "next";
-    if (s.includes("DueSoon")) return "due_soon";
-    if (s.includes("Overdue")) return "overdue";
-    if (s.includes("Completed")) return "completed";
-    if (s.includes("Dropped")) return "dropped";
-    return "unknown";
-  })(),
   projectName: task.containingProject ? task.containingProject.name : null,
   tags: task.tags.map(taskTag => taskTag.name),
   estimatedMinutes: task.estimatedMinutes,
-  hasChildren: task.hasChildren,
-  taskStatus: (() => {
-    const s = String(task.taskStatus);
-    if (s.includes("Available")) return "available";
-    if (s.includes("Blocked")) return "blocked";
-    if (s.includes("Next")) return "next";
-    if (s.includes("DueSoon")) return "due_soon";
-    if (s.includes("Overdue")) return "overdue";
-    if (s.includes("Completed")) return "completed";
-    if (s.includes("Dropped")) return "dropped";
-    return "unknown";
-  })()
+  hasChildren: task.hasChildren
 }));
 `.trim();
 return runOmniJs(script);
