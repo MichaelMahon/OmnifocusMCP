@@ -226,7 +226,27 @@ async fn test_read_tools_return_valid_json() -> Result<(), Box<dyn std::error::E
         ],
     );
 
-    let search = search_tasks(&runner, "read tools validation", 20).await?;
+    let search = search_tasks(
+        &runner,
+        "read tools validation",
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "asc",
+        20,
+    )
+    .await?;
     if let Some(first) = search.first() {
         assert!(!first.id.is_empty());
         assert!(!first.name.is_empty());
@@ -407,7 +427,27 @@ async fn test_search_finds_created_task() -> Result<(), Box<dyn std::error::Erro
     let task_id = require_str_field(&created, "id");
     cleanup.register_task(task_id.clone());
 
-    let results = search_tasks(&runner, &token, 50).await?;
+    let results = search_tasks(
+        &runner,
+        &token,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "asc",
+        50,
+    )
+    .await?;
     let result_ids: HashSet<&str> = results.iter().map(|task| task.id.as_str()).collect();
     assert!(result_ids.contains(task_id.as_str()));
 

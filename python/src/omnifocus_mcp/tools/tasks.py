@@ -390,12 +390,8 @@ async def search_tasks(
         raise ValueError("project must not be empty when provided.")
     if tag is not None and tag.strip() == "":
         raise ValueError("tag must not be empty when provided.")
-    if tags is not None:
-        cleaned_tags = [t.strip() for t in tags if t.strip() != ""]
-        if len(cleaned_tags) == 0:
-            tags = None
-        else:
-            tags = cleaned_tags
+    if tags is not None and any(tag_name.strip() == "" for tag_name in tags):
+        raise ValueError("tags entries must not be empty when provided.")
     if tagFilterMode not in ("any", "all"):
         raise ValueError("tagFilterMode must be one of: any, all.")
     if status not in ("available", "due_soon", "overdue", "completed", "all"):

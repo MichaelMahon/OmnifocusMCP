@@ -577,9 +577,56 @@ async def test_search_tasks_happy_path(mock_server_run_omnijs: Callable[[Any], d
 
     assert json.loads(result) == payload
     assert len(state["calls"]) == 1
-    assert 'const query = "milk".toLowerCase();' in state["calls"][0]["script"]
+    assert 'const queryFilter = "milk".toLowerCase();' in state["calls"][0]["script"]
     assert "completionDate: task.completionDate ? task.completionDate.toISOString() : null," in state["calls"][0]["script"]
     assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
+
+
+@pytest.mark.asyncio
+async def test_search_tasks_with_project_filter_uses_combined_filters(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([{"id": "t-project", "name": "task"}])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.search_tasks(query="shape", project="Errands", limit=5)
+    script = state["calls"][0]["script"]
+    assert 'const projectFilter = "Errands";' in script
+    assert "if (projectFilter !== null) {" in script
+    assert "if (!(name.includes(queryFilter) || note.includes(queryFilter))) return false;" in script
+
+
+@pytest.mark.asyncio
+async def test_search_tasks_with_completed_after_auto_includes_completed_and_auto_sort(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([{"id": "t-complete", "name": "task"}])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.search_tasks(query="shape", completedAfter="2026-03-01T00:00:00Z", limit=5)
+    script = state["calls"][0]["script"]
+    assert 'const statusFilter = "available";' in script
+    assert 'const sortBy = "completionDate";' in script
+    assert 'const sortOrder = "desc";' in script
+    assert "const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;" in script
+
+
+@pytest.mark.asyncio
+async def test_search_tasks_with_status_filter_and_sorting(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([{"id": "t-status", "name": "task"}])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.search_tasks(query="shape", status="overdue", sortBy="name", sortOrder="desc", limit=5)
+    script = state["calls"][0]["script"]
+    assert 'const statusFilter = "overdue";' in script
+    assert 'const sortBy = "name";' in script
+    assert 'const sortOrder = "desc";' in script
+    assert 'if (statusFilter === "overdue") {' in script
 
 
 @pytest.mark.asyncio

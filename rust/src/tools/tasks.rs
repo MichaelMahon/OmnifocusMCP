@@ -445,6 +445,8 @@ return subtasks.map(subtask => {{
     parse_task_list(value)
 }
 
+#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)]
 pub async fn search_tasks<R: JxaRunner>(
     runner: &R,
     query: &str,
@@ -517,6 +519,13 @@ pub async fn search_tasks<R: JxaRunner>(
         return Err(OmniFocusError::Validation(
             "sortOrder must be one of: asc, desc.".to_string(),
         ));
+    }
+    if let Some(max_minutes) = max_estimated_minutes {
+        if max_minutes < 0 {
+            return Err(OmniFocusError::Validation(
+                "maxEstimatedMinutes must be greater than or equal to 0.".to_string(),
+            ));
+        }
     }
     if limit < 1 {
         return Err(OmniFocusError::Validation(
