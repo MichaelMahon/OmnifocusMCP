@@ -2011,6 +2011,14 @@ return {{
     return json.dumps(result)
 
 
+@typed_tool(mcp)
+async def duplicate_task(task_id: str, includeChildren: bool = True) -> str:
+    """duplicate a task with all its properties. if the task has subtasks, they are cloned too by default."""
+    return await _duplicate_task_legacy(
+        task_id=task_id, includeChildren=includeChildren
+    )
+
+
 async def _duplicate_task_legacy(task_id: str, includeChildren: bool = True) -> str:
     """duplicate a task with all its properties.
 

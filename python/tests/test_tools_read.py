@@ -867,8 +867,8 @@ async def test_duplicate_task_happy_path_with_children(
     script = state["calls"][0]["script"]
     assert 'const taskId = "t3";' in script
     assert "const includeChildren = true;" in script
-    assert "const duplicates = duplicateTasks([task], insertionLocation);" in script
-    assert "taskStatus: (() => {" in script
+    assert "const duplicated = duplicateTasks([task], insertionLocation);" in script
+    assert "const taskStatusValue = (taskItem) => {" in script
 
 
 @pytest.mark.asyncio
@@ -885,8 +885,8 @@ async def test_duplicate_task_happy_path_without_children(
     assert json.loads(result) == payload
     script = state["calls"][0]["script"]
     assert "const includeChildren = false;" in script
-    assert "const manualClone = new Task(task.name, insertionLocation);" in script
-    assert "manualClone.addTag(tag);" in script
+    assert "duplicatedTask = new Task(task.name, insertionLocation);" in script
+    assert "task.tags.forEach(tag => duplicatedTask.addTag(tag));" in script
 
 
 @pytest.mark.asyncio
