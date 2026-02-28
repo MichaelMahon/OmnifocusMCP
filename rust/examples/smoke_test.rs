@@ -260,6 +260,17 @@ impl SmokeTest {
                 "set_task_repetition did not set weekly rule.".to_string(),
             ));
         }
+        let task_after_repetition_set = get_task(runner, &task_id).await?;
+        if task_after_repetition_set
+            .get("repetitionRule")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            != "FREQ=WEEKLY"
+        {
+            return Err(OmniFocusError::Validation(
+                "get_task did not report weekly repetition after set.".to_string(),
+            ));
+        }
         let repetition_cleared = set_task_repetition(runner, &task_id, None, "regularly").await?;
         if !repetition_cleared
             .get("repetitionRule")
@@ -268,6 +279,16 @@ impl SmokeTest {
         {
             return Err(OmniFocusError::Validation(
                 "set_task_repetition did not clear repetition rule.".to_string(),
+            ));
+        }
+        let task_after_repetition_clear = get_task(runner, &task_id).await?;
+        if !task_after_repetition_clear
+            .get("repetitionRule")
+            .map(Value::is_null)
+            .unwrap_or(false)
+        {
+            return Err(OmniFocusError::Validation(
+                "get_task did not report cleared repetition after clear.".to_string(),
             ));
         }
 
