@@ -4,8 +4,8 @@
 
 ## Summary
 
-- Iterations completed: 28
-- Current status: Phase 7 in progress (criterion 63 complete; next 64).
+- Iterations completed: 32
+- Current status: Phase 7 in progress (criterion 64 complete; next 65).
 
 ## How This Works
 
@@ -23,10 +23,10 @@ This is how Ralph maintains continuity across iterations.
 | 4     | Python: Write Tools + Tests       | 29–43     | 15/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 10/10 |
 | 6     | Python: Polish                    | 54–59     | 6/6  |
-| 7     | TypeScript: Full Port + Tests     | 60–71     | 4/12 |
+| 7     | TypeScript: Full Port + Tests     | 60–71     | 5/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 63 / 75 criteria complete**
+**Total: 64 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -869,3 +869,20 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-27 23:24:19
 **Session 32 started** (model: auto)
+
+### 2026-02-27 23:25:21
+**Session 32 update**
+- completed phase 7 criterion 64 by porting all 9 write tools in `typescript/src/index.ts`:
+  - `create_task`, `create_tasks_batch`, `complete_task`, `update_task`, `delete_task`
+  - `move_task`, `create_project`, `complete_project`, `create_tag`
+- aligned TypeScript tool behavior and JXA scripts with Python write-tool implementations
+- ran full validation command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 7 criterion 65 (resources and prompts port)
+
+### 2026-02-27 23:25:53
+**Session 32 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-27 23:25:55
+**Session 33 started** (model: auto)
