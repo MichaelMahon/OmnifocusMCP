@@ -10,12 +10,12 @@ use crate::{
 pub async fn daily_review<R: JxaRunner>(runner: &R) -> Result<String> {
     let due_soon = list_tasks(
         runner, None, None, None, "any", None, "due_soon", None, None, None, None, None, None,
-        None, 25,
+        None, None, "asc", 25,
     )
     .await?;
     let overdue = list_tasks(
         runner, None, None, None, "any", None, "overdue", None, None, None, None, None, None, None,
-        25,
+        None, "asc", 25,
     )
     .await?;
     let flagged = list_tasks(
@@ -33,6 +33,8 @@ pub async fn daily_review<R: JxaRunner>(runner: &R) -> Result<String> {
         None,
         None,
         None,
+        None,
+        "asc",
         25,
     )
     .await?;
@@ -63,6 +65,8 @@ pub async fn weekly_review<R: JxaRunner>(runner: &R) -> Result<String> {
         None,
         None,
         None,
+        None,
+        "asc",
         1000,
     )
     .await?;
@@ -108,6 +112,8 @@ pub async fn project_planning<R: JxaRunner>(runner: &R, project: &str) -> Result
         None,
         None,
         None,
+        None,
+        "asc",
         500,
     )
     .await?;

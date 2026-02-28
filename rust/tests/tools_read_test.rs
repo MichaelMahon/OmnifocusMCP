@@ -59,7 +59,7 @@ struct ErrorRunner {
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn list_tasks<R: JxaRunner>(
+async fn list_tasks_with_max<R: JxaRunner>(
     runner: &R,
     project: Option<&str>,
     tag: Option<&str>,
@@ -91,6 +91,45 @@ async fn list_tasks<R: JxaRunner>(
         completed_before,
         completed_after,
         max_estimated_minutes,
+        None,
+        "asc",
+        limit,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn list_tasks<R: JxaRunner>(
+    runner: &R,
+    project: Option<&str>,
+    tag: Option<&str>,
+    tags: Option<Vec<String>>,
+    tag_filter_mode: &str,
+    flagged: Option<bool>,
+    status: &str,
+    due_before: Option<&str>,
+    due_after: Option<&str>,
+    defer_before: Option<&str>,
+    defer_after: Option<&str>,
+    completed_before: Option<&str>,
+    completed_after: Option<&str>,
+    limit: i32,
+) -> Result<Vec<omnifocus_mcp::types::TaskResult>, OmniFocusError> {
+    list_tasks_with_duration(
+        runner,
+        project,
+        tag,
+        tags,
+        tag_filter_mode,
+        flagged,
+        status,
+        due_before,
+        due_after,
+        defer_before,
+        defer_after,
+        completed_before,
+        completed_after,
+        None,
         limit,
     )
     .await
@@ -147,7 +186,6 @@ async fn read_task_tools_happy_path() {
         "any",
         None,
         "available",
-        None,
         None,
         None,
         None,
@@ -284,7 +322,6 @@ async fn empty_results_return_empty_vec() {
         None,
         None,
         None,
-        None,
         100,
     )
     .await
@@ -327,7 +364,6 @@ async fn malformed_json_from_jxa_produces_json_parse_error() {
         None,
         None,
         None,
-        None,
         100,
     )
     .await
@@ -358,7 +394,6 @@ async fn validation_errors_for_read_tools() {
             None,
             None,
             None,
-            None,
             0,
         )
         .await,
@@ -373,7 +408,6 @@ async fn validation_errors_for_read_tools() {
             "invalid",
             None,
             "available",
-            None,
             None,
             None,
             None,
@@ -515,7 +549,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
-        None,
         5,
     )
     .await
@@ -537,7 +570,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         "any",
         None,
         "available",
-        None,
         None,
         None,
         None,
@@ -572,6 +604,7 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
+        None,
         5,
     )
     .await
@@ -592,6 +625,7 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         "any",
         None,
         "available",
+        None,
         None,
         None,
         None,
