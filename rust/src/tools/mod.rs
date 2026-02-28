@@ -1,3 +1,4 @@
+#[path = "folders_clean.rs"]
 pub mod folders;
 pub mod forecast;
 pub mod perspectives;
