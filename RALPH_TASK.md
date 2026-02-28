@@ -287,10 +287,10 @@ Harden error handling, packaging, and MCP client integration docs.
 
 ### Success Criteria
 
-54. [ ] All tools return user-friendly errors: OmniFocus not running,
+54. [x] All tools return user-friendly errors: OmniFocus not running,
         task/project/tag not found, invalid input, macOS automation
         permissions not granted.
-55. [ ] `python/README.md` with: install instructions (uv + pip), MCP client
+55. [x] `python/README.md` with: install instructions (uv + pip), MCP client
         configuration examples (Claude Desktop, Cursor, Cline, generic
         stdio), usage examples.
 56. [ ] MCP client configs documented and tested. Examples:

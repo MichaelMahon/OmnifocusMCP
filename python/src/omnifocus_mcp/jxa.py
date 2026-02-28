@@ -16,7 +16,13 @@ def _friendly_jxa_error(stderr: str) -> str:
         return "OmniFocus is not running. Please open OmniFocus and try again."
     if "application isn't running" in lowered and "omnifocus" in lowered:
         return "OmniFocus is not running. Please open OmniFocus and try again."
-    if "not authorized" in lowered or "not permitted" in lowered:
+    if (
+        "not authorized" in lowered
+        or "not permitted" in lowered
+        or "not authorised" in lowered
+        or "automation" in lowered
+        or "(-1743)" in lowered
+    ):
         return (
             "macOS blocked Automation access to OmniFocus. "
             "Grant permission in System Settings > Privacy & Security > Automation."
@@ -41,7 +47,13 @@ def _friendly_omnijs_error(error: str) -> str:
         return "OmniFocus is not running. Please open OmniFocus and try again."
     if "application isn't running" in lowered and "omnifocus" in lowered:
         return "OmniFocus is not running. Please open OmniFocus and try again."
-    if "not authorized" in lowered or "not permitted" in lowered:
+    if (
+        "not authorized" in lowered
+        or "not permitted" in lowered
+        or "not authorised" in lowered
+        or "automation" in lowered
+        or "(-1743)" in lowered
+    ):
         return (
             "macOS blocked Automation access to OmniFocus. "
             "Grant permission in System Settings > Privacy & Security > Automation."

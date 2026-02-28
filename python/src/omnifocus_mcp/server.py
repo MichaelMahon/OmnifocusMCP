@@ -218,6 +218,10 @@ async def list_tasks(
     """
     if limit < 1:
         raise ValueError("limit must be greater than 0.")
+    if project is not None and project.strip() == "":
+        raise ValueError("project must not be empty when provided.")
+    if tag is not None and tag.strip() == "":
+        raise ValueError("tag must not be empty when provided.")
     if status not in ("available", "due_soon", "overdue", "completed", "all"):
         raise ValueError("status must be one of: available, due_soon, overdue, completed, all.")
 
@@ -388,6 +392,8 @@ async def list_projects(
     """
     if limit < 1:
         raise ValueError("limit must be greater than 0.")
+    if folder is not None and folder.strip() == "":
+        raise ValueError("folder must not be empty when provided.")
     if status not in ("active", "on_hold", "completed", "dropped"):
         raise ValueError("status must be one of: active, on_hold, completed, dropped.")
 
@@ -722,6 +728,8 @@ async def create_task(
     """
     if name.strip() == "":
         raise ValueError("name must not be empty.")
+    if project is not None and project.strip() == "":
+        raise ValueError("project must not be empty when provided.")
 
     task_name = escape_for_jxa(name.strip())
     project_name = "null" if project is None else escape_for_jxa(project.strip())
@@ -1042,6 +1050,8 @@ async def move_task(task_id: str, project: str | None = None) -> str:
     """
     if task_id.strip() == "":
         raise ValueError("task_id must not be empty.")
+    if project is not None and project.strip() == "":
+        raise ValueError("project must not be empty when provided.")
 
     task_id_value = escape_for_jxa(task_id.strip())
     project_value = "null" if project is None else escape_for_jxa(project.strip())

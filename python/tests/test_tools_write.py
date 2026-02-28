@@ -630,3 +630,15 @@ async def test_complete_task_nonexistent_id_error(
 async def test_create_task_empty_name_validation_error(server_module: Any) -> None:
     with pytest.raises(ValueError, match="name must not be empty."):
         await server_module.create_task("   ")
+
+
+@pytest.mark.asyncio
+async def test_create_task_empty_project_validation_error(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="project must not be empty when provided"):
+        await server_module.create_task("Task", project="   ")
+
+
+@pytest.mark.asyncio
+async def test_move_task_empty_project_validation_error(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="project must not be empty when provided"):
+        await server_module.move_task("task-1", project="   ")

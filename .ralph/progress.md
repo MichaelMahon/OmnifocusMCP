@@ -4,8 +4,8 @@
 
 ## Summary
 
-- Iterations completed: 17
-- Current status: Phase 6 in progress (phase 5 complete; next 54).
+- Iterations completed: 20
+- Current status: Phase 6 in progress (criterion 54 complete; next 55).
 
 ## How This Works
 
@@ -22,11 +22,11 @@ This is how Ralph maintains continuity across iterations.
 | 3     | Python: Read Tools + Tests        | 16–28     | 13/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 15/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 10/10 |
-| 6     | Python: Polish                    | 54–59     | 0/6  |
+| 6     | Python: Polish                    | 54–59     | 1/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 53 / 75 criteria complete**
+**Total: 54 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -678,3 +678,22 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-27 23:15:22
 **Session 23 started** (model: auto)
+
+### 2026-02-27 23:31:10
+**Session 23 update**
+- completed phase 6 criterion 54 with improved user-facing error normalization in `python/src/omnifocus_mcp/jxa.py`:
+  - preserves clear not-found errors (`Task/Project/Tag/Folder not found: ...`)
+  - maps OmniFocus-not-running and automation permission failures to actionable guidance
+  - wraps unknown Omni Automation failures as `OmniFocus operation failed: ...`
+- added parsing-layer tests in `python/tests/test_parsing.py`:
+  - `test_run_omnijs_surfaces_not_found_errors_cleanly`
+  - `test_run_omnijs_wraps_unknown_errors_with_actionable_prefix`
+- validation passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+- next up: phase 6 criterion 55 (`python/README.md` install/client-config/usage docs)
+
+### 2026-02-27 23:16:15
+**Session 23 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-27 23:16:18
+**Session 24 started** (model: auto)

@@ -735,3 +735,26 @@ Ralph Session Started: Fri Feb 27 23:15:05 CST 2026
 ═══════════════════════════════════════════════════════════════
 Ralph Session Started: Fri Feb 27 23:15:22 CST 2026
 ═══════════════════════════════════════════════════════════════
+[23:15:25] 🟢 SESSION START: model=Auto
+[23:15:29] 🟢 SHELL ls -la → exit 0
+[23:15:31] 🟢 SHELL ls -la .ralph → exit 0
+[23:15:36] 🔴 TOKENS: 91819 / 80000 (114%) - rotation imminent [read:355KB write:0KB assist:0KB shell:0KB]
+[23:15:36] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/guardrails.md (28 lines, ~2.7KB)
+[23:15:36] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/RALPH_TASK.md (367 lines, ~35.8KB)
+[23:15:36] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/errors.log (5 lines, ~.4KB)
+[23:15:36] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/progress.md (681 lines, ~66.5KB)
+[23:15:36] 🔴 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/python/tests/test_parsing.py (90 lines, ~8.7KB)
+[23:15:36] 🔴 ROTATE: Token threshold reached (94133 >= 80000)
+[23:15:40] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/tasks.yaml (535 lines, ~52.2KB)
+[23:15:40] 🟡 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/activity.log (748 lines, ~73.0KB)
+[23:15:45] 🟡 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/python/README.md (4 lines, ~.3KB)
+[23:15:50] 🟡 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/python/pyproject.toml (31 lines, ~3.0KB)
+[23:15:53] 🟡 TOKENS: 60942 / 80000 (76%) - approaching limit [read:234KB write:0KB assist:0KB shell:0KB]
+[23:16:06] 🟡 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/python/README.md (116 lines, ~11.3KB)
+[23:16:14] 🔴 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/progress.md (694 lines, ~67.7KB)
+[23:16:14] 🔴 ROTATE: Token threshold reached (81252 >= 80000)
+
+═══════════════════════════════════════════════════════════════
+Ralph Session Started: Fri Feb 27 23:16:18 CST 2026
+═══════════════════════════════════════════════════════════════
+[23:16:18] 🔴 ROTATE: Token threshold reached (81301 >= 80000)

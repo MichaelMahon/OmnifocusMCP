@@ -438,6 +438,18 @@ async def test_list_tasks_invalid_status_validation_error(server_module: Any) ->
 
 
 @pytest.mark.asyncio
+async def test_list_tasks_empty_project_validation_error(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="project must not be empty when provided"):
+        await server_module.list_tasks(project="   ")
+
+
+@pytest.mark.asyncio
+async def test_list_projects_empty_folder_validation_error(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="folder must not be empty when provided"):
+        await server_module.list_projects(folder="   ")
+
+
+@pytest.mark.asyncio
 async def test_list_tasks_empty_result_returns_empty_array(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:

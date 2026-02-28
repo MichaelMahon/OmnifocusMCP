@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772255685
-generated_at: 2026-02-28T05:15:01Z
+source_mtime: 1772255724
+generated_at: 2026-02-28T05:16:14Z
 
 tasks:
   - id: "line_109"
@@ -380,7 +380,7 @@ tasks:
     raw_marker: 53.
   - id: "line_290"
     line_number: 290
-    status: pending
+    status: completed
     parallel_group: 999999
     description: All tools return user-friendly errors: OmniFocus not running,
     indent_level: 0

@@ -49,3 +49,29 @@ async def test_run_jxa_timeout_raises_timeout_error(
 
     with pytest.raises(TimeoutError, match="timed out"):
         await run_jxa("1 + 1", timeout_seconds=0.01)
+
+
+@pytest.mark.asyncio
+async def test_run_jxa_not_running_has_user_friendly_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_create_subprocess_exec(*args: str, **kwargs: object) -> FakeProcess:
+        return FakeProcess("", "Application isn't running: OmniFocus", 1)
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+
+    with pytest.raises(RuntimeError, match="OmniFocus is not running"):
+        await run_jxa("ignored")
+
+
+@pytest.mark.asyncio
+async def test_run_jxa_permissions_error_has_user_guidance(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_create_subprocess_exec(*args: str, **kwargs: object) -> FakeProcess:
+        return FakeProcess("", "Not authorised to send Apple events to OmniFocus. (-1743)", 1)
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+
+    with pytest.raises(RuntimeError, match="Grant permission in System Settings"):
+        await run_jxa("ignored")

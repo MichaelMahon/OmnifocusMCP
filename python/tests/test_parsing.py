@@ -87,3 +87,16 @@ async def test_run_omnijs_wraps_unknown_errors_with_actionable_prefix(
 
     with pytest.raises(RuntimeError, match="OmniFocus operation failed: unexpected omni automation exception"):
         await run_omnijs("return null;")
+
+
+@pytest.mark.asyncio
+async def test_run_omnijs_permissions_error_is_user_friendly(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_run_jxa_json(script: str, timeout_seconds: float = 30.0) -> Any:
+        return {"ok": False, "error": "Not authorised to send Apple events to OmniFocus. (-1743)"}
+
+    monkeypatch.setattr("omnifocus_mcp.jxa.run_jxa_json", fake_run_jxa_json)
+
+    with pytest.raises(RuntimeError, match="Grant permission in System Settings"):
+        await run_omnijs("return null;")
