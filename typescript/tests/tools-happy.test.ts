@@ -609,6 +609,38 @@ describe("tool happy paths", () => {
     });
   });
 
+  test("update_folder updates name and status", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "folder-1", name: "Areas", status: "dropped" });
+    const handler = registeredTools.get("update_folder");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      folder_name_or_id: "folder-1",
+      name: "Areas",
+      status: "dropped",
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "folder-1",
+      name: "Areas",
+      status: "dropped",
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const folderFilter = "folder-1";');
+    expect(script).toContain('const newName = "Areas";');
+    expect(script).toContain('const statusValue = "dropped";');
+    expect(script).toContain("Folder.Status.Dropped");
+    expect(script).toContain("folder.status = targetStatus;");
+  });
+
+  test("update_folder returns error when no update fields are provided", async () => {
+    const handler = registeredTools.get("update_folder");
+    expect(handler).toBeDefined();
+    const result = await handler!({ folder_name_or_id: "folder-1" });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "at least one field must be provided: name or status.",
+    });
+  });
+
   test("set_project_status returns error for unsupported status value", async () => {
     const handler = registeredTools.get("set_project_status");
     expect(handler).toBeDefined();

@@ -145,4 +145,78 @@ return {
       }
     }
   );
+
+  server.tool(
+    "update_folder",
+    "update a folder by id or name.",
+    {
+      folder_name_or_id: z.string().min(1),
+      name: z.string().min(1).nullable().optional(),
+      status: z.enum(["active", "dropped"]).nullable().optional(),
+    },
+    async ({ folder_name_or_id, name, status }) => {
+      try {
+        const folderFilter = folder_name_or_id.trim();
+        const newNameValue = name === undefined || name === null ? null : name.trim();
+        const statusValue = status === undefined ? null : status;
+
+        if (!folderFilter) {
+          throw new Error("folder_name_or_id must not be empty.");
+        }
+        if (name !== undefined && newNameValue === "") {
+          throw new Error("name must not be empty when provided.");
+        }
+        if (newNameValue === null && statusValue === null) {
+          throw new Error("at least one field must be provided: name or status.");
+        }
+
+        const escapedFolderFilter = escapeForJxa(folderFilter);
+        const escapedName = newNameValue === null ? "null" : escapeForJxa(newNameValue);
+        const escapedStatus = statusValue === null ? "null" : escapeForJxa(statusValue);
+        const script = `
+const folderFilter = ${escapedFolderFilter};
+const newName = ${escapedName};
+const statusValue = ${escapedStatus};
+
+const folder = document.flattenedFolders.find(item => {
+  return item.id.primaryKey === folderFilter || item.name === folderFilter;
+});
+if (!folder) {
+  throw new Error(\`Folder not found: \${folderFilter}\`);
+}
+
+if (newName !== null) {
+  folder.name = newName;
+}
+
+if (statusValue !== null) {
+  let targetStatus;
+  if (statusValue === "active") {
+    targetStatus = Folder.Status.Active;
+  } else if (statusValue === "dropped") {
+    targetStatus = Folder.Status.Dropped;
+  } else {
+    throw new Error(\`Invalid status: \${statusValue}\`);
+  }
+  folder.status = targetStatus;
+}
+
+const normalizeFolderStatus = (item) => {
+  const rawStatus = String(item.status || "").toLowerCase();
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+};
+
+return {
+  id: folder.id.primaryKey,
+  name: folder.name,
+  status: normalizeFolderStatus(folder)
+};
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
 }
