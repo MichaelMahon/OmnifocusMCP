@@ -473,6 +473,38 @@ async def test_create_folder_validation_error_criterion15(server_module: Any) ->
         await server_module.create_folder(name="Areas", parent="   ")
 
 
+@pytest.mark.asyncio
+async def test_get_folder_happy_path_criterion16(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "id": "folder-1",
+        "name": "Work",
+        "status": "active",
+        "parentName": None,
+        "projects": [{"id": "project-1", "name": "Launch", "status": "active"}],
+        "subfolders": [{"id": "folder-2", "name": "Q1"}],
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.get_folder(folder_name_or_id="folder-1")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const folderFilter = "folder-1";' in script
+    assert "Folder not found" in script
+    assert "projects: folder.projects.map" in script
+    assert "subfolders: folder.folders.map" in script
+
+
+@pytest.mark.asyncio
+async def test_get_folder_validation_error_criterion16(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="folder_name_or_id must not be empty."):
+        await server_module.get_folder(folder_name_or_id="   ")
+
+
 @pytest.fixture
 def server_module(monkeypatch: pytest.MonkeyPatch) -> Any:
     class FakeFastMCP:
