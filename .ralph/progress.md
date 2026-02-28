@@ -991,3 +991,22 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 12:30:22
 **Session 18 started** (model: auto)
+
+### 2026-02-28 12:31:00
+- completed criterion 5 (`set_task_repetition`) across Python, TypeScript, and Rust with aligned task-id/rule validation, schedule-type mapping (`regularly`, `from_completion`, `none`), and return shape (`id`, `name`, `repetitionRule`)
+- fixed duplicate-definition regressions before finishing criterion work:
+  - Python: removed duplicate `set_task_repetition` tool definitions in `python/src/omnifocus_mcp/tools/tasks.py`, keeping one canonical implementation
+  - TypeScript: removed duplicate `set_task_repetition` registrations in `typescript/src/tools/tasks.ts`, keeping one canonical tool handler
+- updated TypeScript happy-path expectations so `"none"` maps to `Task.RepetitionScheduleType.None` instead of erroring
+- ran required phase validation commands:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` (`79 passed, 5 skipped`)
+  - `cd typescript && npx tsc --noEmit && npm test` (`36 passed, 5 skipped`)
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 5 complete in `RALPH_TASK.md`
+- next focus: criterion 6 (phase 1 full lint/typecheck/test gates)
+
+### 2026-02-28 12:31:02
+**Session 18 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 12:31:04
+**Session 19 started** (model: auto)

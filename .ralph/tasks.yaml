@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772303191
-generated_at: 2026-02-28T18:26:43Z
+source_mtime: 1772303451
+generated_at: 2026-02-28T18:31:01Z
 
 tasks:
   - id: "line_71"
@@ -37,7 +37,7 @@ tasks:
     raw_marker: 4.
   - id: "line_121"
     line_number: 121
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **`set_task_repetition`** — all 3 implementations.
     indent_level: 0

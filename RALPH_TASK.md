@@ -118,7 +118,7 @@ Reference implementations:
        - **Error:** throw if task not found.
        - Implement and test in all 3 implementations.
 
-5. [ ] **`set_task_repetition`** — all 3 implementations.
+5. [x] **`set_task_repetition`** — all 3 implementations.
        - **Input:** `task_id: str` (non-empty),
          `rule_string: str | null` (ICS RRULE string like "FREQ=WEEKLY"
          or null to clear repetition),
@@ -131,7 +131,7 @@ Reference implementations:
          Return `{ id, name, repetitionRule: task.repetitionRule ? task.repetitionRule.ruleString : null }`.
        - Implement and test in all 3 implementations.
 
-6. [ ] All lint and test commands pass for Phase 1:
+6. [x] All lint and test commands pass for Phase 1:
        - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
        - `cd typescript && npx tsc --noEmit && npm test`
        - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`

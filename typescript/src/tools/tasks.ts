@@ -361,7 +361,7 @@ return {
     "set or clear a task repetition rule by task id.",
     {
       task_id: z.string().min(1),
-      rule_string: z.string().nullable(),
+      rule_string: z.string().nullable().default(null),
       schedule_type: z.enum(["regularly", "from_completion", "none"]).default("regularly"),
     },
     async ({ task_id, rule_string, schedule_type }) => {

@@ -186,7 +186,8 @@ describe("tool happy paths", () => {
     expect(script).toContain("task.repetitionRule = null;");
   });
 
-  test("set_task_repetition rejects none schedule when rule is provided", async () => {
+  test("set_task_repetition supports none schedule type", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "t10", name: "Weekly", repetitionRule: "FREQ=WEEKLY" });
     const handler = registeredTools.get("set_task_repetition");
     expect(handler).toBeDefined();
     const result = await handler!({
@@ -194,9 +195,26 @@ describe("tool happy paths", () => {
       rule_string: "FREQ=WEEKLY",
       schedule_type: "none",
     });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "t10",
+      name: "Weekly",
+      repetitionRule: "FREQ=WEEKLY",
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain("Task.RepetitionScheduleType.None");
+  });
+
+  test("set_task_repetition returns error for empty rule string", async () => {
+    const handler = registeredTools.get("set_task_repetition");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      task_id: "t10",
+      rule_string: "   ",
+      schedule_type: "regularly",
+    });
     expect(result.isError).toBe(true);
     expect(JSON.parse(result.content[0].text)).toEqual({
-      error: "schedule_type must be regularly or from_completion when rule_string is provided.",
+      error: "rule_string must not be empty when provided.",
     });
   });
 
