@@ -407,3 +407,10 @@ This is how Ralph maintains continuity across iterations.
 - ran the Rust task test command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
 - marked criterion 20 complete in `RALPH_TASK.md`
 - next focus: criterion 21 (`rust/tests/tools_write_test.rs`)
+
+### 2026-02-28 11:09:56
+- completed criterion 21 by adding `rust/tests/tools_write_test.rs` with mocked `JxaRunner` coverage for task/project/tag write tools
+- added happy-path tests, validation tests for empty required inputs, JXA error propagation checks, and script-capture assertions that `create_task` includes expected escaped values
+- ran the Rust task test command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 21 complete in `RALPH_TASK.md`
+- next focus: criterion 22 (full rust checks already passing; update task tracking)

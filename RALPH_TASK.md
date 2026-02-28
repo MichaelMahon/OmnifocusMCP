@@ -196,7 +196,7 @@ Use the trait-based approach: tool functions accept `&dyn JxaRunner`
         - Empty results return empty vec
         - Malformed JSON from JXA produces `JsonParse` error
         - Validation errors (limit < 1, empty id, empty query)
-21. [ ] Create `rust/tests/tools_write_test.rs` with mocked `JxaRunner`:
+21. [x] Create `rust/tests/tools_write_test.rs` with mocked `JxaRunner`:
         - Happy path for each write tool
         - Validation errors (empty name, empty project when provided)
         - JXA error propagation
