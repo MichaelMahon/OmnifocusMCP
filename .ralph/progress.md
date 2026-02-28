@@ -1622,3 +1622,24 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 13:04:31
 **Session 52 started** (model: auto)
+
+### 2026-02-28 13:05:20
+- read required Ralph state files before edits (`RALPH_TASK.md`, `.ralph/guardrails.md`, `.ralph/progress.md`, `.ralph/errors.log`)
+- completed criterion 16 (`get_folder`) across Python -> TypeScript -> Rust with aligned input contract (`folder_name_or_id`) and return shape (`id`, `name`, `status`, `parentName`, `projects`, `subfolders`)
+- fixed regression in `python/src/omnifocus_mcp/tools/folders.py` by removing duplicate `get_folder` definitions and restoring one canonical implementation
+- added/verified criterion-specific tests:
+  - python: added `test_get_folder_happy_path_criterion16` and `test_get_folder_validation_error_criterion16` in `python/tests/test_tools_write.py`
+  - typescript: existing `get_folder` happy/error coverage in `typescript/tests/tools-happy.test.ts` now passes with new tool registration
+  - rust: added `get_folder` tool implementation in `rust/src/tools/folders.rs` and `get_folder_script_returns_direct_children` plus validation/happy-path coverage in `rust/tests/tools_write_test.rs`
+- ran full cross-implementation `test_command` from `RALPH_TASK.md` successfully:
+  - python: `ruff check`, `ruff format --check`, `mypy --strict`, `pytest` (`106 passed, 5 skipped`)
+  - typescript: `npx tsc --noEmit`, `npm test` (`54 passed, 5 skipped`)
+  - rust: `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test` (all passing; `tools_write_test` includes new `get_folder` coverage)
+- marked criterion 16 complete in `RALPH_TASK.md`
+- next focus: criterion 17 (`update_folder` in Python -> TypeScript -> Rust)
+
+### 2026-02-28 13:05:04
+**Session 52 ended** - Agent finished naturally (13 criteria remaining)
+
+### 2026-02-28 13:05:06
+**Session 53 started** (model: auto)

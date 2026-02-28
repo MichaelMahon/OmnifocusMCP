@@ -82,7 +82,7 @@ return {
 
   server.tool(
     "get_folder",
-    "get folder details by id or name, including direct projects and subfolders.",
+    "get a folder by id or name with direct child projects and subfolders.",
     {
       folder_name_or_id: z.string().min(1),
     },
@@ -145,5 +145,4 @@ return {
       }
     }
   );
-
 }
