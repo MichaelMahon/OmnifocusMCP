@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772255315
-generated_at: 2026-02-28T05:09:01Z
+source_mtime: 1772255407
+generated_at: 2026-02-28T05:10:16Z
 
 tasks:
   - id: "line_109"
@@ -296,21 +296,21 @@ tasks:
     raw_marker: 41.
   - id: "line_249"
     line_number: 249
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Error-path tests: `complete_task` with nonexistent ID → error.
     indent_level: 0
     raw_marker: 42.
   - id: "line_251"
     line_number: 251
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
     indent_level: 0
     raw_marker: 43.
   - id: "line_262"
     line_number: 262
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Resource `omnifocus://inbox` — current inbox tasks as JSON.
     indent_level: 0

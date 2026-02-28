@@ -497,3 +497,20 @@ This is how Ralph maintains continuity across iterations.
   - `cd ../typescript && npx tsc --noEmit && npm test`
 - phase 4 is now complete (criteria 29-43)
 - next up: phase 5 criterion 44 (`omnifocus://inbox` resource)
+
+### 2026-02-27 23:09:25
+**Session 12 update**
+- validated current phase-4 completion state:
+  - criterion 41 (`update_task` omitted fields not nulled) is present and checked
+  - criterion 42 error-path tests are present and checked
+  - criterion 43 full phase command remains green
+- re-ran command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 5 criterion 44 (`omnifocus://inbox` resource)
+
+### 2026-02-27 23:10:17
+**Session 11 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-27 23:10:19
+**Session 12 started** (model: auto)

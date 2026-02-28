@@ -13,6 +13,13 @@ def _typed_tool(server: Any) -> Callable[[F], F]:
     return cast(Callable[[F], F], server.tool())
 
 
+def _typed_resource(server: Any, uri: str) -> Callable[[F], F]:
+    resource = getattr(server, "resource", None)
+    if callable(resource):
+        return cast(Callable[[F], F], resource(uri))
+    return lambda func: func
+
+
 mcp = FastMCP("omnifocus-mcp")
 
 
@@ -52,6 +59,18 @@ return tasks.map(task => {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@_typed_resource(mcp, "omnifocus://inbox")
+async def inbox_resource() -> str:
+    """resource for current inbox tasks as json."""
+    return await get_inbox()
+
+
+@_typed_resource(mcp, "omnifocus://today")
+async def today_resource() -> str:
+    """resource for forecast sections as json."""
+    return await get_forecast()
 
 
 @_typed_tool(mcp)
