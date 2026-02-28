@@ -444,7 +444,31 @@ When something fails:
 - **Added after**: Iteration $iteration - what happened
 \`\`\`
 
-## Context Rotation Warning
+## Context Budget (Critical — Read This)
+
+You have ~80,000 tokens per session. The state files you just read use ~25-30k.
+That leaves ~50-55k tokens for actual work. Every file read, shell output, and
+assistant message counts against this budget. If you exceed it, you get rotated
+to a fresh agent and lose all in-context work.
+
+### Hard Rules
+
+1. **NEVER read an entire source file** in tools/, tests/, or examples/.
+   These files are 500-1200 lines (50-120KB). ONE file can use your entire budget.
+2. **Use \`rg\` (ripgrep) first** to find the exact function or code you need.
+   Note the line numbers from the grep output.
+3. **Then read only the lines you need** using offset/limit parameters.
+   Example: to modify list_tasks, grep for \`def list_tasks\` or \`async fn list_tasks\`,
+   then read just that function (e.g., lines 200-280).
+4. **Budget math:** 1KB of file = ~250 tokens. Before reading a file, check its size.
+   If it's >200 lines, do NOT read it whole — grep and read a slice.
+5. **For parity/verification tasks:** compare implementations using \`rg\` to extract
+   tool names, parameter names, and JXA script snippets. Diff the grep outputs.
+   NEVER read 3 full source files side-by-side.
+6. **For test files:** grep to find the relevant test, read only that section.
+7. **Shell output counts too.** Pipe long outputs through \`head\` or \`tail\`.
+
+### Rotation Warning
 
 You may receive a warning that context is running low. When you see it:
 1. Finish your current file edit
