@@ -729,3 +729,34 @@ return created;
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@_typed_tool(mcp)
+async def complete_task(task_id: str) -> str:
+    """complete a task by id and return completion confirmation.
+
+    marks the task complete (including repeating-task rollover behavior in
+    omnifocus) and returns the completed task id and name.
+    """
+    if task_id.strip() == "":
+        raise ValueError("task_id must not be empty.")
+
+    task_id_value = escape_for_jxa(task_id.strip())
+
+    script = f"""
+const taskId = {task_id_value};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+
+task.markComplete();
+
+return {{
+  id: task.id.primaryKey,
+  name: task.name,
+  completed: task.completed
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)

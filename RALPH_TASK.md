@@ -220,7 +220,7 @@ write tools return confirmation with the affected item's current state.
         (names), `estimatedMinutes`. No project → inbox. Returns `{id, name}`.
 30. [x] Tool `create_tasks_batch` — array of task definitions (same schema).
         Single JXA call for efficiency. Returns `[{id, name}]`.
-31. [ ] Tool `complete_task` — by `id`. Handles repeating tasks gracefully.
+31. [x] Tool `complete_task` — by `id`. Handles repeating tasks gracefully.
         Returns confirmation with task name.
 32. [ ] Tool `update_task` — by `id`. Optional: `name`, `note`, `dueDate`,
         `deferDate`, `flagged`, `tags[]`, `estimatedMinutes`. Only provided
