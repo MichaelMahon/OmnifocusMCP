@@ -89,7 +89,7 @@ Reference:
 
 ### Success Criteria
 
-9. [ ] Read `rust/src/tools/tasks.rs` to understand the existing
+9. [x] Read `rust/src/tools/tasks.rs` to understand the existing
         `delete_task` and `create_tasks_batch` implementations.
 10. [ ] Add `delete_tasks_batch` function to `rust/src/tools/tasks.rs`:
         - Function signature: `pub async fn delete_tasks_batch<R: JxaRunner>(runner: &R, task_ids: Vec<String>) -> Result<Value>`

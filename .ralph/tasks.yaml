@@ -3,336 +3,133 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772300734
-generated_at: 2026-02-28T17:45:36Z
+source_mtime: 1772301748
+generated_at: 2026-02-28T18:02:53Z
 
 tasks:
-  - id: "line_44"
-    line_number: 44
+  - id: "line_39"
+    line_number: 39
     status: completed
     parallel_group: 999999
-    description: Research the `rmcp` crate (official Rust MCP SDK at
+    description: Read `python/src/omnifocus_mcp/tools/tasks.py` to understand the
     indent_level: 0
     raw_marker: 1.
-  - id: "line_52"
-    line_number: 52
+  - id: "line_41"
+    line_number: 41
     status: completed
     parallel_group: 999999
-    description: Create `.cursor/rules/rust-conventions.mdc` with:
+    description: Add `delete_tasks_batch` tool to `python/src/omnifocus_mcp/tools/tasks.py`:
     indent_level: 0
     raw_marker: 2.
-  - id: "line_67"
-    line_number: 67
+  - id: "line_61"
+    line_number: 61
     status: completed
     parallel_group: 999999
-    description: Create `rust/Cargo.toml` with:
+    description: Add tests in `python/tests/test_tools_write.py`:
     indent_level: 0
     raw_marker: 3.
-  - id: "line_75"
-    line_number: 75
+  - id: "line_66"
+    line_number: 66
     status: completed
     parallel_group: 999999
-    description: Create `rust/src/error.rs`:
+    description: `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
     indent_level: 0
     raw_marker: 4.
-  - id: "line_88"
-    line_number: 88
+  - id: "line_74"
+    line_number: 74
     status: completed
     parallel_group: 999999
-    description: Create `rust/src/types.rs` with result structs:
+    description: Read `typescript/src/tools/tasks.ts` to understand the existing
     indent_level: 0
     raw_marker: 5.
-  - id: "line_101"
-    line_number: 101
+  - id: "line_76"
+    line_number: 76
     status: completed
     parallel_group: 999999
-    description: Create `rust/src/jxa.rs` with three layers matching Python's jxa.py:
+    description: Add `delete_tasks_batch` tool to `typescript/src/tools/tasks.ts`:
     indent_level: 0
     raw_marker: 6.
-  - id: "line_125"
-    line_number: 125
+  - id: "line_82"
+    line_number: 82
     status: completed
     parallel_group: 999999
-    description: Create `rust/src/lib.rs` that re-exports all modules: `error`,
+    description: Add tests in `typescript/tests/tools-tasks.test.ts` (or
     indent_level: 0
     raw_marker: 7.
-  - id: "line_128"
-    line_number: 128
+  - id: "line_84"
+    line_number: 84
     status: completed
     parallel_group: 999999
-    description: `cargo build` succeeds with no errors.
+    description: `cd typescript && npx tsc --noEmit && npm run lint && npm test` all pass.
     indent_level: 0
     raw_marker: 8.
-  - id: "line_129"
-    line_number: 129
-    status: completed
+  - id: "line_92"
+    line_number: 92
+    status: pending
     parallel_group: 999999
-    description: Create `rust/tests/jxa_test.rs` with unit tests:
+    description: Read `rust/src/tools/tasks.rs` to understand the existing
     indent_level: 0
     raw_marker: 9.
-  - id: "line_136"
-    line_number: 136
-    status: completed
+  - id: "line_94"
+    line_number: 94
+    status: pending
     parallel_group: 999999
-    description: JXA bridge probe against real OmniFocus:
+    description: Add `delete_tasks_batch` function to `rust/src/tools/tasks.rs`:
     indent_level: 0
     raw_marker: 10.
-  - id: "line_139"
-    line_number: 139
-    status: completed
+  - id: "line_99"
+    line_number: 99
+    status: pending
     parallel_group: 999999
-    description: `cargo test && cargo clippy -- -D warnings && cargo fmt --check`
+    description: Register the tool in `rust/src/server.rs`:
     indent_level: 0
     raw_marker: 11.
-  - id: "line_155"
-    line_number: 155
-    status: completed
+  - id: "line_103"
+    line_number: 103
+    status: pending
     parallel_group: 999999
-    description: Create `rust/src/tools/mod.rs` re-exporting all tool modules.
+    description: Add tests in `rust/tests/tools_write_test.rs`:
     indent_level: 0
     raw_marker: 12.
-  - id: "line_156"
-    line_number: 156
-    status: completed
+  - id: "line_105"
+    line_number: 105
+    status: pending
     parallel_group: 999999
-    description: Create `rust/src/tools/tasks.rs` with read tools — **signatures
+    description: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` all pass.
     indent_level: 0
     raw_marker: 13.
-  - id: "line_165"
-    line_number: 165
-    status: completed
+  - id: "line_113"
+    line_number: 113
+    status: pending
     parallel_group: 999999
-    description: Add write tools to `rust/src/tools/tasks.rs`:
+    description: Add `delete_tasks_batch` to the Rust smoke test
     indent_level: 0
     raw_marker: 14.
-  - id: "line_176"
-    line_number: 176
-    status: completed
+  - id: "line_116"
+    line_number: 116
+    status: pending
     parallel_group: 999999
-    description: Create `rust/src/tools/projects.rs` — **read Python file first**:
+    description: Run the smoke test against real OmniFocus — zero failures.
     indent_level: 0
     raw_marker: 15.
-  - id: "line_185"
-    line_number: 185
-    status: completed
+  - id: "line_118"
+    line_number: 118
+    status: pending
     parallel_group: 999999
-    description: Create `rust/src/tools/tags.rs`:
+    description: Verify all three implementations produce identical tool names
     indent_level: 0
     raw_marker: 16.
-  - id: "line_188"
-    line_number: 188
-    status: completed
+  - id: "line_128"
+    line_number: 128
+    status: pending
     parallel_group: 999999
-    description: Create `rust/src/tools/folders.rs`:
+    description: Update `README.md` tool count and tool list table to include
     indent_level: 0
     raw_marker: 17.
-  - id: "line_190"
-    line_number: 190
-    status: completed
+  - id: "line_130"
+    line_number: 130
+    status: pending
     parallel_group: 999999
-    description: Create `rust/src/tools/forecast.rs`:
+    description: Update `rust/README.md` if it has a separate tool listing.
     indent_level: 0
     raw_marker: 18.
-  - id: "line_192"
-    line_number: 192
-    status: completed
-    parallel_group: 999999
-    description: Create `rust/src/tools/perspectives.rs`:
-    indent_level: 0
-    raw_marker: 19.
-  - id: "line_194"
-    line_number: 194
-    status: completed
-    parallel_group: 999999
-    description: Create `rust/tests/tools_read_test.rs` with mocked `JxaRunner`:
-    indent_level: 0
-    raw_marker: 20.
-  - id: "line_199"
-    line_number: 199
-    status: completed
-    parallel_group: 999999
-    description: Create `rust/tests/tools_write_test.rs` with mocked `JxaRunner`:
-    indent_level: 0
-    raw_marker: 21.
-  - id: "line_204"
-    line_number: 204
-    status: completed
-    parallel_group: 999999
-    description: `cargo test && cargo clippy -- -D warnings && cargo fmt --check`
-    indent_level: 0
-    raw_marker: 22.
-  - id: "line_215"
-    line_number: 215
-    status: completed
-    parallel_group: 999999
-    description: Create `rust/src/resources.rs` with 3 resource handlers matching
-    indent_level: 0
-    raw_marker: 23.
-  - id: "line_223"
-    line_number: 223
-    status: completed
-    parallel_group: 999999
-    description: Create `rust/src/prompts.rs` with 4 prompt handlers matching
-    indent_level: 0
-    raw_marker: 24.
-  - id: "line_240"
-    line_number: 240
-    status: completed
-    parallel_group: 999999
-    description: Create `rust/src/server.rs`:
-    indent_level: 0
-    raw_marker: 25.
-  - id: "line_249"
-    line_number: 249
-    status: completed
-    parallel_group: 999999
-    description: Create `rust/src/main.rs`:
-    indent_level: 0
-    raw_marker: 26.
-  - id: "line_256"
-    line_number: 256
-    status: completed
-    parallel_group: 999999
-    description: `echo '{}' | cargo run` starts the server and exits cleanly
-    indent_level: 0
-    raw_marker: 27.
-  - id: "line_258"
-    line_number: 258
-    status: completed
-    parallel_group: 999999
-    description: `cargo run -- --version` prints `omnifocus-mcp` followed by
-    indent_level: 0
-    raw_marker: 28.
-  - id: "line_260"
-    line_number: 260
-    status: completed
-    parallel_group: 999999
-    description: Create `rust/tests/resources_test.rs` — verify resource content
-    indent_level: 0
-    raw_marker: 29.
-  - id: "line_265"
-    line_number: 265
-    status: completed
-    parallel_group: 999999
-    description: `cargo test && cargo clippy -- -D warnings && cargo fmt --check`
-    indent_level: 0
-    raw_marker: 30.
-  - id: "line_277"
-    line_number: 277
-    status: completed
-    parallel_group: 999999
-    description: Create `rust/examples/smoke_test.rs` — standalone async binary
-    indent_level: 0
-    raw_marker: 31.
-  - id: "line_280"
-    line_number: 280
-    status: completed
-    parallel_group: 999999
-    description: Smoke test passes against real OmniFocus with zero failures.
-    indent_level: 0
-    raw_marker: 32.
-  - id: "line_283"
-    line_number: 283
-    status: completed
-    parallel_group: 999999
-    description: Create `rust/tests/integration_test.rs` gated by
-    indent_level: 0
-    raw_marker: 33.
-  - id: "line_292"
-    line_number: 292
-    status: completed
-    parallel_group: 999999
-    description: Integration tests pass: `cargo test --features integration`
-    indent_level: 0
-    raw_marker: 34.
-  - id: "line_294"
-    line_number: 294
-    status: completed
-    parallel_group: 999999
-    description: Integration tests are excluded from normal `cargo test`.
-    indent_level: 0
-    raw_marker: 35.
-  - id: "line_295"
-    line_number: 295
-    status: completed
-    parallel_group: 999999
-    description: No test data leaks — all `[TEST-MCP]` items cleaned up by
-    indent_level: 0
-    raw_marker: 36.
-  - id: "line_308"
-    line_number: 308
-    status: completed
-    parallel_group: 999999
-    description: `cargo build --release` produces a working binary at
-    indent_level: 0
-    raw_marker: 37.
-  - id: "line_311"
-    line_number: 311
-    status: completed
-    parallel_group: 999999
-    description: Create `.github/workflows/release-rust.yml`:
-    indent_level: 0
-    raw_marker: 38.
-  - id: "line_321"
-    line_number: 321
-    status: completed
-    parallel_group: 999999
-    description: Create `homebrew/omnifocus-mcp.rb` — Homebrew formula template:
-    indent_level: 0
-    raw_marker: 39.
-  - id: "line_329"
-    line_number: 329
-    status: completed
-    parallel_group: 999999
-    description: Create `docs/install-rust.md` with:
-    indent_level: 0
-    raw_marker: 40.
-  - id: "line_347"
-    line_number: 347
-    status: completed
-    parallel_group: 999999
-    description: Update top-level `README.md`:
-    indent_level: 0
-    raw_marker: 41.
-  - id: "line_352"
-    line_number: 352
-    status: completed
-    parallel_group: 999999
-    description: Release binary smoke test: build release binary, run the
-    indent_level: 0
-    raw_marker: 42.
-  - id: "line_361"
-    line_number: 361
-    status: completed
-    parallel_group: 999999
-    description: `cargo fmt --check` is clean (no formatting issues).
-    indent_level: 0
-    raw_marker: 43.
-  - id: "line_362"
-    line_number: 362
-    status: completed
-    parallel_group: 999999
-    description: `cargo clippy -- -D warnings` is clean (no lint warnings).
-    indent_level: 0
-    raw_marker: 44.
-  - id: "line_363"
-    line_number: 363
-    status: completed
-    parallel_group: 999999
-    description: `cargo test` passes (all mocked tests, integration skipped).
-    indent_level: 0
-    raw_marker: 45.
-  - id: "line_364"
-    line_number: 364
-    status: completed
-    parallel_group: 999999
-    description: `.gitignore` updated to exclude `rust/target/`.
-    indent_level: 0
-    raw_marker: 46.
-  - id: "line_366"
-    line_number: 366
-    status: completed
-    parallel_group: 999999
-    description: Git status is clean — no untracked source files, no uncommitted
-    indent_level: 0
-    raw_marker: 47.
