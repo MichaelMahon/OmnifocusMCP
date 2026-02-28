@@ -613,6 +613,11 @@ This is how Ralph maintains continuity across iterations.
 - completed criterion 36 using prefix-based cleanup at test boundaries in `rust/tests/integration_test.rs` so `[TEST-MCP]` artifacts are removed between runs
 - next focus: criterion 37 (`cd rust && cargo build --release` plus `--version` verification)
 
+### 2026-02-28 12:45:00
+- completed criterion 37 by running `cd rust && cargo build --release` and validating the built binary at `rust/target/release/omnifocus-mcp`
+- verified version output with `./target/release/omnifocus-mcp --version` -> `omnifocus-mcp 0.1.0`
+- next focus: criterion 38 (`.github/workflows/release-rust.yml`)
+
 ### 2026-02-28 11:31:21
 **Session 18 ended** - 🔄 Context rotation (token limit reached)
 
@@ -653,3 +658,11 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 11:37:47
 **Session 24 started** (model: auto)
+
+### 2026-02-28 11:40:51
+- repaired `rust/tests/integration_test.rs` after duplicate-content corruption and restored a single feature-gated integration suite with the required five tests
+- validated criterion 34 with `cd rust && cargo test --features integration` (`5 passed` with real OmniFocus)
+- validated criterion 35 with `cd rust && cargo test` (integration tests excluded in default runs; `integration_test.rs` reports `0 tests`)
+- retained explicit teardown strategy (cleanup at test start and end) in integration tests for criterion 36
+- reran required rust task command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- next focus: begin Phase 5 criterion 37 (`cargo build --release` and release binary verification)

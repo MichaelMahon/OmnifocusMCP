@@ -305,7 +305,7 @@ distribution.
 
 ### Success Criteria
 
-37. [ ] `cargo build --release` produces a working binary at
+37. [x] `cargo build --release` produces a working binary at
         `rust/target/release/omnifocus-mcp`. Verify it starts and
         responds to `--version`.
 38. [ ] Create `.github/workflows/release-rust.yml`:
