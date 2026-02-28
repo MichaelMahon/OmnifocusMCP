@@ -41,7 +41,7 @@ files. Do NOT modify `RALPH_TASK.md`. This task is docs/config only.
        - `rust/Cargo.toml` — add `license = "MIT"` under `[package]`
          if missing.
 
-4. [ ] Delete the top-level `package.json`. It is a junk placeholder
+4. [x] Delete the top-level `package.json`. It is a junk placeholder
        (name: "OmnifocusMCP", no real purpose). The real package.json
        lives in `typescript/`. Verify nothing depends on the root one
        before deleting.
