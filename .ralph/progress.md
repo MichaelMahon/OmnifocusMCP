@@ -273,3 +273,9 @@ This is how Ralph maintains continuity across iterations.
 - reran the Ralph test command from `RALPH_TASK.md`; all python and TypeScript checks/tests passed after Docker documentation changes
 - marked criterion 27 complete in `RALPH_TASK.md`
 - next focus: implement criterion 28 (top-level `README.md` quick start and full capabilities table)
+
+### 2026-02-28 10:37:00
+- completed criterion 28 by rewriting top-level `README.md` with quick-start links to all three install guides, status indicators, and full capability tables covering all 19 tools, 3 resources, and 4 prompts
+- preserved required MCP config/switching documentation sections and reran the Ralph test command; both implementations' checks/tests passed
+- marked criterion 28 complete in `RALPH_TASK.md`
+- next focus: execute criterion 29 guide validation steps (python startup, TypeScript startup, docker build/run checks)

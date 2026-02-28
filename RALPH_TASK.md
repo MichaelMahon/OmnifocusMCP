@@ -216,7 +216,7 @@ running mocked tests). The Docker guide must explain this clearly.
         - Commands to run linting, type-checking, and mocked tests
           inside the container for both implementations
         - Example CI usage (GitHub Actions snippet or similar)
-28. [ ] Update the top-level `README.md`:
+28. [x] Update the top-level `README.md`:
         - Add a "Quick Start" section linking to the three guides
         - List all 19 tools, 3 resources, and 4 prompts with one-line
           descriptions in a features table

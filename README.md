@@ -1,60 +1,75 @@
 # OmniFocus MCP
 
-OmniFocus MCP is a Model Context Protocol server that lets MCP-compatible clients interact with OmniFocus on macOS via JXA (`osascript` + `evaluateJavaScript`).
+OmniFocus MCP is a Model Context Protocol server for OmniFocus automation on macOS, powered by JXA (`osascript`) and Omni Automation (`evaluateJavascript` bridge).
 
-This monorepo ships two full implementations with matching tool names and response shapes:
+## Status
 
-- Python implementation: `python/`
-- TypeScript implementation: `typescript/`
+| Indicator | Value |
+| --- | --- |
+| Stability | ✅ validated with mocked test suites in both implementations |
+| Tooling parity | ✅ Python and TypeScript expose matching tool/resource/prompt surfaces |
+| Platform support | ✅ macOS host runtime (OmniFocus + Apple Events) |
+
+## Quick Start
+
+- Python install and runtime guide: [`docs/install-python.md`](docs/install-python.md)
+- TypeScript install and runtime guide: [`docs/install-typescript.md`](docs/install-typescript.md)
+- Docker development and CI guide: [`docs/development-docker.md`](docs/development-docker.md)
 
 ## Prerequisites
 
-- macOS with OmniFocus 3+ installed
-- OmniFocus running when tools are invoked
-- macOS Automation permission granted to your terminal/editor
-- Python 3.10+ (Python implementation)
-- Node.js 18+ and npm (TypeScript implementation)
+- macOS with OmniFocus installed
+- OmniFocus running when tools are used
+- Automation permission granted to the terminal/editor process
+- Python 3.11+ and `uv` (Python server)
+- Node.js 20+ and npm (TypeScript server)
 
-## Feature Comparison
+## Features
 
-| Capability | Python (`python/`) | TypeScript (`typescript/`) |
+### tools (19)
+
+| Type | Name | Description |
 | --- | --- | --- |
-| MCP transport | stdio | stdio |
-| JXA bridge (`evaluateJavaScript`) | yes | yes |
-| Read tools | yes (10) | yes (10) |
-| Write tools | yes (9) | yes (9) |
-| Resources | yes (3) | yes (3) |
-| Prompts | yes (4) | yes (4) |
-| Primary run command | `python -m omnifocus_mcp` or `omnifocus-mcp` | `node dist/index.js` |
-| Packaging entrypoint | `pyproject.toml` script | `package.json` bin |
+| tool | `get_inbox` | Return inbox tasks that are not completed. |
+| tool | `list_tasks` | List tasks with filters for project, tag, flagged state, and status. |
+| tool | `get_task` | Fetch one task by stable OmniFocus task id. |
+| tool | `search_tasks` | Search tasks by case-insensitive text in name and note. |
+| tool | `create_task` | Create one task in inbox or a named project with optional metadata. |
+| tool | `create_tasks_batch` | Create multiple tasks in a single OmniJS call. |
+| tool | `complete_task` | Mark a task complete by id. |
+| tool | `update_task` | Apply partial updates to an existing task by id. |
+| tool | `delete_task` | Delete a task by id and return deletion status. |
+| tool | `move_task` | Move a task into a target project or back to inbox. |
+| tool | `list_projects` | List projects with optional folder and status filters. |
+| tool | `get_project` | Return full details for a project by id or exact name. |
+| tool | `create_project` | Create a project with optional folder, note, dates, and mode. |
+| tool | `complete_project` | Mark a project complete by id or exact name. |
+| tool | `list_tags` | List tags with active task counts and status filtering. |
+| tool | `create_tag` | Create a tag with an optional parent tag. |
+| tool | `list_folders` | List folder hierarchy and project counts. |
+| tool | `get_forecast` | Return forecast sections for overdue, due today, and flagged work. |
+| tool | `list_perspectives` | List available built-in and custom perspectives. |
 
-## Install
+### resources (3)
 
-### Python implementation
+| Type | Name | Description |
+| --- | --- | --- |
+| resource | `inbox_resource` (`omnifocus://inbox`) | Current inbox snapshot in JSON form. |
+| resource | `today_resource` (`omnifocus://today`) | Forecast snapshot for overdue, today, and flagged tasks. |
+| resource | `projects_resource` (`omnifocus://projects`) | Active project summaries in JSON form. |
 
-```bash
-cd python
-uv pip install -e ".[dev]"
-```
+### prompts (4)
 
-Alternative:
-
-```bash
-cd python
-python -m pip install -e ".[dev]"
-```
-
-### TypeScript implementation
-
-```bash
-cd typescript
-npm install
-npm run build
-```
+| Type | Name | Description |
+| --- | --- | --- |
+| prompt | `daily_review` | Build a daily plan from overdue, due-soon, and flagged tasks. |
+| prompt | `weekly_review` | Run GTD-style weekly review across active projects and next actions. |
+| prompt | `inbox_processing` | Process inbox items one-by-one into concrete decisions. |
+| prompt | `project_planning` | Turn a project into sequenced executable next actions. |
 
 ## MCP client config examples
 
-Any MCP client with stdio support can use either implementation.
+Any MCP client with stdio support can run either implementation.
 
 ### Claude Desktop
 
@@ -115,49 +130,19 @@ TypeScript:
 }
 ```
 
-### Cline
-
-Python:
-
-```json
-{
-  "mcpServers": {
-    "omnifocus-python": {
-      "command": "python",
-      "args": ["-m", "omnifocus_mcp"],
-      "cwd": "/absolute/path/to/OmnifocusMCP/python"
-    }
-  }
-}
-```
-
-TypeScript:
-
-```json
-{
-  "mcpServers": {
-    "omnifocus-typescript": {
-      "command": "node",
-      "args": ["dist/index.js"],
-      "cwd": "/absolute/path/to/OmnifocusMCP/typescript"
-    }
-  }
-}
-```
-
 ### switching between Python and TypeScript
 
-- use the Python config when you want `uv`/`python` execution from `python/`
+- use the Python config when you want `uv` or `python` execution from `python/`
 - use the TypeScript config when you want `node` execution from `typescript/dist/index.js`
-- keep only one OmniFocus server entry enabled in your client config to avoid duplicate tool sets
+- keep only one OmniFocus server entry enabled to avoid duplicate tool sets
 
 ## switching implementations
 
 1. choose either the Python or TypeScript command block for your MCP client
-2. replace the existing OmniFocus server entry with the other implementation command
+2. replace your existing OmniFocus server entry with the other implementation command
 3. restart the MCP client so it reloads the server command
 
-## Docs
+## Additional Docs
 
-- Python docs: `python/README.md`
-- TypeScript docs: `typescript/README.md`
+- Python implementation details: `python/README.md`
+- TypeScript implementation details: `typescript/README.md`
