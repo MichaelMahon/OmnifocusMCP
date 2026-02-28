@@ -26,6 +26,7 @@ from omnifocus_mcp.tools.projects import (  # noqa: E402,F401
     uncomplete_project,
 )
 from omnifocus_mcp.tools.tasks import (  # noqa: E402,F401
+    add_notification,
     append_to_note,
     complete_task,
     create_task,

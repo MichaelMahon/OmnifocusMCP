@@ -6,7 +6,7 @@
 ## Summary
 
 - Current task: OmniFocus MCP — Superior read-side filtering, sorting, and aggregation
-- Current status: Phases 1-8 complete; Phase 9 started (28/36 criteria done)
+- Current status: Phases 1-8 complete and Phase 9 in progress (28/36 criteria done).
 - Next criterion: **29** — implement `add_notification` across all 3 implementations
 - Remaining: criteria 29-36 (8 criteria across Phases 9-11)
 
@@ -33,12 +33,7 @@
 - Python tools: `python/src/omnifocus_mcp/tools/*.py`
 - TypeScript tools: `typescript/src/tools/*.ts`
 - Rust tools: `rust/src/tools/*.rs`
-- Criteria 23-27 complete: taskStatus, effective fields, modified timestamps, and plannedDate support are implemented
-- Criterion 28 complete: `list_notifications` added in Python/TypeScript/Rust with task-id validation and notification summary mapping
-- Focused validation run passed for criterion 28:
-  - `cd python && pytest tests/test_tools_read.py -k "list_notifications" -v`
-  - `cd typescript && npm test -- tools-representative.test.ts`
-  - `cd rust && cargo test list_notifications -- --nocapture`
+- Criteria 23-28 complete: taskStatus/effective fields/modified/plannedDate and `list_notifications`
 - Next: criterion 29 (`add_notification`)
 
 ## Session History (keep only last 3 substantive entries)
@@ -57,9 +52,10 @@
   - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
 - next: criterion 28 (`list_notifications` new tool across python/typescript/rust)
 
-### 2026-02-28 16:08-16:10
-- completed criterion 28 by adding `list_notifications` in all 3 implementations with identical JXA notification mapping
-- wired Python and Rust server exports/registration for the new tool
-- added tests in `python/tests/test_tools_read.py`, `typescript/tests/tools-representative.test.ts`, and `rust/tests/tools_read_test.rs`
-- ran focused criterion tests; all passed
+### 2026-02-28 16:08
+- verified criterion 28 is implemented in Python/TypeScript/Rust with matching JXA mapping and task-not-found behavior
+- ran focused notification tests:
+  - `cd python && pytest tests/test_tools_read.py -k list_notifications -v`
+  - `cd typescript && npm test -- tools-representative.test.ts -t list_notifications`
+  - `cd rust && cargo test --test tools_read_test list_notifications_script_maps_notification_fields`
 - next: criterion 29 (`add_notification`)

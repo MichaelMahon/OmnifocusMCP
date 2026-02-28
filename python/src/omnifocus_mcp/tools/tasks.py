@@ -1306,6 +1306,67 @@ return task.notifications.map(n => ({{
 
 
 @typed_tool(mcp)
+async def add_notification(
+    task_id: str,
+    absoluteDate: str | None = None,
+    relativeOffset: float | None = None,
+) -> str:
+    """add one notification to a task by id.
+
+    exactly one of absoluteDate or relativeOffset must be provided.
+    relativeOffset requires the task to have an effective due date.
+    returns the created notification summary.
+    """
+    if task_id.strip() == "":
+        raise ValueError("task_id must not be empty.")
+
+    has_absolute = absoluteDate is not None
+    has_relative = relativeOffset is not None
+    if has_absolute == has_relative:
+        raise ValueError(
+            "exactly one of absoluteDate or relativeOffset must be provided."
+        )
+    if absoluteDate is not None and absoluteDate.strip() == "":
+        raise ValueError("absoluteDate must not be empty when provided.")
+
+    task_id_filter = escape_for_jxa(task_id.strip())
+    absolute_date_filter = (
+        "null" if absoluteDate is None else escape_for_jxa(absoluteDate.strip())
+    )
+    relative_offset_filter = (
+        "null" if relativeOffset is None else repr(float(relativeOffset))
+    )
+    script = f"""
+const taskId = {task_id_filter};
+const absoluteDateValue = {absolute_date_filter};
+const relativeOffsetValue = {relative_offset_filter};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+if (relativeOffsetValue !== null && !task.effectiveDueDate) {{
+  throw new Error(`Task ${{taskId}} must have an effective due date when using relativeOffset.`);
+}}
+const notification = absoluteDateValue !== null
+  ? task.addNotification(new Date(absoluteDateValue))
+  : task.addNotification(relativeOffsetValue);
+if (!notification) {{
+  throw new Error("Failed to create notification.");
+}}
+return {{
+  id: notification.id.primaryKey,
+  kind: notification.initialFireDate ? "absolute" : "relative",
+  absoluteFireDate: notification.initialFireDate ? notification.initialFireDate.toISOString() : null,
+  relativeFireOffset: notification.initialFireDate ? null : notification.relativeFireOffset,
+  nextFireDate: notification.nextFireDate ? notification.nextFireDate.toISOString() : null,
+  isSnoozed: notification.isSnoozed
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
 async def create_task(
     name: str,
     project: str | None = None,
