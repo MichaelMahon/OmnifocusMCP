@@ -96,6 +96,22 @@ async def test_inbox_resource_returns_inbox_json(
 
 
 @pytest.mark.asyncio
+async def test_today_resource_returns_forecast_json(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"overdue": [], "dueToday": [{"id": "d1"}], "flagged": [{"id": "f1"}]}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.today_resource()
+
+    assert json.loads(result) == payload
+    assert len(state["calls"]) == 1
+    assert "const overdue = openTasks" in state["calls"][0]["script"]
+
+
+@pytest.mark.asyncio
 async def test_projects_resource_returns_active_projects_json(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:

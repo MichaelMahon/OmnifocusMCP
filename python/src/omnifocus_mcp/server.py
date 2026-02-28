@@ -20,6 +20,13 @@ def _typed_resource(server: Any, uri: str) -> Callable[[F], F]:
     return lambda func: func
 
 
+def _typed_prompt(server: Any) -> Callable[[F], F]:
+    prompt = getattr(server, "prompt", None)
+    if callable(prompt):
+        return cast(Callable[[F], F], prompt())
+    return lambda func: func
+
+
 mcp = FastMCP("omnifocus-mcp")
 
 
@@ -77,6 +84,32 @@ async def today_resource() -> str:
 async def projects_resource() -> str:
     """resource for active project summaries as json."""
     return await list_projects(status="active")
+
+
+@_typed_prompt(mcp)
+async def daily_review() -> str:
+    """daily planning prompt with due-soon, overdue, and flagged tasks."""
+    due_soon = await list_tasks(status="due_soon", limit=25)
+    overdue = await list_tasks(status="overdue", limit=25)
+    flagged = await list_tasks(flagged=True, status="all", limit=25)
+
+    return f"""run a focused daily review using the task data below.
+
+1) identify the highest-risk overdue items.
+2) review due-soon tasks and sequence today's execution.
+3) evaluate flagged work and confirm urgency.
+4) produce exactly three top priorities for today with short rationale.
+5) call out anything that should be deferred, delegated, or dropped.
+
+overdue_tasks_json:
+{overdue}
+
+due_soon_tasks_json:
+{due_soon}
+
+flagged_tasks_json:
+{flagged}
+"""
 
 
 @_typed_tool(mcp)

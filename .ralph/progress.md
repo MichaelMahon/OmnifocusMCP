@@ -4,8 +4,8 @@
 
 ## Summary
 
-- Iterations completed: 11
-- Current status: Phase 5 in progress (criterion 45 complete; next 46).
+- Iterations completed: 12
+- Current status: Phase 5 in progress (criterion 46 complete; next 47).
 
 ## How This Works
 
@@ -21,12 +21,12 @@ This is how Ralph maintains continuity across iterations.
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
 | 3     | Python: Read Tools + Tests        | 16–28     | 13/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 15/15 |
-| 5     | Python: Resources & Prompts + Tests | 44–53   | 2/10 |
+| 5     | Python: Resources & Prompts + Tests | 44–53   | 3/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 45 / 75 criteria complete**
+**Total: 46 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -548,3 +548,20 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-27 23:11:28
 **Session 14 started** (model: auto)
+
+### 2026-02-27 23:11:41
+**Session 14 update**
+- completed phase 5 criterion 46 (`omnifocus://projects` resource)
+- added `projects_resource` in `python/src/omnifocus_mcp/server.py` at `omnifocus://projects`
+- resource returns active project summaries via existing `list_projects(status="active")`
+- added `test_projects_resource_returns_active_projects_json` in `python/tests/test_tools_read.py`
+- re-ran full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 5 criterion 47 (`daily_review` prompt)
+
+### 2026-02-27 23:11:58
+**Session 14 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-27 23:12:00
+**Session 15 started** (model: auto)

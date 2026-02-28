@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772255458
-generated_at: 2026-02-28T05:11:24Z
+source_mtime: 1772255515
+generated_at: 2026-02-28T05:11:57Z
 
 tasks:
   - id: "line_109"
@@ -331,7 +331,7 @@ tasks:
     raw_marker: 46.
   - id: "line_265"
     line_number: 265
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Prompt `daily_review` — fetches due-soon, overdue, flagged tasks;
     indent_level: 0
