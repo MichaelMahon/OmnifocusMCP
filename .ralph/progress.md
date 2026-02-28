@@ -26,12 +26,12 @@ This is how Ralph maintains continuity across iterations.
 | 5     | Enhanced get_forecast              | 17–18    | 2/2  |
 | 6     | Tests and Parity Verification      | 19–20    | 2/2  |
 | 7     | Documentation                      | 21–22    | 2/2  |
-| 8     | Native Properties & Effective Vals | 23–27    | 1/5  |
+| 8     | Native Properties & Effective Vals | 23–27    | 3/5  |
 | 9     | Notifications                      | 28–31    | 0/4  |
 | 10    | Duplicate Task                     | 32–33    | 0/2  |
 | 11    | Final Parity & Docs                | 34–36    | 0/3  |
 
-**Total: 23 / 36 criteria complete**
+**Total: 25 / 36 criteria complete**
 
 ## Key Context
 
@@ -708,3 +708,19 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 15:33:51
 **Session 66 started** (model: auto)
+
+### 2026-02-28 15:34:45
+- implemented criterion 25 code changes for `modified` on `get_task` and `get_project` across python/typescript/rust
+- updated representative read-tool tests in all three implementations to assert `modified` field script mapping/payload presence
+- reran full required gate successfully:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd typescript && npx tsc --noEmit && npm test`
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+- confirmed criterion 25 is checked in `RALPH_TASK.md`
+- next: criterion 26 (`plannedDate` support across all 3 implementations)
+
+### 2026-02-28 15:34:19
+**Session 66 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 15:34:21
+**Session 67 started** (model: auto)
