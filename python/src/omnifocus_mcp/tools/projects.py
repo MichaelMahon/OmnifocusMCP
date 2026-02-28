@@ -10,6 +10,11 @@ from omnifocus_mcp.app import mcp
 async def list_projects(
     folder: str | None = None,
     status: Literal["active", "on_hold", "completed", "dropped"] = "active",
+    completedBefore: str | None = None,
+    completedAfter: str | None = None,
+    stalledOnly: bool = False,
+    sortBy: Literal["name", "dueDate", "completionDate", "taskCount"] | None = None,
+    sortOrder: Literal["asc", "desc"] = "asc",
     limit: int = 100,
 ) -> str:
     """list projects with optional folder and status filters.
@@ -23,13 +28,61 @@ async def list_projects(
         raise ValueError("folder must not be empty when provided.")
     if status not in ("active", "on_hold", "completed", "dropped"):
         raise ValueError("status must be one of: active, on_hold, completed, dropped.")
+    if sortBy is not None and sortBy not in ("name", "dueDate", "completionDate", "taskCount"):
+        raise ValueError(
+            "sortBy must be one of: name, dueDate, completionDate, taskCount."
+        )
+    if sortOrder not in ("asc", "desc"):
+        raise ValueError("sortOrder must be one of: asc, desc.")
+
+    effective_status = status
+    if completedBefore is not None or completedAfter is not None:
+        effective_status = "completed"
+    if stalledOnly:
+        effective_status = "active"
+
+    effective_sort_by = sortBy
+    effective_sort_order = sortOrder
+    if (
+        completedBefore is not None or completedAfter is not None
+    ) and effective_sort_by is None:
+        effective_sort_by = "completionDate"
+        effective_sort_order = "desc"
 
     folder_filter = "null" if folder is None else escape_for_jxa(folder)
-    status_filter = escape_for_jxa(status)
+    status_filter = escape_for_jxa(effective_status)
+    completed_before_filter = (
+        "null" if completedBefore is None else escape_for_jxa(completedBefore)
+    )
+    completed_after_filter = (
+        "null" if completedAfter is None else escape_for_jxa(completedAfter)
+    )
+    stalled_only_filter = "true" if stalledOnly else "false"
+    sort_by_filter = (
+        "null" if effective_sort_by is None else escape_for_jxa(effective_sort_by)
+    )
+    sort_order_filter = escape_for_jxa(effective_sort_order)
 
     script = f"""
 const folderFilter = {folder_filter};
 const statusFilter = {status_filter};
+const completedBeforeRaw = {completed_before_filter};
+const completedAfterRaw = {completed_after_filter};
+const stalledOnly = {stalled_only_filter};
+const sortBy = {sort_by_filter};
+const sortOrder = {sort_order_filter};
+
+const parseOptionalDate = (rawValue, fieldName) => {{
+  if (rawValue === null) return null;
+  const parsed = new Date(rawValue);
+  if (Number.isNaN(parsed.getTime())) {{
+    throw new Error(`${{fieldName}} must be a valid ISO 8601 date string.`);
+  }}
+  return parsed;
+}};
+
+const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
+const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
 
 const projectCounts = new Map();
 document.flattenedTasks.forEach(task => {{
@@ -54,15 +107,22 @@ const normalizeProjectStatus = (project) => {{
 
 const projects = document.flattenedProjects
   .filter(project => {{
+    const nextTask = project.nextTask;
+    const isStalled = normalizeProjectStatus(project) === "active"
+      && project.flattenedTasks.some(t => !t.completed)
+      && nextTask === null;
     if (folderFilter !== null) {{
       const folderName = project.folder ? project.folder.name : null;
       if (folderName !== folderFilter) return false;
     }}
-    return normalizeProjectStatus(project) === statusFilter;
-  }})
-  .slice(0, {limit});
+    if (normalizeProjectStatus(project) !== statusFilter) return false;
+    if (completedBefore !== null && !(project.completionDate !== null && project.completionDate < completedBefore)) return false;
+    if (completedAfter !== null && !(project.completionDate !== null && project.completionDate > completedAfter)) return false;
+    if (stalledOnly && !isStalled) return false;
+    return true;
+  }});
 
-return projects.map(project => {{
+const mappedProjects = projects.map(project => {{
   const projectId = project.id.primaryKey;
   const counts = projectCounts.get(projectId) || {{ taskCount: 0, remainingTaskCount: 0 }};
   const nextTask = project.nextTask;
@@ -88,6 +148,40 @@ return projects.map(project => {{
     reviewInterval: reviewInterval === null || reviewInterval === undefined ? null : String(reviewInterval)
   }};
 }});
+
+const compareValues = (left, right) => {{
+  if (left < right) return sortOrder === "asc" ? -1 : 1;
+  if (left > right) return sortOrder === "asc" ? 1 : -1;
+  return 0;
+}};
+
+const sortedProjects = sortBy === null ? mappedProjects : mappedProjects.slice().sort((a, b) => {{
+  let aValue = null;
+  let bValue = null;
+  if (sortBy === "name") {{
+    aValue = a.name;
+    bValue = b.name;
+  }} else if (sortBy === "dueDate") {{
+    aValue = a.dueDate;
+    bValue = b.dueDate;
+  }} else if (sortBy === "completionDate") {{
+    aValue = a.completionDate;
+    bValue = b.completionDate;
+  }} else if (sortBy === "taskCount") {{
+    aValue = a.taskCount;
+    bValue = b.taskCount;
+  }}
+
+  if (aValue === null) return 1;
+  if (bValue === null) return -1;
+
+  if (sortBy === "name") {{
+    return compareValues(String(aValue).toLowerCase(), String(bValue).toLowerCase());
+  }}
+  return compareValues(aValue, bValue);
+}});
+
+return sortedProjects.slice(0, {limit});
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
