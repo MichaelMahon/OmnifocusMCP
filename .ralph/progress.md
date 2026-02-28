@@ -4,8 +4,8 @@
 
 ## Summary
 
-- Iterations completed: 3
-- Current status: Phase 4 in progress (criterion 29 complete; next 30).
+- Iterations completed: 5
+- Current status: Phase 4 in progress (criterion 30 complete; next 31).
 
 ## How This Works
 
@@ -20,13 +20,13 @@ This is how Ralph maintains continuity across iterations.
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
 | 3     | Python: Read Tools + Tests        | 16–28     | 13/13 |
-| 4     | Python: Write Tools + Tests       | 29–43     | 1/15 |
+| 4     | Python: Write Tools + Tests       | 29–43     | 2/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 29 / 75 criteria complete**
+**Total: 30 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -292,3 +292,16 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-27 22:58:58
 **Session 5 started** (model: auto)
+
+### 2026-02-27 22:59:50
+**Session 5 update**
+- completed phase 4 criterion 30 (`create_tasks_batch`)
+- extended `python/src/omnifocus_mcp/server.py` with `create_tasks_batch(tasks)`:
+  - validates non-empty batch input and per-task required/optional field types
+  - normalizes incoming task definitions and creates all tasks in one OmniJS execution
+  - supports optional project, note, due/defer dates, flagged, tags, and estimated minutes
+  - returns created task summaries as `[{id, name}]`
+- re-ran full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 4 criterion 31 (`complete_task`)

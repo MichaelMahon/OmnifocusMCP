@@ -624,3 +624,108 @@ return {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@_typed_tool(mcp)
+async def create_tasks_batch(
+    tasks: list[dict[str, Any]],
+) -> str:
+    """create multiple tasks in a single omnijs call for efficiency.
+
+    accepts an array of task definitions using create_task fields and returns
+    an array of created task summaries with id and name.
+    """
+    if len(tasks) == 0:
+        raise ValueError("tasks must contain at least one task definition.")
+
+    normalized_tasks: list[dict[str, Any]] = []
+    for task in tasks:
+        name_value = task.get("name")
+        if not isinstance(name_value, str) or name_value.strip() == "":
+            raise ValueError("each task must include a non-empty name.")
+
+        project_value = task.get("project")
+        if project_value is not None and not isinstance(project_value, str):
+            raise ValueError("task project must be a string when provided.")
+
+        note_value = task.get("note")
+        if note_value is not None and not isinstance(note_value, str):
+            raise ValueError("task note must be a string when provided.")
+
+        due_date_value = task.get("dueDate")
+        if due_date_value is not None and not isinstance(due_date_value, str):
+            raise ValueError("task dueDate must be an ISO 8601 string when provided.")
+
+        defer_date_value = task.get("deferDate")
+        if defer_date_value is not None and not isinstance(defer_date_value, str):
+            raise ValueError("task deferDate must be an ISO 8601 string when provided.")
+
+        flagged_value = task.get("flagged")
+        if flagged_value is not None and not isinstance(flagged_value, bool):
+            raise ValueError("task flagged must be a boolean when provided.")
+
+        estimated_minutes_value = task.get("estimatedMinutes")
+        if estimated_minutes_value is not None and not isinstance(estimated_minutes_value, int):
+            raise ValueError("task estimatedMinutes must be an integer when provided.")
+
+        tags_value = task.get("tags")
+        if tags_value is not None:
+            if not isinstance(tags_value, list) or not all(isinstance(tag, str) for tag in tags_value):
+                raise ValueError("task tags must be an array of strings when provided.")
+
+        normalized_tasks.append(
+            {
+                "name": name_value.strip(),
+                "project": None if project_value is None else project_value.strip(),
+                "note": note_value,
+                "dueDate": due_date_value,
+                "deferDate": defer_date_value,
+                "flagged": flagged_value,
+                "tags": tags_value,
+                "estimatedMinutes": estimated_minutes_value,
+            }
+        )
+
+    tasks_value = json.dumps(normalized_tasks)
+
+    script = f"""
+const taskInputs = {tasks_value};
+
+const resolveParent = (projectName) => {{
+  if (projectName === null || projectName === "") return inbox.ending;
+  const targetProject = document.flattenedProjects.byName(projectName);
+  if (!targetProject) {{
+    throw new Error(`Project not found: ${{projectName}}`);
+  }}
+  return targetProject.ending;
+}};
+
+const created = taskInputs.map(input => {{
+  const parent = resolveParent(input.project);
+  const task = new Task(input.name, parent);
+
+  if (input.note !== null && input.note !== undefined) task.note = input.note;
+  if (input.dueDate !== null && input.dueDate !== undefined) task.dueDate = new Date(input.dueDate);
+  if (input.deferDate !== null && input.deferDate !== undefined) task.deferDate = new Date(input.deferDate);
+  if (input.flagged !== null && input.flagged !== undefined) task.flagged = input.flagged;
+  if (input.estimatedMinutes !== null && input.estimatedMinutes !== undefined) {{
+    task.estimatedMinutes = input.estimatedMinutes;
+  }}
+
+  if (input.tags !== null && input.tags !== undefined) {{
+    input.tags.forEach(tagName => {{
+      const tag = document.flattenedTags.byName(tagName);
+      if (tag) task.addTag(tag);
+    }});
+  }}
+
+  return {{
+    id: task.id.primaryKey,
+    name: task.name
+  }};
+}});
+
+return created;
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
