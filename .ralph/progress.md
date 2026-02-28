@@ -353,3 +353,10 @@ This is how Ralph maintains continuity across iterations.
 - reran rust validation command `cd rust && cargo test && cargo clippy -- -D warnings && cargo fmt --check` after implementation and formatting (all passing)
 - marked criteria 13 and 14 complete in `RALPH_TASK.md`
 - next focus: criterion 15 (`rust/src/tools/projects.rs`)
+
+### 2026-02-28 11:44:00
+- completed criterion 15 by implementing `rust/src/tools/projects.rs` with `list_projects`, `get_project`, `create_project`, and `complete_project`
+- preserved required behavior parity: id-or-name lookup for `get_project` and `complete_project`, and no tags parameter for `create_project`
+- reran rust validation command `cd rust && cargo test && cargo clippy -- -D warnings && cargo fmt --check` after formatting (all passing)
+- marked criterion 15 complete in `RALPH_TASK.md`
+- next focus: criteria 16-19 (`tags.rs`, `folders.rs`, `forecast.rs`, `perspectives.rs`)

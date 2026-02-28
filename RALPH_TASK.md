@@ -173,7 +173,7 @@ Use the trait-based approach: tool functions accept `&dyn JxaRunner`
         - `move_task(task_id, project?)` — when project is None,
           moves task to inbox (matches Python, NO extra `to_inbox` param)
         Input validation: non-empty name, non-empty project when provided.
-15. [ ] Create `rust/src/tools/projects.rs` — **read Python file first**:
+15. [x] Create `rust/src/tools/projects.rs` — **read Python file first**:
         - `list_projects(folder?: String, status: String = "active",
           limit: i32 = 100)`
         - `get_project(project_id_or_name: String)` — accepts BOTH
