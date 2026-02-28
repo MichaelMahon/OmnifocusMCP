@@ -488,6 +488,13 @@ This is how Ralph maintains continuity across iterations.
 - marked criterion 26 complete in `RALPH_TASK.md`
 - next focus: criterion 27 (`echo '{}' | cargo run`)
 
+### 2026-02-28 11:29:00
+- completed criterion 27 by validating `echo '{}' | cargo run` exits cleanly with no crash path in `rust/src/main.rs`
+- completed criterion 29 by adding `rust/tests/resources_test.rs` and `rust/tests/prompts_test.rs` using mocked `JxaRunner` responses, including `project_planning` empty-input validation
+- completed criterion 30 by running `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` with all checks passing
+- marked criterion 30 complete in `RALPH_TASK.md`
+- next focus: begin Phase 4 criterion 31 (`rust/examples/smoke_test.rs`)
+
 ### 2026-02-28 11:28:00
 - completed criterion 27 by updating `rust/src/main.rs` shutdown handling so transport closure on invalid startup payload is treated as a clean exit
 - verified the required probe command exactly: `cd rust && echo '{}' | cargo run` (exit code 0)
@@ -519,3 +526,9 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 11:22:29
 **Session 12 started** (model: auto)
+
+### 2026-02-28 11:23:33
+**Session 12 ended** - Agent finished naturally (17 criteria remaining)
+
+### 2026-02-28 11:23:35
+**Session 13 started** (model: auto)

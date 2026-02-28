@@ -262,7 +262,7 @@ Connect everything into a working MCP server.
         Create `rust/tests/prompts_test.rs` — verify prompt rendering
         with mocked JxaRunner returns expected structure. Verify
         `project_planning` validates non-empty project argument.
-30. [ ] `cargo test && cargo clippy -- -D warnings && cargo fmt --check`
+30. [x] `cargo test && cargo clippy -- -D warnings && cargo fmt --check`
         all pass.
 
 ---
