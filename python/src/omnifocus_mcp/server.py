@@ -30,6 +30,38 @@ def _typed_prompt(server: Any) -> Callable[[F], F]:
 mcp = FastMCP("omnifocus-mcp")
 
 
+@_typed_prompt(mcp)
+async def project_planning(project_name: str) -> str:
+    """project planning prompt that turns a project into actionable steps."""
+    if project_name.strip() == "":
+        raise ValueError("project_name must not be empty.")
+
+    project_name_value = project_name.strip()
+    project_state = await get_project(project_name_value)
+
+    return f"""plan the project using the current omnifocus project state below.
+
+project name:
+{project_name_value}
+
+planning goals:
+1) clarify the desired outcome and success criteria.
+2) break the project into concrete next actions with realistic estimated minutes.
+3) identify sequencing and dependencies between actions.
+4) highlight blockers, risks, and missing information.
+5) suggest defer/due dates only where they add real planning value.
+
+respond with:
+- project outcome statement
+- next actions list (action, estimate_minutes, owner/context, dependency)
+- suggested milestones
+- immediate first 3 actions to execute
+
+project_state_json:
+{project_state}
+"""
+
+
 @_typed_tool(mcp)
 async def ping() -> dict[str, str]:
     return {"status": "ok", "message": "pong"}
@@ -162,6 +194,40 @@ respond with:
 
 inbox_items_json:
 {inbox_items}
+"""
+
+
+@_typed_prompt(mcp)
+async def project_planning(project: str) -> str:
+    """project planning prompt that turns a project into actionable next steps."""
+    if project.strip() == "":
+        raise ValueError("project must not be empty.")
+
+    project_details = await get_project(project_id_or_name=project.strip())
+    available_tasks = await list_tasks(project=project.strip(), status="available", limit=500)
+
+    return f"""plan this project into clear executable work.
+
+planning goals:
+1) summarize the project outcome in one concise sentence.
+2) evaluate current task coverage and identify missing steps.
+3) convert vague items into concrete next actions (verb-first, observable).
+4) sequence work logically (dependencies first, then parallelizable actions).
+5) estimate effort (minutes/hours) for each next action and flag high-risk items.
+6) recommend what to do now, next, later, and what to defer/drop.
+
+output format:
+- project summary
+- work breakdown with columns:
+  action, estimate, priority, dependency, suggested tags, due/defer recommendation, rationale
+- first 3 actions to execute immediately
+- risk/blocker list with mitigation ideas
+
+project_details_json:
+{project_details}
+
+project_available_tasks_json:
+{available_tasks}
 """
 
 

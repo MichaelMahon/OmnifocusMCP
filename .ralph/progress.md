@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 12
-- Current status: Phase 5 in progress (criterion 49 complete; next 50).
+- Current status: Phase 5 in progress (criterion 50 complete; next 51).
 
 ## How This Works
 
@@ -21,12 +21,12 @@ This is how Ralph maintains continuity across iterations.
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
 | 3     | Python: Read Tools + Tests        | 16–28     | 13/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 15/15 |
-| 5     | Python: Resources & Prompts + Tests | 44–53   | 6/10 |
+| 5     | Python: Resources & Prompts + Tests | 44–53   | 7/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 49 / 75 criteria complete**
+**Total: 50 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -618,3 +618,15 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-27 23:13:18
 **Session 18 started** (model: auto)
+
+### 2026-02-27 23:13:39
+**Session 18 update**
+- completed phase 5 criterion 50 by adding `project_planning(project)` prompt in `python/src/omnifocus_mcp/server.py`
+- prompt fetches project detail plus available project tasks, then guides step breakdown, sequencing, and effort estimates
+- next up: phase 5 criterion 51 (resource tests)
+
+### 2026-02-27 23:13:52
+**Session 18 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-27 23:13:54
+**Session 19 started** (model: auto)
