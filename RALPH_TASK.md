@@ -339,7 +339,7 @@ required across Python/TypeScript/Rust with strict parity.
         - destination modes:
           (a) move to project, (b) move under parent task, (c) move to inbox.
 
-29. [ ] Add strict validation in all 3 implementations:
+29. [x] Add strict validation in all 3 implementations:
         - reject empty `task_ids`
         - reject empty/whitespace ids
         - reject duplicate ids in request

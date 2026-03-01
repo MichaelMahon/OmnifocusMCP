@@ -2099,7 +2099,7 @@ async def move_tasks_batch(
         if normalized_task_id == "":
             raise ValueError("each task id must be a non-empty string.")
         if normalized_task_id in seen_task_ids:
-            raise ValueError("task_ids must not contain duplicate ids.")
+            raise ValueError(f"task_ids must not contain duplicates: {normalized_task_id}")
         normalized_task_ids.append(normalized_task_id)
         seen_task_ids.add(normalized_task_id)
 
@@ -2111,7 +2111,7 @@ async def move_tasks_batch(
         and normalized_parent_task_id in seen_task_ids
     ):
         raise ValueError(
-            "parent_task_id must not be included in task_ids (cannot move a task under itself)."
+            "parent_task_id cannot be included in task_ids (self-parenting in batch move)."
         )
 
     task_ids_value = json.dumps(normalized_task_ids)

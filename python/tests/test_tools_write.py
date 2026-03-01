@@ -1303,18 +1303,21 @@ async def test_move_tasks_batch_happy_path(
         "requested_count": 2,
         "moved_count": 2,
         "failed_count": 0,
+        "partial_success": False,
         "results": [
             {
                 "id": "t1",
                 "name": "Task One",
                 "moved": True,
                 "destination": {"mode": "project", "projectName": "Work"},
+                "error": None,
             },
             {
                 "id": "t2",
                 "name": "Task Two",
                 "moved": True,
                 "destination": {"mode": "project", "projectName": "Work"},
+                "error": None,
             },
         ],
     }
@@ -1329,7 +1332,168 @@ async def test_move_tasks_batch_happy_path(
     assert 'const taskIds = ["t1", "t2"];' in script
     assert 'const projectName = "Work";' in script
     assert "moveTasks([task], destinationInfo.location);" in script
+    assert "partial_success" in script
     assert "moved_count" in script
+
+
+@pytest.mark.asyncio
+async def test_move_tasks_batch_happy_path_parent_destination(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "requested_count": 2,
+        "moved_count": 2,
+        "failed_count": 0,
+        "partial_success": False,
+        "results": [
+            {
+                "id": "t1",
+                "name": "Task One",
+                "moved": True,
+                "destination": {
+                    "mode": "parent",
+                    "parentTaskId": "parent-1",
+                    "parentTaskName": "Parent One",
+                },
+                "error": None,
+            },
+            {
+                "id": "t2",
+                "name": "Task Two",
+                "moved": True,
+                "destination": {
+                    "mode": "parent",
+                    "parentTaskId": "parent-1",
+                    "parentTaskName": "Parent One",
+                },
+                "error": None,
+            },
+        ],
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.move_tasks_batch(["t1", "t2"], parent_task_id="parent-1")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const parentTaskId = "parent-1";' in script
+    assert "Cannot move tasks under their own descendant." in script
+    assert "parentTaskName: parentTask.name" in script
+
+
+@pytest.mark.asyncio
+async def test_move_tasks_batch_happy_path_inbox_destination(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "requested_count": 2,
+        "moved_count": 2,
+        "failed_count": 0,
+        "partial_success": False,
+        "results": [
+            {
+                "id": "t1",
+                "name": "Task One",
+                "moved": True,
+                "destination": {"mode": "inbox"},
+                "error": None,
+            },
+            {
+                "id": "t2",
+                "name": "Task Two",
+                "moved": True,
+                "destination": {"mode": "inbox"},
+                "error": None,
+            },
+        ],
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.move_tasks_batch(["t1", "t2"])
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert "const projectName = null;" in script
+    assert "const parentTaskId = null;" in script
+    assert 'summary: { mode: "inbox" }' in script
+
+
+@pytest.mark.asyncio
+async def test_move_tasks_batch_partial_success_payload(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "requested_count": 2,
+        "moved_count": 1,
+        "failed_count": 1,
+        "partial_success": True,
+        "results": [
+            {
+                "id": "t1",
+                "name": "Task One",
+                "moved": True,
+                "destination": {"mode": "project", "projectName": "Work"},
+                "error": None,
+            },
+            {
+                "id": "missing",
+                "name": None,
+                "moved": False,
+                "destination": {"mode": "project", "projectName": "Work"},
+                "error": "Task not found.",
+            },
+        ],
+    }
+    configured = mock_server_run_omnijs(payload)
+    server = configured["server"]
+
+    result = await server.move_tasks_batch(["t1", "missing"], project="Work")
+
+    assert json.loads(result) == payload
+
+
+@pytest.mark.asyncio
+async def test_move_tasks_batch_validation_errors(server_module: Any) -> None:
+    with pytest.raises(
+        ValueError, match="provide either project or parent_task_id, not both"
+    ):
+        await server_module.move_tasks_batch(
+            ["task-1"], project="Work", parent_task_id="parent-1"
+        )
+    with pytest.raises(ValueError, match="task_ids must not contain duplicates: task-1"):
+        await server_module.move_tasks_batch(["task-1", "task-1"], project="Work")
+    with pytest.raises(
+        ValueError,
+        match="parent_task_id cannot be included in task_ids \\(self-parenting in batch move\\).",
+    ):
+        await server_module.move_tasks_batch(
+            ["task-1", "task-2"], parent_task_id="task-1"
+        )
+
+
+@pytest.mark.asyncio
+async def test_move_tasks_batch_cycle_rejection_error_propagates(
+    monkeypatch: pytest.MonkeyPatch, server_module: Any
+) -> None:
+    tasks_mod = importlib.import_module("omnifocus_mcp.tools.tasks")
+
+    async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
+        raise RuntimeError("Cannot move tasks under their own descendant.")
+
+    monkeypatch.setattr(tasks_mod, "run_omnijs", fake_run_omnijs)
+
+    with pytest.raises(RuntimeError, match="Cannot move tasks under their own descendant."):
+        await tasks_mod.move_tasks_batch(["task-1", "task-2"], parent_task_id="parent-descendant")
+
+
+@pytest.mark.asyncio
+async def test_move_tasks_batch_signature_uses_parity_parameter_names(server_module: Any) -> None:
+    signature = inspect.signature(server_module.move_tasks_batch)
+    assert list(signature.parameters.keys()) == ["task_ids", "project", "parent_task_id"]
 
 
 @pytest.mark.asyncio
