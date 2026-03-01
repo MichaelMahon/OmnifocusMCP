@@ -6,12 +6,14 @@ type ToolHandler = (args: Record<string, unknown>) => Promise<{
 }>;
 
 const registeredTools = new Map<string, ToolHandler>();
+const registeredSchemas = new Map<string, unknown>();
 const runOmniJsMock = vi.fn<(...args: unknown[]) => Promise<unknown>>();
 
 vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => {
   class MockMcpServer {
-    tool(name: string, _description: string, _schema: unknown, handler: ToolHandler): void {
+    tool(name: string, _description: string, schema: unknown, handler: ToolHandler): void {
       registeredTools.set(name, handler);
+      registeredSchemas.set(name, schema);
     }
 
     registerResource(): void {}
@@ -40,6 +42,7 @@ vi.mock("../src/jxa.js", () => ({
 describe("tool happy paths", () => {
   beforeEach(async () => {
     registeredTools.clear();
+    registeredSchemas.clear();
     runOmniJsMock.mockReset();
     vi.resetModules();
     await import("../src/index.js");
@@ -323,6 +326,37 @@ describe("tool happy paths", () => {
     expect(JSON.parse(result.content[0].text)).toEqual({
       error: "provide either project or parent_task_id, not both (destination is ambiguous).",
     });
+  });
+
+  test("move_task propagates self-parenting and descendant-cycle errors", async () => {
+    runOmniJsMock.mockRejectedValueOnce(new Error("Cannot move a task under itself."));
+    runOmniJsMock.mockRejectedValueOnce(new Error("Cannot move a task under its own descendant."));
+    const handler = registeredTools.get("move_task");
+    expect(handler).toBeDefined();
+
+    const selfParentResult = await handler!({
+      task_id: "task-5",
+      parent_task_id: "task-5",
+    });
+    expect(selfParentResult.isError).toBe(true);
+    expect(JSON.parse(selfParentResult.content[0].text)).toEqual({
+      error: "Cannot move a task under itself.",
+    });
+
+    const cycleResult = await handler!({
+      task_id: "task-6",
+      parent_task_id: "task-7",
+    });
+    expect(cycleResult.isError).toBe(true);
+    expect(JSON.parse(cycleResult.content[0].text)).toEqual({
+      error: "Cannot move a task under its own descendant.",
+    });
+  });
+
+  test("move_task schema uses parity parameter names", () => {
+    const schema = registeredSchemas.get("move_task") as Record<string, unknown> | undefined;
+    expect(schema).toBeDefined();
+    expect(Object.keys(schema ?? {})).toEqual(["task_id", "project", "parent_task_id"]);
   });
 
   test("uncomplete_task marks completed task incomplete", async () => {

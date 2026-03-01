@@ -173,6 +173,98 @@ async fn write_task_tools_happy_path() {
 }
 
 #[tokio::test]
+async fn move_task_supports_project_inbox_and_parent_destinations() {
+    let project_runner = MockRunner {
+        payload: json!({
+            "id": "task-1",
+            "name": "Task One",
+            "projectName": "Work",
+            "inInbox": false
+        }),
+    };
+    let moved_project = move_task(&project_runner, "task-1", Some("Work"), None)
+        .await
+        .expect("move_task project destination should succeed");
+    assert_eq!(moved_project["id"], "task-1");
+    assert_eq!(moved_project["name"], "Task One");
+    assert_eq!(moved_project["projectName"], "Work");
+    assert_eq!(moved_project["inInbox"], false);
+
+    let inbox_runner = MockRunner {
+        payload: json!({
+            "id": "task-2",
+            "name": "Task Two",
+            "projectName": null,
+            "inInbox": true
+        }),
+    };
+    let moved_inbox = move_task(&inbox_runner, "task-2", None, None)
+        .await
+        .expect("move_task inbox destination should succeed");
+    assert_eq!(moved_inbox["id"], "task-2");
+    assert_eq!(moved_inbox["projectName"], Value::Null);
+    assert_eq!(moved_inbox["inInbox"], true);
+
+    let parent_runner = MockRunner {
+        payload: json!({
+            "id": "task-3",
+            "name": "Task Three",
+            "projectName": "Work",
+            "inInbox": false
+        }),
+    };
+    let moved_parent = move_task(&parent_runner, "task-3", None, Some("parent-1"))
+        .await
+        .expect("move_task parent destination should succeed");
+    assert_eq!(moved_parent["id"], "task-3");
+    assert_eq!(moved_parent["name"], "Task Three");
+    assert_eq!(moved_parent["projectName"], "Work");
+    assert_eq!(moved_parent["inInbox"], false);
+}
+
+#[tokio::test]
+async fn move_task_rejects_ambiguous_destination_input() {
+    let runner = MockRunner { payload: json!({}) };
+    let result = move_task(&runner, "task-1", Some("Work"), Some("parent-1")).await;
+    assert!(matches!(result, Err(OmniFocusError::Validation(_))));
+    assert_eq!(
+        result.err().map(|error| error.to_string()),
+        Some("provide either project or parent_task_id, not both (destination is ambiguous).".to_string())
+    );
+}
+
+#[tokio::test]
+async fn move_task_propagates_self_parenting_and_cycle_rejections() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let self_parent_runner = RecordingRunner {
+        payload: json!({}),
+        scripts: Arc::clone(&scripts),
+        error_message: Some("Cannot move a task under itself.".to_string()),
+    };
+    let self_parent_result = move_task(&self_parent_runner, "task-4", None, Some("task-4")).await;
+    assert!(matches!(
+        self_parent_result,
+        Err(OmniFocusError::OmniFocus(_))
+    ));
+    assert_eq!(
+        self_parent_result.err().map(|error| error.to_string()),
+        Some("Cannot move a task under itself.".to_string())
+    );
+
+    let cycle_runner = RecordingRunner {
+        payload: json!({}),
+        scripts,
+        error_message: Some("Cannot move a task under its own descendant.".to_string()),
+    };
+    let cycle_result = move_task(&cycle_runner, "task-5", None, Some("task-6")).await;
+    assert!(matches!(cycle_result, Err(OmniFocusError::OmniFocus(_))));
+    assert_eq!(
+        cycle_result.err().map(|error| error.to_string()),
+        Some("Cannot move a task under its own descendant.".to_string())
+    );
+}
+
+#[tokio::test]
 async fn write_project_and_tag_tools_happy_path() {
     let runner = MockRunner {
         payload: json!({"id": "p1", "name": "entity"}),
@@ -616,6 +708,22 @@ async fn delete_tasks_batch_validation_errors() {
 }
 
 #[tokio::test]
+async fn move_task_validation_rejects_ambiguous_destination() {
+    let runner = MockRunner { payload: json!({}) };
+
+    let result = move_task(&runner, "task-id", Some("Work"), Some("parent-1")).await;
+    match result {
+        Err(OmniFocusError::Validation(message)) => {
+            assert_eq!(
+                message,
+                "provide either project or parent_task_id, not both (destination is ambiguous)."
+            );
+        }
+        other => panic!("expected validation error, got {other:?}"),
+    }
+}
+
+#[tokio::test]
 async fn create_task_script_contains_expected_escaped_values() {
     let scripts = Arc::new(Mutex::new(Vec::new()));
     let runner = RecordingRunner {
@@ -695,6 +803,96 @@ async fn create_subtask_script_contains_parent_lookup_and_insert_position() {
         .expect("one script should be captured");
     assert!(captured.contains("const parentTask = document.flattenedTasks.find"));
     assert!(captured.contains("const task = new Task(taskName, parentTask.ending);"));
+}
+
+#[tokio::test]
+async fn move_task_script_supports_project_inbox_and_parent_destinations() {
+    let project_scripts = Arc::new(Mutex::new(Vec::new()));
+    let project_runner = RecordingRunner {
+        payload: json!({
+            "id": "task-5",
+            "name": "moved",
+            "projectName": "Errands",
+            "inInbox": false
+        }),
+        scripts: Arc::clone(&project_scripts),
+        error_message: None,
+    };
+    let to_project = move_task(&project_runner, "task-5", Some("Errands"), None)
+        .await
+        .expect("move_task to project should succeed");
+    assert_eq!(to_project["id"], "task-5");
+    assert_eq!(to_project["name"], "moved");
+    assert_eq!(to_project["projectName"], "Errands");
+    assert_eq!(to_project["inInbox"], false);
+    let project_script = project_scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("project move script should be captured");
+    assert!(project_script.contains("const taskId = \"task-5\";"));
+    assert!(project_script.contains("const projectName = \"Errands\";"));
+    assert!(project_script.contains("const parentTaskId = null;"));
+    assert!(project_script.contains("moveTasks([task], destinationInfo.location);"));
+
+    let inbox_scripts = Arc::new(Mutex::new(Vec::new()));
+    let inbox_runner = RecordingRunner {
+        payload: json!({
+            "id": "task-5",
+            "name": "moved",
+            "projectName": null,
+            "inInbox": true
+        }),
+        scripts: Arc::clone(&inbox_scripts),
+        error_message: None,
+    };
+    let to_inbox = move_task(&inbox_runner, "task-5", None, None)
+        .await
+        .expect("move_task to inbox should succeed");
+    assert_eq!(to_inbox["id"], "task-5");
+    assert_eq!(to_inbox["name"], "moved");
+    assert_eq!(to_inbox["projectName"], Value::Null);
+    assert_eq!(to_inbox["inInbox"], true);
+    let inbox_script = inbox_scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("inbox move script should be captured");
+    assert!(inbox_script.contains("const projectName = null;"));
+    assert!(inbox_script.contains("const parentTaskId = null;"));
+    assert!(inbox_script.contains("return { mode: \"inbox\", location: inbox.ending };"));
+
+    let parent_scripts = Arc::new(Mutex::new(Vec::new()));
+    let parent_runner = RecordingRunner {
+        payload: json!({
+            "id": "task-5",
+            "name": "moved",
+            "projectName": "Errands",
+            "inInbox": false
+        }),
+        scripts: Arc::clone(&parent_scripts),
+        error_message: None,
+    };
+    let to_parent = move_task(&parent_runner, "task-5", None, Some("parent-1"))
+        .await
+        .expect("move_task to parent should succeed");
+    assert_eq!(to_parent["id"], "task-5");
+    assert_eq!(to_parent["name"], "moved");
+    assert_eq!(to_parent["projectName"], "Errands");
+    assert_eq!(to_parent["inInbox"], false);
+    let parent_script = parent_scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("parent move script should be captured");
+    assert!(parent_script.contains("const parentTaskId = \"parent-1\";"));
+    assert!(parent_script.contains("if (parentTaskId === taskId) {"));
+    assert!(parent_script.contains("Cannot move a task under itself."));
+    assert!(parent_script.contains("Cannot move a task under its own descendant."));
+    assert!(parent_script.contains("return { mode: \"parent\", location: parentTask.ending };"));
 }
 
 #[tokio::test]

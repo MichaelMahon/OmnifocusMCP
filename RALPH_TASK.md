@@ -302,7 +302,7 @@ required across Python/TypeScript/Rust with strict parity.
         - explicitly state preserve-by-default behavior
         - explicitly state delete is never required for reorganization
 
-25. [ ] Add/extend tests in all 3 implementations covering:
+25. [x] Add/extend tests in all 3 implementations covering:
         - move task to project (existing behavior)
         - move task to inbox (existing behavior)
         - move task under parent task (new behavior)
@@ -311,7 +311,7 @@ required across Python/TypeScript/Rust with strict parity.
         - cycle rejection
         - parity of parameter names/response shape across all 3
 
-26. [ ] Update user-facing docs:
+26. [x] Update user-facing docs:
         - `README.md` features section mentions task reparenting support
         - include one short usage example for `move_task` with
           `parent_task_id`
