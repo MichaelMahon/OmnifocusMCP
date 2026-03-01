@@ -310,7 +310,7 @@ async def test_move_task_parent_destination_includes_self_and_cycle_guards(
     assert 'throw new Error("Cannot move a task under itself.");' in script
     assert 'throw new Error("Cannot move a task under its own descendant.");' in script
     assert 'return { mode: "parent", location: parentTask.ending };' in script
-    assert "moveTasks([task], destinationInfo.location);" in script
+    assert "moveTasks(movableTasks, destinationInfo.location);" in script
 
 
 @pytest.mark.asyncio
@@ -1458,6 +1458,10 @@ async def test_move_tasks_batch_partial_success_payload(
 
 @pytest.mark.asyncio
 async def test_move_tasks_batch_validation_errors(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="task_ids must contain at least one task id."):
+        await server_module.move_tasks_batch([])
+    with pytest.raises(ValueError, match="each task id must be a non-empty string."):
+        await server_module.move_tasks_batch(["task-1", "   "], project="Work")
     with pytest.raises(
         ValueError, match="provide either project or parent_task_id, not both"
     ):

@@ -448,9 +448,25 @@ describe("tool happy paths", () => {
     expect(script).toContain("Cannot move tasks under their own descendant.");
   });
 
-  test("move_tasks_batch validates ambiguous, duplicate, and self-parenting inputs", async () => {
+  test("move_tasks_batch validates empty, ambiguous, duplicate, and self-parenting inputs", async () => {
     const handler = registeredTools.get("move_tasks_batch");
     expect(handler).toBeDefined();
+
+    const emptyArrayResult = await handler!({
+      task_ids: [],
+    });
+    expect(emptyArrayResult.isError).toBe(true);
+    expect(JSON.parse(emptyArrayResult.content[0].text)).toEqual({
+      error: "task_ids must contain at least one task id.",
+    });
+
+    const emptyIdResult = await handler!({
+      task_ids: ["task-1", "   "],
+    });
+    expect(emptyIdResult.isError).toBe(true);
+    expect(JSON.parse(emptyIdResult.content[0].text)).toEqual({
+      error: "each task id must be a non-empty string.",
+    });
 
     const ambiguousResult = await handler!({
       task_ids: ["task-1"],
@@ -477,7 +493,7 @@ describe("tool happy paths", () => {
     });
     expect(selfParentResult.isError).toBe(true);
     expect(JSON.parse(selfParentResult.content[0].text)).toEqual({
-      error: "parent_task_id cannot be included in task_ids (self-parenting in batch move).",
+      error: "parent_task_id must not be included in task_ids (cannot move a task under itself).",
     });
   });
 
@@ -516,7 +532,7 @@ describe("tool happy paths", () => {
     });
     expect(result.isError).toBe(true);
     expect(JSON.parse(result.content[0].text)).toEqual({
-      error: "parent_task_id cannot be included in task_ids (self-parenting in batch move).",
+      error: "parent_task_id must not be included in task_ids (cannot move a task under itself).",
     });
   });
 
@@ -567,6 +583,20 @@ describe("tool happy paths", () => {
     expect(script).toContain('const parentTaskId = "parent-1";');
     expect(script).toContain('if (taskIds.includes(ancestor.id.primaryKey)) {');
     expect(script).toContain('throw new Error("Cannot move tasks under their own descendant.");');
+  });
+
+  test("move_tasks_batch propagates cycle rejection errors", async () => {
+    runOmniJsMock.mockRejectedValueOnce(new Error("Cannot move tasks under their own descendant."));
+    const handler = registeredTools.get("move_tasks_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      task_ids: ["task-1", "task-2"],
+      parent_task_id: "parent-1",
+    });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "Cannot move tasks under their own descendant.",
+    });
   });
 
   test("move_task supports project destination mode", async () => {

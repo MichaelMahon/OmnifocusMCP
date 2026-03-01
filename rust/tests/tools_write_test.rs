@@ -198,6 +198,34 @@ async fn move_tasks_batch_rejects_ambiguous_destination_input_criterion29() {
 }
 
 #[tokio::test]
+async fn move_tasks_batch_rejects_empty_and_whitespace_ids_criterion29() {
+    let runner = MockRunner { payload: json!({}) };
+
+    let empty_result = move_tasks_batch(&runner, Vec::new(), None, None).await;
+    assert!(matches!(empty_result, Err(OmniFocusError::Validation(_))));
+    assert_eq!(
+        empty_result.err().map(|error| error.to_string()),
+        Some("task_ids must contain at least one task id.".to_string())
+    );
+
+    let whitespace_result = move_tasks_batch(
+        &runner,
+        vec!["task-1".to_string(), "   ".to_string()],
+        None,
+        None,
+    )
+    .await;
+    assert!(matches!(
+        whitespace_result,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert_eq!(
+        whitespace_result.err().map(|error| error.to_string()),
+        Some("each task id must be a non-empty string.".to_string())
+    );
+}
+
+#[tokio::test]
 async fn move_tasks_batch_rejects_duplicate_task_ids_criterion29() {
     let runner = MockRunner { payload: json!({}) };
     let result = move_tasks_batch(
@@ -210,7 +238,7 @@ async fn move_tasks_batch_rejects_duplicate_task_ids_criterion29() {
     assert!(matches!(result, Err(OmniFocusError::Validation(_))));
     assert_eq!(
         result.err().map(|error| error.to_string()),
-        Some("task_ids must not contain duplicate ids.".to_string())
+        Some("task_ids must not contain duplicates: task-1".to_string())
     );
 }
 
@@ -387,7 +415,7 @@ async fn move_tasks_batch_rejects_duplicate_and_self_parent_inputs() {
     assert!(matches!(duplicate_ids, Err(OmniFocusError::Validation(_))));
     assert_eq!(
         duplicate_ids.err().map(|error| error.to_string()),
-        Some("task_ids must not contain duplicate ids.".to_string())
+        Some("task_ids must not contain duplicates: task-1".to_string())
     );
 
     let self_parent = move_tasks_batch(
@@ -430,6 +458,29 @@ async fn move_tasks_batch_parent_destination_script_includes_cycle_guard() {
         .expect("scripts lock should succeed")
         .join("\n");
     assert!(captured.contains("Cannot move tasks under their own descendant."));
+}
+
+#[tokio::test]
+async fn move_tasks_batch_propagates_cycle_rejection_errors() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({}),
+        scripts,
+        error_message: Some("Cannot move tasks under their own descendant.".to_string()),
+    };
+
+    let result = move_tasks_batch(
+        &runner,
+        vec!["task-1".to_string(), "task-2".to_string()],
+        None,
+        Some("parent-1"),
+    )
+    .await;
+    assert!(matches!(result, Err(OmniFocusError::OmniFocus(_))));
+    assert_eq!(
+        result.err().map(|error| error.to_string()),
+        Some("Cannot move tasks under their own descendant.".to_string())
+    );
 }
 
 #[tokio::test]
@@ -570,7 +621,7 @@ async fn move_tasks_batch_rejects_ambiguous_duplicate_and_self_parent_inputs() {
     assert!(matches!(duplicate, Err(OmniFocusError::Validation(_))));
     assert_eq!(
         duplicate.err().map(|error| error.to_string()),
-        Some("task_ids must not contain duplicate ids.".to_string())
+        Some("task_ids must not contain duplicates: task-1".to_string())
     );
 
     let self_parent = move_tasks_batch(
