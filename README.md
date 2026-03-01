@@ -188,14 +188,7 @@ The server runs JXA (JavaScript for Automation) scripts through macOS `osascript
   "mcpServers": {
     "omnifocus": {
       "command": "uv",
-      "args": [
-        "run",
-        "--directory",
-        "/absolute/path/to/OmnifocusMCP/python",
-        "python",
-        "-m",
-        "omnifocus_mcp"
-      ]
+      "args": ["run", "omnifocus-mcp"]
     }
   }
 }
@@ -208,7 +201,8 @@ The server runs JXA (JavaScript for Automation) scripts through macOS `osascript
   "mcpServers": {
     "omnifocus": {
       "command": "node",
-      "args": ["/absolute/path/to/OmnifocusMCP/typescript/dist/index.js"]
+      "args": ["dist/index.js"],
+      "cwd": "/absolute/path/to/OmnifocusMCP/typescript"
     }
   }
 }
@@ -217,6 +211,17 @@ The server runs JXA (JavaScript for Automation) scripts through macOS `osascript
 > Keep only one OmniFocus MCP server enabled at a time to avoid duplicate tool surfaces.
 
 Compatibility snippets:
+
+```json
+{
+  "mcpServers": {
+    "omnifocus": {
+      "command": "uv",
+      "args": ["run", "omnifocus-mcp"]
+    }
+  }
+}
+```
 
 ```json
 {
@@ -234,17 +239,21 @@ Compatibility snippets:
   "mcpServers": {
     "omnifocus": {
       "command": "node",
-      "args": ["dist/index.js"]
+      "args": ["dist/index.js"],
+      "cwd": "/absolute/path/to/OmnifocusMCP/typescript"
     }
   }
 }
 ```
 
-## Switching Between Rust, Python, and TypeScript
+## Switching Implementations
+
+### Switching Between Rust, Python, and TypeScript
 
 - Use Rust when you want a single prebuilt `omnifocus-mcp` binary.
 - Use Python when you want `uv` or `python -m` execution and fast local iteration.
 - Use TypeScript when you want `node` execution from `typescript/dist/index.js`.
+- Restart the MCP client so it reloads the server command after you switch implementations.
 
 ## Prerequisites
 

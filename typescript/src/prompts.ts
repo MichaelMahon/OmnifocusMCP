@@ -347,6 +347,7 @@ output format:
 engagement protocol:
 - treat this as omnifocus execution planning, not just writing a detached document.
 - if the project is not found, keep planning from user intent and then ask whether to create it in omnifocus.
+- fallback marker for missing projects: 'status': 'not_found'
 - after presenting the plan, ask for confirmation to apply it in omnifocus (create project, create tasks, set metadata).
 - once approved, execute tool calls and return the created/updated ids.
 

@@ -1,3 +1,5 @@
+import json
+
 from omnifocus_mcp.registration import typed_prompt
 from omnifocus_mcp.app import mcp
 from omnifocus_mcp.tools.projects import get_project, list_projects
@@ -140,6 +142,22 @@ async def project_planning(project: str) -> str:
     available_tasks = await list_tasks(
         project=project_name, status="available", limit=500
     )
+    if isinstance(project_details, str):
+        try:
+            project_details = json.loads(project_details)
+        except json.JSONDecodeError:
+            pass
+
+    project_details_json = (
+        project_details
+        if isinstance(project_details, str)
+        else json.dumps(project_details)
+    )
+    available_tasks_json = (
+        available_tasks
+        if isinstance(available_tasks, str)
+        else json.dumps(available_tasks)
+    )
 
     return f"""plan this project into clear executable work.
 
@@ -164,12 +182,13 @@ output format:
 engagement protocol:
 - treat this as omnifocus execution planning, not just writing a detached document.
 - if the project is not found, keep planning from user intent and then ask whether to create it in omnifocus.
+- fallback marker for missing projects: 'status': 'not_found'
 - after presenting the plan, ask for confirmation to apply it in omnifocus (create project, create tasks, set metadata).
 - once approved, execute tool calls and return the created/updated ids.
 
 project_details_json:
-{project_details}
+{project_details_json}
 
 project_available_tasks_json:
-{available_tasks}
+{available_tasks_json}
 """

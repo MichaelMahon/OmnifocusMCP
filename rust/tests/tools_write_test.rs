@@ -229,7 +229,10 @@ async fn move_task_rejects_ambiguous_destination_input() {
     assert!(matches!(result, Err(OmniFocusError::Validation(_))));
     assert_eq!(
         result.err().map(|error| error.to_string()),
-        Some("provide either project or parent_task_id, not both (destination is ambiguous).".to_string())
+        Some(
+            "provide either project or parent_task_id, not both (destination is ambiguous)."
+                .to_string()
+        )
     );
 }
 
@@ -400,17 +403,13 @@ async fn move_task_script_covers_project_inbox_parent_and_cycle_guards() {
     assert!(captured[0].contains(r#"return { mode: "project", location: targetProject.ending };"#));
 
     assert!(captured[1].contains("const projectName = null;"));
-    assert!(captured[1].contains(
-        r#"return { mode: "inbox", location: inbox.ending };"#
-    ));
+    assert!(captured[1].contains(r#"return { mode: "inbox", location: inbox.ending };"#));
 
     assert!(captured[2].contains(r#"const parentTaskId = "parent-1";"#));
     assert!(captured[2].contains("if (parentTaskId === taskId) {"));
     assert!(captured[2].contains("Cannot move a task under itself."));
     assert!(captured[2].contains("Cannot move a task under its own descendant."));
-    assert!(captured[2].contains(
-        r#"return { mode: "parent", location: parentTask.ending };"#
-    ));
+    assert!(captured[2].contains(r#"return { mode: "parent", location: parentTask.ending };"#));
 }
 
 #[tokio::test]
@@ -966,14 +965,12 @@ async fn move_task_script_contains_destination_modes_and_parent_guards() {
     assert!(parent_script.contains(r#"const parentTaskId = "parent-1";"#));
     assert!(parent_script.contains("if (parentTaskId === taskId) {"));
     assert!(parent_script.contains(r#"throw new Error("Cannot move a task under itself.");"#));
-    assert!(parent_script.contains(
-        r#"throw new Error("Cannot move a task under its own descendant.");"#
-    ));
+    assert!(parent_script
+        .contains(r#"throw new Error("Cannot move a task under its own descendant.");"#));
     assert!(parent_script.contains(r#"return { mode: "parent", location: parentTask.ending };"#));
     assert!(parent_script.contains("moveTasks([task], destinationInfo.location);"));
-    assert!(parent_script.contains(
-        "projectName: task.containingProject ? task.containingProject.name : null,"
-    ));
+    assert!(parent_script
+        .contains("projectName: task.containingProject ? task.containingProject.name : null,"));
     assert!(parent_script.contains("inInbox: task.inInbox"));
 
     let inbox_result = move_task(&runner, "task-1", None, None).await;
@@ -988,12 +985,12 @@ async fn move_task_script_contains_destination_modes_and_parent_guards() {
     assert!(inbox_script.contains("const parentTaskId = null;"));
     assert!(inbox_script.contains(r#"return { mode: "inbox", location: inbox.ending };"#));
     assert!(inbox_script.contains("const originalTaskId = task.id.primaryKey;"));
-    assert!(inbox_script.contains(
-        r#"throw new Error("Task move did not preserve task identity.");"#
-    ));
-    assert!(inbox_script.contains(
-        r#"if (destinationInfo.mode !== "parent" && task.containingTask) {"#
-    ));
+    assert!(
+        inbox_script.contains(r#"throw new Error("Task move did not preserve task identity.");"#)
+    );
+    assert!(
+        inbox_script.contains(r#"if (destinationInfo.mode !== "parent" && task.containingTask) {"#)
+    );
 }
 
 #[tokio::test]
@@ -1141,7 +1138,9 @@ async fn move_task_script_supports_project_and_inbox_destinations() {
         .cloned()
         .expect("project script should be captured");
     assert!(project_script.contains("const projectName = \"Errands\";"));
-    assert!(project_script.contains("return { mode: \"project\", location: targetProject.ending };"));
+    assert!(
+        project_script.contains("return { mode: \"project\", location: targetProject.ending };")
+    );
 
     let moved_to_inbox = move_task(&runner, "task-2", None, None)
         .await

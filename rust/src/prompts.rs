@@ -104,9 +104,7 @@ pub async fn project_planning<R: JxaRunner>(runner: &R, project: &str) -> Result
     let project_details = match get_project(runner, project_name).await {
         Ok(details) => details,
         Err(OmniFocusError::OmniFocus(message))
-            if message
-                .to_ascii_lowercase()
-                .contains("project not found") =>
+            if message.to_ascii_lowercase().contains("project not found") =>
         {
             serde_json::json!({
                 "id": null,
@@ -160,6 +158,6 @@ pub async fn project_planning<R: JxaRunner>(runner: &R, project: &str) -> Result
     let available_tasks_json = serde_json::to_string(&available_tasks)?;
 
     Ok(format!(
-        "plan this project into clear executable work.\n\nproject name:\n{project_name}\n\nplanning goals:\n1) summarize the project outcome in one concise sentence.\n2) evaluate current task coverage and identify missing steps.\n3) convert vague items into concrete next actions (verb-first, observable).\n4) sequence work logically (dependencies first, then parallelizable actions).\n5) estimate effort (minutes/hours) for each next action and flag high-risk items.\n6) recommend what to do now, next, later, and what to defer/drop.\n\noutput format:\n- project summary\n- work breakdown with columns:\n  action, estimate, priority, dependency, suggested tags, due/defer recommendation, rationale\n- first 3 actions to execute immediately\n- risk/blocker list with mitigation ideas\n\nengagement protocol:\n- treat this as omnifocus execution planning, not just writing a detached document.\n- if the project is not found, keep planning from user intent and then ask whether to create it in omnifocus.\n- after presenting the plan, ask for confirmation to apply it in omnifocus (create project, create tasks, set metadata).\n- once approved, execute tool calls and return the created/updated ids.\n\nproject_details_json:\n{project_details_json}\n\nproject_available_tasks_json:\n{available_tasks_json}\n"
+        "plan this project into clear executable work.\n\nproject name:\n{project_name}\n\nplanning goals:\n1) summarize the project outcome in one concise sentence.\n2) evaluate current task coverage and identify missing steps.\n3) convert vague items into concrete next actions (verb-first, observable).\n4) sequence work logically (dependencies first, then parallelizable actions).\n5) estimate effort (minutes/hours) for each next action and flag high-risk items.\n6) recommend what to do now, next, later, and what to defer/drop.\n\noutput format:\n- project summary\n- work breakdown with columns:\n  action, estimate, priority, dependency, suggested tags, due/defer recommendation, rationale\n- first 3 actions to execute immediately\n- risk/blocker list with mitigation ideas\n\nengagement protocol:\n- treat this as omnifocus execution planning, not just writing a detached document.\n- if the project is not found, keep planning from user intent and then ask whether to create it in omnifocus.\n- fallback marker for missing projects: 'status': 'not_found'\n- after presenting the plan, ask for confirmation to apply it in omnifocus (create project, create tasks, set metadata).\n- once approved, execute tool calls and return the created/updated ids.\n\nproject_details_json:\n{project_details_json}\n\nproject_available_tasks_json:\n{available_tasks_json}\n"
     ))
 }

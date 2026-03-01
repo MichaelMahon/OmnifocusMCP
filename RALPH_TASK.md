@@ -318,7 +318,7 @@ required across Python/TypeScript/Rust with strict parity.
         - clarify that destructive delete confirmation is separate from
           non-destructive move/update workflows
 
-27. [ ] Run full quality gates before marking phase complete:
+27. [x] Run full quality gates before marking phase complete:
         - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
         - `cd typescript && npx tsc --noEmit && npm test`
         - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
