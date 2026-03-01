@@ -852,7 +852,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "list projects with status and folder filters.")]
+    #[tool(
+        description = "list projects with status and folder filters. status semantics: completed means finished work (done), dropped means intentionally abandoned/not-doing, on_hold means paused, active means current."
+    )]
     async fn list_projects(
         &self,
         Parameters(params): Parameters<ListProjectsParams>,
@@ -931,7 +933,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "mark a project complete by id or name.")]
+    #[tool(
+        description = "mark a project complete by id or name. use this for finished/closed projects (done/completed), not set_project_status(\"dropped\")."
+    )]
     async fn complete_project(
         &self,
         Parameters(params): Parameters<ProjectIdOrNameParams>,
@@ -942,7 +946,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "mark a completed project incomplete by id or name.")]
+    #[tool(
+        description = "mark a completed project incomplete by id or name (reopen done work back to active)."
+    )]
     async fn uncomplete_project(
         &self,
         Parameters(params): Parameters<ProjectIdOrNameParams>,
@@ -1004,7 +1010,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "set a project's organizational status by id or name.")]
+    #[tool(
+        description = "set a project's organizational status by id or name. allowed values: active, on_hold, dropped. semantics: dropped means intentionally abandoned/cancelled (not completed); for finished/closed projects use complete_project instead. when presenting planned/finished changes to users, prefer business-meaning labels (project name, folder, current->target status) and include raw ids only as secondary references."
+    )]
     async fn set_project_status(
         &self,
         Parameters(params): Parameters<SetProjectStatusParams>,
@@ -1227,7 +1235,7 @@ impl<R: JxaRunner + Send + Sync + 'static> ServerHandler for OmniFocusServer<R> 
         let _ = &self.runner_dyn;
         ServerInfo {
             instructions: Some(
-                "OmniFocus MCP server exposing tools, resources, and prompts. treat conversations as active omnifocus workflows: ground responses in omnifocus data, engage users with concise clarifying questions when needed, propose concrete next actions, and offer to apply approved changes via tool calls. for user-requested changes, preserve existing objects by default and prefer update/move tools; never delete and recreate tasks/projects/folders as a shortcut unless the user explicitly asks for deletion. ask explicit confirmation before destructive operations and report resulting object ids after writes."
+                "OmniFocus MCP server exposing tools, resources, and prompts. treat conversations as active omnifocus workflows: ground responses in omnifocus data, engage users with concise clarifying questions when needed, propose concrete next actions, and offer to apply approved changes via tool calls. communicate at business-meaning level first: show object names and context (project/folder/status/counts), and use raw ids only as secondary references. project lifecycle semantics: complete_project is for finished/closed work; set_project_status(\"dropped\") means intentionally abandoned/cancelled; set_project_status(\"on_hold\") means paused. for user-requested changes, preserve existing objects by default and prefer update/move tools; never delete and recreate tasks/projects/folders as a shortcut unless the user explicitly asks for deletion. ask explicit confirmation before destructive operations and report resulting object ids after writes."
                     .to_string(),
             ),
             capabilities: ServerCapabilities::builder()

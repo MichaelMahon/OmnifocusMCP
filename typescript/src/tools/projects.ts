@@ -6,7 +6,7 @@ import { errorResult, normalizeError, textResult, type Server } from "../types.j
 export function register(server: Server): void {
   server.tool(
     "list_projects",
-    "list projects with optional folder and status filters.",
+    "list projects with optional folder and status filters. status semantics: completed means finished work, dropped means intentionally abandoned/cancelled, on_hold means paused, active means current.",
     {
       folder: z.string().min(1).optional().describe("optional folder name filter"),
       status: z
@@ -429,7 +429,7 @@ return {
 
   server.tool(
     "complete_project",
-    "complete a project by id or name.",
+    "complete a project by id or name. use this for finished/closed projects (done/completed), not set_project_status(\"dropped\").",
     { project_id_or_name: z.string().min(1).describe("project id primaryKey or exact name") },
     async ({ project_id_or_name }) => {
       try {
@@ -461,7 +461,7 @@ return {
 
   server.tool(
     "uncomplete_project",
-    "reopen a completed project by id or name and return active status.",
+    "reopen a completed project by id or name and return active status (undo complete_project).",
     { project_id_or_name: z.string().min(1).describe("project id primaryKey or exact name") },
     async ({ project_id_or_name }) => {
       try {
@@ -599,12 +599,12 @@ return {
 
   server.tool(
     "set_project_status",
-    "set a project's organizational status by id or name.",
+    "set a project's organizational status by id or name. allowed values: active, on_hold, dropped. dropped means intentionally abandoned/cancelled (not completed); for finished/closed projects use complete_project. when presenting planned/finished changes to users, prefer business-meaning labels (project name, folder, current->target status) and include raw ids only as secondary references.",
     {
       project_id_or_name: z.string().min(1).describe("project id primaryKey or exact name"),
       status: z
         .enum(["active", "on_hold", "dropped"])
-        .describe("target project status: active, on_hold, or dropped"),
+        .describe("target status: active | on_hold | dropped; use complete_project for done/completed"),
     },
     async ({ project_id_or_name, status }) => {
       try {

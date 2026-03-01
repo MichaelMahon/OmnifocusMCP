@@ -108,6 +108,18 @@ All list/search tools support `sortBy` and `sortOrder`:
 - **Sorting** — by name, due date, or other fields
 - **Aggregate counts** — project counts by status, optionally scoped to a folder
 
+#### Project Lifecycle Semantics
+
+- Use `complete_project` when work is finished/closed (done/completed).
+- Use `set_project_status` for organizational state only:
+  - `active` = current
+  - `on_hold` = paused (UI wording is often "on hold"/"on-hold")
+  - `dropped` = intentionally abandoned/cancelled, not completed
+- Use `uncomplete_project` to reopen a completed project back to active.
+- In user-facing summaries, present business meaning first (project name,
+  folder, and status transition), and include opaque IDs only as secondary
+  references.
+
 ### Tags (5 tools)
 
 - **CRUD** — create, update (name and status), delete

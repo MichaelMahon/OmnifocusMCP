@@ -21,6 +21,8 @@ async def list_projects(
 
     returns projects with id, name, status, folder name, task counts, defer/due
     dates, note, sequential state, and review interval.
+    status semantics: completed means finished work, dropped means intentionally
+    abandoned/cancelled work, on_hold means paused work, active means current.
     """
     if limit < 1:
         raise ValueError("limit must be greater than 0.")
@@ -420,7 +422,10 @@ return {{
 
 @typed_tool(mcp)
 async def complete_project(project_id_or_name: str) -> str:
-    """complete a project by id or name and return confirmation."""
+    """complete a project by id or name and return confirmation.
+
+    use this for finished/closed projects (done/completed), not dropped status.
+    """
     if project_id_or_name.strip() == "":
         raise ValueError("project_id_or_name must not be empty.")
 
@@ -448,7 +453,10 @@ return {{
 
 @typed_tool(mcp)
 async def uncomplete_project(project_id_or_name: str) -> str:
-    """reopen a completed project by id or name and return active status."""
+    """reopen a completed project by id or name and return active status.
+
+    this reverses complete_project and returns the project to active workflow.
+    """
     if project_id_or_name.strip() == "":
         raise ValueError("project_id_or_name must not be empty.")
 
@@ -558,7 +566,15 @@ async def set_project_status(
     project_id_or_name: str,
     status: Literal["active", "on_hold", "dropped"],
 ) -> str:
-    """set a project's organizational status by id or name."""
+    """set a project's organizational status by id or name.
+
+    allowed values: active, on_hold, dropped.
+    dropped means intentionally abandoned/cancelled (not completed).
+    for finished/closed projects use complete_project.
+    when presenting planned/finished changes to users, prefer business-meaning
+    labels (project name, folder, current->target status) and include raw ids
+    only as secondary references.
+    """
     if project_id_or_name.strip() == "":
         raise ValueError("project_id_or_name must not be empty.")
     if status not in ("active", "on_hold", "dropped"):
