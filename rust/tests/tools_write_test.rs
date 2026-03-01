@@ -460,6 +460,14 @@ async fn validation_errors_for_write_tools() {
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
+        move_task(&runner, "task-id", None, Some("   ")).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        move_task(&runner, "task-id", Some("Work"), Some("parent-1")).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
         append_to_note(&runner, "folder", "task-id", "x").await,
         Err(OmniFocusError::Validation(_))
     ));
@@ -631,6 +639,62 @@ async fn create_subtask_script_contains_parent_lookup_and_insert_position() {
         .expect("one script should be captured");
     assert!(captured.contains("const parentTask = document.flattenedTasks.find"));
     assert!(captured.contains("const task = new Task(taskName, parentTask.ending);"));
+}
+
+#[tokio::test]
+async fn move_task_script_supports_project_inbox_and_parent_modes() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({
+            "id": "task-1",
+            "name": "Task",
+            "projectName": "Work",
+            "inInbox": false
+        }),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let moved_to_project = move_task(&runner, "task-1", Some("Work"), None).await;
+    assert!(moved_to_project.is_ok());
+    let first_script = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .first()
+        .cloned()
+        .expect("first script should be captured");
+    assert!(first_script.contains("const projectName = \"Work\";"));
+    assert!(first_script.contains("const parentTaskId = null;"));
+    assert!(first_script.contains("const destinationInfo = (() => {"));
+    assert!(first_script.contains("moveTasks([task], destinationInfo.location);"));
+    assert!(first_script.contains("Task move did not preserve task identity."));
+
+    let moved_to_inbox = move_task(&runner, "task-1", None, None).await;
+    assert!(moved_to_inbox.is_ok());
+    let second_script = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .get(1)
+        .cloned()
+        .expect("second script should be captured");
+    assert!(second_script.contains("const projectName = null;"));
+    assert!(second_script.contains("const parentTaskId = null;"));
+    assert!(second_script.contains("return { mode: \"inbox\", location: inbox.ending };"));
+    assert!(second_script.contains("Task move failed: task is still nested under a parent."));
+
+    let moved_to_parent = move_task(&runner, "task-1", None, Some("parent-1")).await;
+    assert!(moved_to_parent.is_ok());
+    let third_script = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .get(2)
+        .cloned()
+        .expect("third script should be captured");
+    assert!(third_script.contains("const parentTaskId = \"parent-1\";"));
+    assert!(third_script.contains("if (parentTaskId === taskId) {"));
+    assert!(third_script.contains("Cannot move a task under itself."));
+    assert!(third_script.contains("Cannot move a task under its own descendant."));
+    assert!(third_script.contains("return { mode: \"parent\", location: parentTask.ending };"));
 }
 
 #[tokio::test]

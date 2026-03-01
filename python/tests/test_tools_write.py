@@ -289,7 +289,27 @@ async def test_move_task_to_inbox_when_destination_omitted(
     assert "const projectName = null;" in script
     assert "const parentTaskId = null;" in script
     assert "if (projectName === null || projectName === \"\") {" in script
-    assert "return { location: inbox.ending, mode: \"inbox\" };" in script
+    assert "return { mode: \"inbox\", location: inbox.ending };" in script
+
+
+@pytest.mark.asyncio
+async def test_move_task_parent_destination_includes_self_and_cycle_guards(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "t5", "name": "Move me", "projectName": "Work", "inInbox": False}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.move_task(task_id="t5", parent_task_id="parent-1")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const parentTaskId = "parent-1";' in script
+    assert 'throw new Error("Cannot move a task under itself.");' in script
+    assert 'throw new Error("Cannot move a task under its own descendant.");' in script
+    assert 'return { mode: "parent", location: parentTask.ending };' in script
+    assert "moveTasks([task], destinationInfo.location);" in script
 
 
 @pytest.mark.asyncio
