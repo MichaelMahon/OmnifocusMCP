@@ -1116,7 +1116,7 @@ return {
           seenTaskIds.has(normalizedParentTaskId)
         ) {
           throw new Error(
-            "parent_task_id must not be included in task_ids (cannot move a task under itself)."
+            "parent_task_id cannot be included in task_ids (self-parenting in batch move)."
           );
         }
 

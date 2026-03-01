@@ -361,7 +361,7 @@ required across Python/TypeScript/Rust with strict parity.
           moved flag, destination summary, and error (if any)
         - include `partial_success` indicator when some tasks fail.
 
-32. [ ] Add/extend tests in all 3 implementations covering:
+32. [x] Add/extend tests in all 3 implementations covering:
         - happy path: move multiple tasks to project
         - happy path: move multiple tasks to inbox
         - happy path: move multiple tasks under parent task
@@ -372,7 +372,7 @@ required across Python/TypeScript/Rust with strict parity.
         - mixed found/not-found partial success behavior
         - parity of params and response shape across all 3.
 
-33. [ ] Update docs/tool descriptions:
+33. [x] Update docs/tool descriptions:
         - add `move_tasks_batch` to README features + usage examples
         - clarify this is non-destructive reorganization
         - clarify delete confirmation policy remains separate.
