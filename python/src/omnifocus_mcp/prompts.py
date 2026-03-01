@@ -108,6 +108,7 @@ async def project_planning(project: str) -> str:
         raise ValueError("project must not be empty.")
 
     project_name = project.strip()
+    project_details: str | dict[str, str | int | bool | None | list[object]]
     try:
         project_details = await get_project(project_id_or_name=project_name)
     except Exception as error:

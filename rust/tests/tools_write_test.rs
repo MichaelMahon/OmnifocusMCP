@@ -173,7 +173,7 @@ async fn write_task_tools_happy_path() {
 }
 
 #[tokio::test]
-async fn move_task_supports_project_inbox_and_parent_destinations() {
+async fn move_task_supports_project_inbox_and_parent_destinations_alt_payloads() {
     let project_runner = MockRunner {
         payload: json!({
             "id": "task-1",
@@ -1551,4 +1551,31 @@ async fn append_to_note_script_targets_task_or_project_and_appends_text() {
     assert!(captured.contains("const objectId = \"task-1\";"));
     assert!(captured.contains("const textToAppend = \"more context\";"));
     assert!(captured.contains("obj.appendStringToNote(textToAppend);"));
+}
+
+#[tokio::test]
+async fn move_task_script_uses_parity_parameter_names_and_cycle_guards() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "task-8", "name": "Task Eight", "projectName": "Work", "inInbox": false}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = move_task(&runner, "task-8", None, Some("parent-8")).await;
+    assert!(result.is_ok());
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains("const taskId = \"task-8\";"));
+    assert!(captured.contains("const projectName = null;"));
+    assert!(captured.contains("const parentTaskId = \"parent-8\";"));
+    assert!(captured.contains("throw new Error(\"Cannot move a task under itself.\");"));
+    assert!(captured.contains("throw new Error(\"Cannot move a task under its own descendant.\");"));
+    assert!(captured.contains("moveTasks([task], destinationInfo.location);"));
+    assert!(captured.contains("inInbox: task.inInbox"));
 }

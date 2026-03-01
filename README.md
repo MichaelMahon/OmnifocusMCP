@@ -41,12 +41,27 @@ Full lifecycle management for OmniFocus tasks:
 - **Subtasks** — create and list subtasks under any parent task
 - **Completion** — mark complete, mark incomplete (supports repeating tasks)
 - **Search** — full-text search across task names and notes with all filters applied
-- **Move** — relocate tasks between projects or back to inbox
+- **Move and reparent** — relocate tasks between projects, reparent tasks under other tasks, or move subtasks back to inbox/project without delete/recreate
 - **Duplicate** — clone a task with all properties and optional subtasks
 - **Notifications** — list, add, and remove notifications (absolute date or relative offset)
 - **Repetition** — set or clear repetition rules with schedule type (regularly/after completion)
 - **Notes** — append text to task notes without overwriting
+- **Safety model** — destructive delete confirmations stay separate from non-destructive move/update workflows
 - **Aggregate counts** — fast "how many" queries without listing individual tasks
+
+Example reparent move:
+
+```json
+{
+  "tool": "move_task",
+  "arguments": {
+    "task_id": "child-task-id",
+    "parent_task_id": "parent-task-id"
+  }
+}
+```
+
+This move operation is non-destructive and preserves task identity; destructive deletion remains a separate workflow through delete tools.
 
 #### Advanced Filtering
 
@@ -138,7 +153,7 @@ Detailed setup guides: [Rust](docs/install-rust.md) · [Python](docs/install-pyt
 
 The server runs JXA (JavaScript for Automation) scripts through macOS `osascript`. Each script uses the OmniFocus `evaluateJavascript` bridge to execute Omni Automation JavaScript inside OmniFocus itself, where full APIs like `flattenedTasks`, `Task.Status`, and `new Task()` are available. Data is serialized as JSON and returned through the MCP protocol with consistent schemas across all three implementations.
 
-## MCP Client Configuration
+## MCP Client Config Examples
 
 ### Claude Desktop
 
