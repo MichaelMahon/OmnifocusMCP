@@ -2091,18 +2091,35 @@ async def move_tasks_batch(
         )
 
     normalized_task_ids: list[str] = []
+    seen_task_ids: set[str] = set()
     for task_id in task_ids:
         if not isinstance(task_id, str):
             raise ValueError("each task id must be a string.")
         normalized_task_id = task_id.strip()
         if normalized_task_id == "":
             raise ValueError("each task id must be a non-empty string.")
+        if normalized_task_id in seen_task_ids:
+            raise ValueError("task_ids must not contain duplicate ids.")
         normalized_task_ids.append(normalized_task_id)
+        seen_task_ids.add(normalized_task_id)
+
+    normalized_parent_task_id = (
+        None if parent_task_id is None else parent_task_id.strip()
+    )
+    if (
+        normalized_parent_task_id is not None
+        and normalized_parent_task_id in seen_task_ids
+    ):
+        raise ValueError(
+            "parent_task_id must not be included in task_ids (cannot move a task under itself)."
+        )
 
     task_ids_value = json.dumps(normalized_task_ids)
     project_value = "null" if project is None else escape_for_jxa(project.strip())
     parent_task_id_value = (
-        "null" if parent_task_id is None else escape_for_jxa(parent_task_id.strip())
+        "null"
+        if normalized_parent_task_id is None
+        else escape_for_jxa(normalized_parent_task_id)
     )
 
     script = f"""

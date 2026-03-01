@@ -1099,12 +1099,25 @@ return {
         }
 
         const normalizedTaskIds: string[] = [];
+        const seenTaskIds = new Set<string>();
         for (const taskId of task_ids) {
           const normalizedTaskId = taskId.trim();
           if (normalizedTaskId === "") {
             throw new Error("each task id must be a non-empty string.");
           }
+          if (seenTaskIds.has(normalizedTaskId)) {
+            throw new Error(`task_ids must not contain duplicates: ${normalizedTaskId}`);
+          }
+          seenTaskIds.add(normalizedTaskId);
           normalizedTaskIds.push(normalizedTaskId);
+        }
+        if (
+          normalizedParentTaskId !== undefined &&
+          seenTaskIds.has(normalizedParentTaskId)
+        ) {
+          throw new Error(
+            "parent_task_id cannot be included in task_ids (self-parenting in batch move)."
+          );
         }
 
         const taskIds = JSON.stringify(normalizedTaskIds);
@@ -1129,6 +1142,13 @@ const destinationInfo = (() => {
       taskById.get(parentTaskId) ||
       document.flattenedTasks.find(item => item.id.primaryKey === parentTaskId);
     if (!parentTask) throw new Error(\`Parent task not found: \${parentTaskId}\`);
+    let ancestor = parentTask;
+    while (ancestor) {
+      if (taskIds.includes(ancestor.id.primaryKey)) {
+        throw new Error("Cannot move tasks under their own descendant.");
+      }
+      ancestor = ancestor.containingTask;
+    }
     return {
       mode: "parent",
       location: parentTask.ending,
@@ -1155,43 +1175,45 @@ const results = taskIds.map(taskId => {
   if (!task) {
     return {
       id: taskId,
+      name: null,
       moved: false,
       destination: destinationInfo.summary,
-      error: "not found"
+      error: "Task not found."
     };
   }
-
-  const originalTaskId = task.id.primaryKey;
-  moveTasks([task], destinationInfo.location);
-  if (task.id.primaryKey !== originalTaskId) {
+  try {
+    const originalTaskId = task.id.primaryKey;
+    moveTasks([task], destinationInfo.location);
+    if (task.id.primaryKey !== originalTaskId) {
+      throw new Error("Task move did not preserve task identity.");
+    }
+    if (destinationInfo.mode !== "parent" && task.containingTask) {
+      throw new Error("Task move failed: task is still nested under a parent.");
+    }
+    return {
+      id: task.id.primaryKey,
+      name: task.name,
+      moved: true,
+      destination: destinationInfo.summary,
+      error: null
+    };
+  } catch (e) {
     return {
       id: taskId,
+      name: task.name,
       moved: false,
       destination: destinationInfo.summary,
-      error: "Task move did not preserve task identity."
+      error: e && e.message ? String(e.message) : "move failed"
     };
   }
-  if (destinationInfo.mode !== "parent" && task.containingTask) {
-    return {
-      id: taskId,
-      moved: false,
-      destination: destinationInfo.summary,
-      error: "Task move failed: task is still nested under a parent."
-    };
-  }
-  return {
-    id: task.id.primaryKey,
-    name: task.name,
-    moved: true,
-    destination: destinationInfo.summary
-  };
 });
 const movedCount = results.filter(result => result.moved).length;
 const failedCount = results.length - movedCount;
 return {
-  requested_count: results.length,
+  requested_count: taskIds.length,
   moved_count: movedCount,
   failed_count: failedCount,
+  partial_success: movedCount > 0 && failedCount > 0,
   results: results
 };
 `.trim();
