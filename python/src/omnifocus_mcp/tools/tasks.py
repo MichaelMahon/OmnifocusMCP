@@ -1992,6 +1992,10 @@ async def move_task(
         raise ValueError(
             "provide either project or parent_task_id, not both (destination is ambiguous)."
         )
+    if project is not None and parent_task_id is not None:
+        raise ValueError(
+            "provide either project or parent_task_id, not both (destination is ambiguous)."
+        )
 
     task_id_value = escape_for_jxa(task_id.strip())
     project_value = "null" if project is None else escape_for_jxa(project.strip())
@@ -2050,123 +2054,6 @@ return {{
   name: task.name,
   projectName: task.containingProject ? task.containingProject.name : null,
   inInbox: task.inInbox
-}};
-""".strip()
-    result = await run_omnijs(script)
-    return json.dumps(result)
-
-
-@typed_tool(mcp)
-async def move_tasks_batch(
-    task_ids: list[str], project: str | None = None, parent_task_id: str | None = None
-) -> str:
-    """move multiple tasks without deleting or recreating them.
-
-    destination modes: (a) provide `project` to move tasks to a project,
-    (b) provide `parent_task_id` to move tasks under an existing parent task,
-    or (c) omit both to move tasks to inbox. uses one omnijs call per tool
-    invocation and returns per-task move results.
-    """
-    if len(task_ids) == 0:
-        raise ValueError("task_ids must contain at least one task id.")
-    if project is not None and project.strip() == "":
-        raise ValueError("project must not be empty when provided.")
-    if parent_task_id is not None and parent_task_id.strip() == "":
-        raise ValueError("parent_task_id must not be empty when provided.")
-    if project is not None and parent_task_id is not None:
-        raise ValueError(
-            "provide either project or parent_task_id, not both (destination is ambiguous)."
-        )
-
-    normalized_task_ids: list[str] = []
-    for task_id in task_ids:
-        if not isinstance(task_id, str):
-            raise ValueError("each task id must be a string.")
-        normalized_task_id = task_id.strip()
-        if normalized_task_id == "":
-            raise ValueError("each task id must be a non-empty string.")
-        normalized_task_ids.append(normalized_task_id)
-
-    task_ids_value = json.dumps(normalized_task_ids)
-    project_value = "null" if project is None else escape_for_jxa(project.strip())
-    parent_task_id_value = (
-        "null" if parent_task_id is None else escape_for_jxa(parent_task_id.strip())
-    )
-
-    script = f"""
-const taskIds = {task_ids_value};
-const projectName = {project_value};
-const parentTaskId = {parent_task_id_value};
-const taskById = new Map();
-for (const task of document.flattenedTasks) {{
-  try {{
-    taskById.set(task.id.primaryKey, task);
-  }} catch (e) {{
-  }}
-}}
-
-const destinationInfo = (() => {{
-  if (parentTaskId !== null && parentTaskId !== "") {{
-    const parentTask = taskById.get(parentTaskId);
-    if (!parentTask) {{
-      throw new Error(`Parent task not found: ${{parentTaskId}}`);
-    }}
-    return {{ mode: "parent", location: parentTask.ending }};
-  }}
-  if (projectName === null || projectName === "") {{
-    return {{ mode: "inbox", location: inbox.ending }};
-  }}
-  const targetProject = document.flattenedProjects.byName(projectName);
-  if (!targetProject) {{
-    throw new Error(`Project not found: ${{projectName}}`);
-  }}
-  return {{ mode: "project", location: targetProject.ending }};
-}})();
-
-const results = taskIds.map(taskId => {{
-  const task = taskById.get(taskId);
-  if (!task) {{
-    return {{
-      id: taskId,
-      moved: false,
-      error: "not found"
-    }};
-  }}
-
-  try {{
-    const originalTaskId = task.id.primaryKey;
-    moveTasks([task], destinationInfo.location);
-    if (task.id.primaryKey !== originalTaskId) {{
-      throw new Error("Task move did not preserve task identity.");
-    }}
-    if (destinationInfo.mode !== "parent" && task.containingTask) {{
-      throw new Error("Task move failed: task is still nested under a parent.");
-    }}
-    return {{
-      id: task.id.primaryKey,
-      name: task.name,
-      moved: true,
-      projectName: task.containingProject ? task.containingProject.name : null,
-      inInbox: task.inInbox
-    }};
-  }} catch (e) {{
-    return {{
-      id: taskId,
-      name: task.name,
-      moved: false,
-      error: e && e.message ? String(e.message) : "move failed"
-    }};
-  }}
-}});
-
-const movedCount = results.filter(result => result.moved).length;
-const failedCount = results.length - movedCount;
-
-return {{
-  requested_count: results.length,
-  moved_count: movedCount,
-  failed_count: failedCount,
-  results: results
 }};
 """.strip()
     result = await run_omnijs(script)

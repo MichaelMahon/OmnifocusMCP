@@ -1296,6 +1296,43 @@ async def test_delete_tasks_batch_empty_string_validation_error(server_module: A
 
 
 @pytest.mark.asyncio
+async def test_move_tasks_batch_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "requested_count": 2,
+        "moved_count": 2,
+        "failed_count": 0,
+        "results": [
+            {
+                "id": "t1",
+                "name": "Task One",
+                "moved": True,
+                "destination": {"mode": "project", "projectName": "Work"},
+            },
+            {
+                "id": "t2",
+                "name": "Task Two",
+                "moved": True,
+                "destination": {"mode": "project", "projectName": "Work"},
+            },
+        ],
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.move_tasks_batch(["t1", "t2"], project="Work")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const taskIds = ["t1", "t2"];' in script
+    assert 'const projectName = "Work";' in script
+    assert "moveTasks([task], destinationInfo.location);" in script
+    assert "moved_count" in script
+
+
+@pytest.mark.asyncio
 async def test_set_project_status_happy_path_criterion9(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:

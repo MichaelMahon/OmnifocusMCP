@@ -265,6 +265,58 @@ describe("tool happy paths", () => {
     expect(script).toContain("inInbox: task.inInbox");
   });
 
+  test("move_tasks_batch supports project destination mode", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      requested_count: 2,
+      moved_count: 2,
+      failed_count: 0,
+      results: [
+        {
+          id: "task-1",
+          name: "Task One",
+          moved: true,
+          destination: { mode: "project", projectName: "Work" },
+        },
+        {
+          id: "task-2",
+          name: "Task Two",
+          moved: true,
+          destination: { mode: "project", projectName: "Work" },
+        },
+      ],
+    });
+    const handler = registeredTools.get("move_tasks_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      task_ids: ["task-1", "task-2"],
+      project: "Work",
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      requested_count: 2,
+      moved_count: 2,
+      failed_count: 0,
+      results: [
+        {
+          id: "task-1",
+          name: "Task One",
+          moved: true,
+          destination: { mode: "project", projectName: "Work" },
+        },
+        {
+          id: "task-2",
+          name: "Task Two",
+          moved: true,
+          destination: { mode: "project", projectName: "Work" },
+        },
+      ],
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const taskIds = ["task-1", "task-2"];');
+    expect(script).toContain('const projectName = "Work";');
+    expect(script).toContain("moveTasks([task], destinationInfo.location);");
+    expect(script).toContain("moved_count");
+  });
+
   test("move_task supports project destination mode", async () => {
     runOmniJsMock.mockResolvedValueOnce({
       id: "task-2",

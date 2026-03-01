@@ -16,8 +16,8 @@ use omnifocus_mcp::{
         tags::{create_tag, delete_tag, update_tag},
         tasks::{
             complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
-            delete_tasks_batch, duplicate_task, move_task, set_task_repetition, uncomplete_task,
-            update_task, CreateTaskInput,
+            delete_tasks_batch, duplicate_task, move_task, move_tasks_batch, set_task_repetition,
+            uncomplete_task, update_task, CreateTaskInput,
         },
         utility::append_to_note,
     },
@@ -165,6 +165,11 @@ async fn write_task_tools_happy_path() {
         .await
         .expect("move_task should succeed");
     assert_eq!(moved["id"], "t1");
+
+    let moved_batch = move_tasks_batch(&runner, vec!["t1".to_string()], Some("project"), None)
+        .await
+        .expect("move_tasks_batch should succeed");
+    assert_eq!(moved_batch["id"], "t1");
 
     let appended = append_to_note(&runner, "task", "t1", "more context")
         .await
