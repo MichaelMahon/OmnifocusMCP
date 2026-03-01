@@ -310,7 +310,7 @@ async def test_move_task_parent_destination_includes_self_and_cycle_guards(
     assert 'throw new Error("Cannot move a task under itself.");' in script
     assert 'throw new Error("Cannot move a task under its own descendant.");' in script
     assert 'return { mode: "parent", location: parentTask.ending };' in script
-    assert "moveTasks(movableTasks, destinationInfo.location);" in script
+    assert "moveTasks([task], destinationInfo.location);" in script
 
 
 @pytest.mark.asyncio
@@ -1331,7 +1331,7 @@ async def test_move_tasks_batch_happy_path(
     script = state["calls"][0]["script"]
     assert 'const taskIds = ["t1", "t2"];' in script
     assert 'const projectName = "Work";' in script
-    assert "moveTasks([task], destinationInfo.location);" in script
+    assert "moveTasks(movableTasks, destinationInfo.location);" in script
     assert "partial_success" in script
     assert "moved_count" in script
 
