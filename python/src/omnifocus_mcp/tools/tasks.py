@@ -1972,29 +1972,47 @@ return {{
 
 
 @typed_tool(mcp)
-async def move_task(task_id: str, project: str | None = None) -> str:
+async def move_task(
+    task_id: str, project: str | None = None, parent_task_id: str | None = None
+) -> str:
     """move a task to a named project or back to inbox.
 
-    accepts a task id and optional project name. when project is omitted, the
-    task is moved to inbox.
+    accepts a task id and optional destination fields. when parent_task_id is
+    provided, task is moved under that parent task. otherwise, project moves to
+    a project and omitted destination moves to inbox.
     """
     if task_id.strip() == "":
         raise ValueError("task_id must not be empty.")
     if project is not None and project.strip() == "":
         raise ValueError("project must not be empty when provided.")
+    if parent_task_id is not None and parent_task_id.strip() == "":
+        raise ValueError("parent_task_id must not be empty when provided.")
 
     task_id_value = escape_for_jxa(task_id.strip())
     project_value = "null" if project is None else escape_for_jxa(project.strip())
+    parent_task_id_value = (
+        "null"
+        if parent_task_id is None
+        else escape_for_jxa(parent_task_id.strip())
+    )
 
     script = f"""
 const taskId = {task_id_value};
 const projectName = {project_value};
+const parentTaskId = {parent_task_id_value};
 const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
 if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
 
 const destination = (() => {{
+  if (parentTaskId !== null && parentTaskId !== "") {{
+    const parentTask = document.flattenedTasks.find(item => item.id.primaryKey === parentTaskId);
+    if (!parentTask) {{
+      throw new Error(`Parent task not found: ${{parentTaskId}}`);
+    }}
+    return parentTask.ending;
+  }}
   if (projectName === null || projectName === "") return inbox.ending;
   const targetProject = document.flattenedProjects.byName(projectName);
   if (!targetProject) {{
