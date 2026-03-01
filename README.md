@@ -238,7 +238,9 @@ Compatibility snippet:
 }
 ```
 
-## Switching Between Rust, Python, and TypeScript
+## Switching Implementations
+
+### Switching Between Rust, Python, and TypeScript
 
 - Use Rust when you want a single prebuilt `omnifocus-mcp` binary.
 - Use Python when you want `uv` or `python -m` execution and fast local iteration.
