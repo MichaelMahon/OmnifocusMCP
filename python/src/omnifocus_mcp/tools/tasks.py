@@ -1977,10 +1977,10 @@ async def move_task(
 ) -> str:
     """move a task without deleting or recreating it.
 
-    destination modes: provide `project` to move to a project, provide
-    `parent_task_id` to move under an existing parent task, or omit both to move
-    to inbox. this preserves the original task object and id, and delete is not
-    required for reorganization workflows.
+    destination modes: (a) provide `project` to move to a project,
+    (b) provide `parent_task_id` to move under an existing parent task,
+    or (c) omit both to move to inbox. move_task preserves the original task
+    object and id by default, and delete is never required for reorganization.
     """
     if task_id.strip() == "":
         raise ValueError("task_id must not be empty.")
@@ -2008,7 +2008,7 @@ if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
 
-const destination = (() => {{
+const destinationInfo = (() => {{
   if (parentTaskId !== null && parentTaskId !== "") {{
     if (parentTaskId === taskId) {{
       throw new Error("Cannot move a task under itself.");
@@ -2024,17 +2024,26 @@ const destination = (() => {{
       }}
       ancestor = ancestor.containingTask;
     }}
-    return parentTask.ending;
+    return {{ mode: "parent", location: parentTask.ending }};
   }}
-  if (projectName === null || projectName === "") return inbox.ending;
+  if (projectName === null || projectName === "") {{
+    return {{ mode: "inbox", location: inbox.ending }};
+  }}
   const targetProject = document.flattenedProjects.byName(projectName);
   if (!targetProject) {{
     throw new Error(`Project not found: ${{projectName}}`);
   }}
-  return targetProject.ending;
+  return {{ mode: "project", location: targetProject.ending }};
 }})();
 
-moveTasks([task], destination);
+const originalTaskId = task.id.primaryKey;
+moveTasks([task], destinationInfo.location);
+if (task.id.primaryKey !== originalTaskId) {{
+  throw new Error("Task move did not preserve task identity.");
+}}
+if (destinationInfo.mode !== "parent" && task.containingTask) {{
+  throw new Error("Task move failed: task is still nested under a parent.");
+}}
 
 return {{
   id: task.id.primaryKey,

@@ -255,7 +255,8 @@ describe("tool happy paths", () => {
     const script = String(runOmniJsMock.mock.calls[0][0]);
     expect(script).toContain('const taskId = "task-1";');
     expect(script).toContain('const parentTaskId = "parent-1";');
-    expect(script).toContain("moveTasks([task], parentTask.ending);");
+    expect(script).toContain("moveTasks([task], destinationInfo.location);");
+    expect(script).toContain('return { mode: "parent", location: parentTask.ending };');
     expect(script).toContain("inInbox: task.inInbox");
   });
 

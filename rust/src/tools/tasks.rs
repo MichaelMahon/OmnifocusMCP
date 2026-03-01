@@ -2592,7 +2592,7 @@ if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
 
-const destination = (() => {{
+const destinationInfo = (() => {{
   if (parentTaskId !== null && parentTaskId !== "") {{
     if (parentTaskId === taskId) {{
       throw new Error("Cannot move a task under itself.");
@@ -2608,17 +2608,26 @@ const destination = (() => {{
       }}
       ancestor = ancestor.containingTask;
     }}
-    return parentTask.ending;
+    return {{ mode: "parent", location: parentTask.ending }};
   }}
-  if (projectName === null || projectName === "") return inbox.ending;
+  if (projectName === null || projectName === "") {{
+    return {{ mode: "inbox", location: inbox.ending }};
+  }}
   const targetProject = document.flattenedProjects.byName(projectName);
   if (!targetProject) {{
     throw new Error(`Project not found: ${{projectName}}`);
   }}
-  return targetProject.ending;
+  return {{ mode: "project", location: targetProject.ending }};
 }})();
 
-moveTasks([task], destination);
+const originalTaskId = task.id.primaryKey;
+moveTasks([task], destinationInfo.location);
+if (task.id.primaryKey !== originalTaskId) {{
+  throw new Error("Task move did not preserve task identity.");
+}}
+if (destinationInfo.mode !== "parent" && task.containingTask) {{
+  throw new Error("Task move failed: task is still nested under a parent.");
+}}
 
 return {{
   id: task.id.primaryKey,

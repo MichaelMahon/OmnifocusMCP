@@ -987,7 +987,7 @@ return {
 
   server.tool(
     "move_task",
-    "move a task without deleting or recreating it. destination modes: provide project to move to a project, provide parent_task_id to move under an existing parent task, or omit both to move to inbox. this preserves the original task object and id, and delete is not required for reorganization workflows.",
+    "move a task without deleting or recreating it. destination modes: (a) provide project to move to a project, (b) provide parent_task_id to move under an existing parent task, or (c) omit both to move to inbox. move_task preserves the original task object and id by default, and delete is never required for reorganization.",
     {
       task_id: z.string().min(1),
       project: z.string().min(1).optional(),
@@ -1025,26 +1025,36 @@ const projectName = ${projectName};
 const parentTaskId = ${parentTaskId};
 const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
 if (!task) throw new Error(\`Task not found: \${taskId}\`);
-if (parentTaskId !== null && parentTaskId !== "") {
-  if (parentTaskId === taskId) {
-    throw new Error("Cannot move a task under itself.");
-  }
-  const parentTask = document.flattenedTasks.find(item => item.id.primaryKey === parentTaskId);
-  if (!parentTask) throw new Error(\`Parent task not found: \${parentTaskId}\`);
-  let ancestor = parentTask;
-  while (ancestor) {
-    if (ancestor.id.primaryKey === taskId) {
-      throw new Error("Cannot move a task under its own descendant.");
+const destinationInfo = (() => {
+  if (parentTaskId !== null && parentTaskId !== "") {
+    if (parentTaskId === taskId) {
+      throw new Error("Cannot move a task under itself.");
     }
-    ancestor = ancestor.containingTask;
+    const parentTask = document.flattenedTasks.find(item => item.id.primaryKey === parentTaskId);
+    if (!parentTask) throw new Error(\`Parent task not found: \${parentTaskId}\`);
+    let ancestor = parentTask;
+    while (ancestor) {
+      if (ancestor.id.primaryKey === taskId) {
+        throw new Error("Cannot move a task under its own descendant.");
+      }
+      ancestor = ancestor.containingTask;
+    }
+    return { mode: "parent", location: parentTask.ending };
   }
-  moveTasks([task], parentTask.ending);
-} else if (projectName === null || projectName === "") {
-  moveTasks([task], inbox.ending);
-} else {
+  if (projectName === null || projectName === "") {
+    return { mode: "inbox", location: inbox.ending };
+  }
   const targetProject = document.flattenedProjects.byName(projectName);
   if (!targetProject) throw new Error(\`Project not found: \${projectName}\`);
-  moveTasks([task], targetProject.ending);
+  return { mode: "project", location: targetProject.ending };
+})();
+const originalTaskId = task.id.primaryKey;
+moveTasks([task], destinationInfo.location);
+if (task.id.primaryKey !== originalTaskId) {
+  throw new Error("Task move did not preserve task identity.");
+}
+if (destinationInfo.mode !== "parent" && task.containingTask) {
+  throw new Error("Task move failed: task is still nested under a parent.");
 }
 return {
   id: task.id.primaryKey,

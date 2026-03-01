@@ -295,7 +295,7 @@ required across Python/TypeScript/Rust with strict parity.
         - to inbox when destination omitted
         Ensure this keeps object identity and does not clone/recreate.
 
-24. [ ] Update tool descriptions/docs in all 3 implementations for
+24. [x] Update tool descriptions/docs in all 3 implementations for
         `move_task`:
         - clearly document the 3 destination modes:
           (a) `project`, (b) `parent_task_id`, (c) inbox default
