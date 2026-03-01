@@ -12,7 +12,27 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  validate_version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: validate tag version matches cargo version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#rust-v}"
+          CARGO_VERSION="$(awk -F '"' '$1 ~ /^version = / { print $2; exit }' rust/Cargo.toml)"
+          if [ -z "${CARGO_VERSION}" ]; then
+            echo "failed to read version from rust/Cargo.toml"
+            exit 1
+          fi
+          if [ "${TAG_VERSION}" != "${CARGO_VERSION}" ]; then
+            echo "tag version (${TAG_VERSION}) does not match rust/Cargo.toml version (${CARGO_VERSION})"
+            exit 1
+          fi
+
   build:
+    needs: validate_version
     strategy:
       fail-fast: false
       matrix:
