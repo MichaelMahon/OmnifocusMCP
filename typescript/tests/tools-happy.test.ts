@@ -484,7 +484,7 @@ describe("tool happy paths", () => {
     });
     expect(duplicateResult.isError).toBe(true);
     expect(JSON.parse(duplicateResult.content[0].text)).toEqual({
-      error: "task_ids must not contain duplicates: task-1",
+      error: "task_ids must not contain duplicate ids.",
     });
 
     const selfParentResult = await handler!({
@@ -519,7 +519,7 @@ describe("tool happy paths", () => {
     });
     expect(result.isError).toBe(true);
     expect(JSON.parse(result.content[0].text)).toEqual({
-      error: "task_ids must not contain duplicates: task-1",
+      error: "task_ids must not contain duplicate ids.",
     });
   });
 
