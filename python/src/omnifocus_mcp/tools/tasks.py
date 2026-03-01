@@ -1932,11 +1932,6 @@ async def delete_tasks_batch(task_ids: list[str]) -> str:
             raise ValueError(f"task_ids must not contain duplicates: {normalized_task_id}")
         seen_task_ids.add(normalized_task_id)
         normalized_task_ids.append(normalized_task_id)
-    if parent_task_id is not None and parent_task_id.strip() in seen_task_ids:
-        raise ValueError(
-            "parent_task_id cannot be included in task_ids (self-parenting in batch move)."
-        )
-
     task_ids_value = json.dumps(normalized_task_ids)
     script = f"""
 const taskIds = {task_ids_value};
@@ -2099,7 +2094,9 @@ async def move_tasks_batch(
         if normalized_task_id == "":
             raise ValueError("each task id must be a non-empty string.")
         if normalized_task_id in seen_task_ids:
-            raise ValueError(f"task_ids must not contain duplicates: {normalized_task_id}")
+            raise ValueError(
+                f"task_ids must not contain duplicates: {normalized_task_id}"
+            )
         normalized_task_ids.append(normalized_task_id)
         seen_task_ids.add(normalized_task_id)
 
@@ -2111,7 +2108,7 @@ async def move_tasks_batch(
         and normalized_parent_task_id in seen_task_ids
     ):
         raise ValueError(
-            "parent_task_id cannot be included in task_ids (self-parenting in batch move)."
+            "parent_task_id must not be included in task_ids (cannot move a task under itself)."
         )
 
     task_ids_value = json.dumps(normalized_task_ids)
@@ -2136,7 +2133,7 @@ for (const task of document.flattenedTasks) {{
 
 const destinationInfo = (() => {{
   if (parentTaskId !== null && parentTaskId !== "") {{
-    const parentTask = taskById.get(parentTaskId);
+    const parentTask = taskById.get(parentTaskId) || document.flattenedTasks.find(item => item.id.primaryKey === parentTaskId);
     if (!parentTask) {{
       throw new Error(`Parent task not found: ${{parentTaskId}}`);
     }}

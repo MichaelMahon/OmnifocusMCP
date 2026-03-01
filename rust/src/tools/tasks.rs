@@ -2510,15 +2510,6 @@ pub async fn delete_tasks_batch<R: JxaRunner>(runner: &R, task_ids: Vec<String>)
         seen_task_ids.insert(normalized_task_id.to_string());
         normalized_task_ids.push(normalized_task_id.to_string());
     }
-    if let Some(parent_id) = parent_task_id {
-        if seen_task_ids.contains(parent_id.trim()) {
-            return Err(OmniFocusError::Validation(
-                "parent_task_id cannot be included in task_ids (self-parenting in batch move)."
-                    .to_string(),
-            ));
-        }
-    }
-
     let task_ids_value = serde_json::to_string(&normalized_task_ids)?;
     let script = format!(
         r#"const taskIds = {task_ids_value};

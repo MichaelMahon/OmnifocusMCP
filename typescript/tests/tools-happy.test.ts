@@ -270,18 +270,21 @@ describe("tool happy paths", () => {
       requested_count: 2,
       moved_count: 2,
       failed_count: 0,
+      partial_success: false,
       results: [
         {
           id: "task-1",
           name: "Task One",
           moved: true,
           destination: { mode: "project", projectName: "Work" },
+          error: null,
         },
         {
           id: "task-2",
           name: "Task Two",
           moved: true,
           destination: { mode: "project", projectName: "Work" },
+          error: null,
         },
       ],
     });
@@ -295,18 +298,21 @@ describe("tool happy paths", () => {
       requested_count: 2,
       moved_count: 2,
       failed_count: 0,
+      partial_success: false,
       results: [
         {
           id: "task-1",
           name: "Task One",
           moved: true,
           destination: { mode: "project", projectName: "Work" },
+          error: null,
         },
         {
           id: "task-2",
           name: "Task Two",
           moved: true,
           destination: { mode: "project", projectName: "Work" },
+          error: null,
         },
       ],
     });
@@ -314,7 +320,253 @@ describe("tool happy paths", () => {
     expect(script).toContain('const taskIds = ["task-1"');
     expect(script).toContain('const projectName = "Work";');
     expect(script).toContain("moveTasks([task], destinationInfo.location);");
+    expect(script).toContain("partial_success");
     expect(script).toContain("moved_count");
+  });
+
+  test("move_tasks_batch supports inbox and parent destinations", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      requested_count: 2,
+      moved_count: 2,
+      failed_count: 0,
+      partial_success: false,
+      results: [
+        {
+          id: "task-1",
+          name: "Task One",
+          moved: true,
+          destination: { mode: "inbox" },
+          error: null,
+        },
+        {
+          id: "task-2",
+          name: "Task Two",
+          moved: true,
+          destination: { mode: "inbox" },
+          error: null,
+        },
+      ],
+    });
+    runOmniJsMock.mockResolvedValueOnce({
+      requested_count: 2,
+      moved_count: 1,
+      failed_count: 1,
+      partial_success: true,
+      results: [
+        {
+          id: "task-3",
+          name: "Task Three",
+          moved: true,
+          destination: {
+            mode: "parent",
+            parentTaskId: "parent-1",
+            parentTaskName: "Parent One",
+          },
+          error: null,
+        },
+        {
+          id: "missing",
+          name: null,
+          moved: false,
+          destination: {
+            mode: "parent",
+            parentTaskId: "parent-1",
+            parentTaskName: "Parent One",
+          },
+          error: "Task not found.",
+        },
+      ],
+    });
+
+    const handler = registeredTools.get("move_tasks_batch");
+    expect(handler).toBeDefined();
+
+    const inboxResult = await handler!({ task_ids: ["task-1", "task-2"] });
+    expect(JSON.parse(inboxResult.content[0].text)).toEqual({
+      requested_count: 2,
+      moved_count: 2,
+      failed_count: 0,
+      partial_success: false,
+      results: [
+        {
+          id: "task-1",
+          name: "Task One",
+          moved: true,
+          destination: { mode: "inbox" },
+          error: null,
+        },
+        {
+          id: "task-2",
+          name: "Task Two",
+          moved: true,
+          destination: { mode: "inbox" },
+          error: null,
+        },
+      ],
+    });
+    let script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain("const projectName = null;");
+    expect(script).toContain("const parentTaskId = null;");
+    expect(script).toContain('summary: { mode: "inbox" }');
+
+    const parentResult = await handler!({
+      task_ids: ["task-3", "missing"],
+      parent_task_id: "parent-1",
+    });
+    expect(JSON.parse(parentResult.content[0].text)).toEqual({
+      requested_count: 2,
+      moved_count: 1,
+      failed_count: 1,
+      partial_success: true,
+      results: [
+        {
+          id: "task-3",
+          name: "Task Three",
+          moved: true,
+          destination: {
+            mode: "parent",
+            parentTaskId: "parent-1",
+            parentTaskName: "Parent One",
+          },
+          error: null,
+        },
+        {
+          id: "missing",
+          name: null,
+          moved: false,
+          destination: {
+            mode: "parent",
+            parentTaskId: "parent-1",
+            parentTaskName: "Parent One",
+          },
+          error: "Task not found.",
+        },
+      ],
+    });
+    script = String(runOmniJsMock.mock.calls[1][0]);
+    expect(script).toContain('const parentTaskId = "parent-1";');
+    expect(script).toContain("Cannot move tasks under their own descendant.");
+  });
+
+  test("move_tasks_batch validates ambiguous, duplicate, and self-parenting inputs", async () => {
+    const handler = registeredTools.get("move_tasks_batch");
+    expect(handler).toBeDefined();
+
+    const ambiguousResult = await handler!({
+      task_ids: ["task-1"],
+      project: "Work",
+      parent_task_id: "parent-1",
+    });
+    expect(ambiguousResult.isError).toBe(true);
+    expect(JSON.parse(ambiguousResult.content[0].text)).toEqual({
+      error: "provide either project or parent_task_id, not both (destination is ambiguous).",
+    });
+
+    const duplicateResult = await handler!({
+      task_ids: ["task-1", "task-1"],
+      project: "Work",
+    });
+    expect(duplicateResult.isError).toBe(true);
+    expect(JSON.parse(duplicateResult.content[0].text)).toEqual({
+      error: "task_ids must not contain duplicates: task-1",
+    });
+
+    const selfParentResult = await handler!({
+      task_ids: ["task-1", "task-2"],
+      parent_task_id: "task-1",
+    });
+    expect(selfParentResult.isError).toBe(true);
+    expect(JSON.parse(selfParentResult.content[0].text)).toEqual({
+      error: "parent_task_id cannot be included in task_ids (self-parenting in batch move).",
+    });
+  });
+
+  test("move_tasks_batch returns error for ambiguous destination inputs", async () => {
+    const handler = registeredTools.get("move_tasks_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      task_ids: ["task-1"],
+      project: "Work",
+      parent_task_id: "parent-1",
+    });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "provide either project or parent_task_id, not both (destination is ambiguous).",
+    });
+  });
+
+  test("move_tasks_batch returns error for duplicate task ids", async () => {
+    const handler = registeredTools.get("move_tasks_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      task_ids: ["task-1", "task-1"],
+    });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "task_ids must not contain duplicate ids.",
+    });
+  });
+
+  test("move_tasks_batch returns error when parent_task_id appears in task_ids", async () => {
+    const handler = registeredTools.get("move_tasks_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      task_ids: ["task-1", "task-2"],
+      parent_task_id: "task-2",
+    });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "parent_task_id must not be included in task_ids (cannot move a task under itself).",
+    });
+  });
+
+  test("move_tasks_batch parent destination script includes cycle guard", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      requested_count: 1,
+      moved_count: 1,
+      failed_count: 0,
+      results: [
+        {
+          id: "task-1",
+          name: "Task One",
+          moved: true,
+          destination: {
+            mode: "parent",
+            parentTaskId: "parent-1",
+            parentTaskName: "Parent One",
+          },
+          error: null,
+        },
+      ],
+    });
+    const handler = registeredTools.get("move_tasks_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      task_ids: ["task-1"],
+      parent_task_id: "parent-1",
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      requested_count: 1,
+      moved_count: 1,
+      failed_count: 0,
+      results: [
+        {
+          id: "task-1",
+          name: "Task One",
+          moved: true,
+          destination: {
+            mode: "parent",
+            parentTaskId: "parent-1",
+            parentTaskName: "Parent One",
+          },
+          error: null,
+        },
+      ],
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const parentTaskId = "parent-1";');
+    expect(script).toContain('if (taskIds.includes(ancestor.id.primaryKey)) {');
+    expect(script).toContain('throw new Error("Cannot move tasks under their own descendant.");');
   });
 
   test("move_task supports project destination mode", async () => {
@@ -409,6 +661,14 @@ describe("tool happy paths", () => {
     const schema = registeredSchemas.get("move_task") as Record<string, unknown> | undefined;
     expect(schema).toBeDefined();
     expect(Object.keys(schema ?? {})).toEqual(["task_id", "project", "parent_task_id"]);
+  });
+
+  test("move_tasks_batch schema uses parity parameter names", () => {
+    const schema = registeredSchemas.get("move_tasks_batch") as
+      | Record<string, unknown>
+      | undefined;
+    expect(schema).toBeDefined();
+    expect(Object.keys(schema ?? {})).toEqual(["task_ids", "project", "parent_task_id"]);
   });
 
   test("uncomplete_task marks completed task incomplete", async () => {
