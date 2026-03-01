@@ -377,7 +377,7 @@ required across Python/TypeScript/Rust with strict parity.
         - clarify this is non-destructive reorganization
         - clarify delete confirmation policy remains separate.
 
-34. [ ] Run full quality gates after implementation:
+34. [x] Run full quality gates after implementation:
         - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
         - `cd typescript && npx tsc --noEmit && npm test`
         - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
