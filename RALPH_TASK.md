@@ -28,10 +28,16 @@ Target outcome:
       - `typescript/src/tools/perspectives.ts`
       - `rust/src/tools/perspectives.rs`
 
-2. [ ] document expected perspective sources for implementation:
+2. [x] document expected perspective sources for implementation:
       - `Perspective.BuiltIn.all`
       - `Perspective.Custom.all`
       - `document.perspectives` (when available)
+
+implementation source contract (all runtimes must match):
+- source order: built-ins first, then custom, then document-level perspectives
+- dedupe key: stable perspective id
+- null-safe source reads: treat missing/undefined sources as empty lists
+- output contract unchanged: emit only `{ id, name }` objects after dedupe and `limit`
 
 3. [ ] preserve current tool contract:
       - tool name remains `list_perspectives`
