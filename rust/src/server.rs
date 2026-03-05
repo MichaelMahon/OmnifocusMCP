@@ -33,9 +33,9 @@ use crate::{
         forecast::get_forecast,
         perspectives::list_perspectives,
         projects::{
-            complete_project, create_project, delete_project, get_project, get_project_counts,
-            list_projects, move_project, search_projects, set_project_status, uncomplete_project,
-            update_project,
+            complete_project, create_project, delete_project, delete_projects_batch, get_project,
+            get_project_counts, list_projects, move_project, search_projects, set_project_status,
+            uncomplete_project, update_project,
         },
         tags::{create_tag, delete_tag, list_tags, search_tags, update_tag},
         tasks::{
@@ -321,6 +321,11 @@ struct ListTagsParams {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct ProjectIdOrNameParams {
     project_id_or_name: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct DeleteProjectsBatchParams {
+    project_ids_or_names: Vec<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -967,6 +972,19 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         Parameters(params): Parameters<ProjectIdOrNameParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = delete_project(self.runner.as_ref(), &params.project_id_or_name)
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(
+        description = "delete multiple projects by id or exact name in a single omnijs call. destructive operation: this permanently removes each matched project and its tasks. before calling, always show the user which projects are targeted and ask for explicit confirmation."
+    )]
+    async fn delete_projects_batch(
+        &self,
+        Parameters(params): Parameters<DeleteProjectsBatchParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = delete_projects_batch(self.runner.as_ref(), params.project_ids_or_names)
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)

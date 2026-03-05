@@ -269,4 +269,81 @@ return {
     }
   );
 
+  server.tool(
+    "delete_tags_batch",
+    "delete multiple tags by id or exact name in a single omnijs call.",
+    {
+      tag_ids_or_names: z
+        .array(z.string().min(1))
+        .min(1)
+        .describe("required non-empty array of tag ids or exact names"),
+    },
+    async ({ tag_ids_or_names }) => {
+      try {
+        if (tag_ids_or_names.length === 0) {
+          throw new Error("tag_ids_or_names must contain at least one tag identifier.");
+        }
+        const normalizedIdentifiers = tag_ids_or_names.map((identifier) => {
+          const normalizedIdentifier = identifier.trim();
+          if (normalizedIdentifier === "") {
+            throw new Error("each tag identifier must be a non-empty string.");
+          }
+          return normalizedIdentifier;
+        });
+        const identifiersValue = JSON.stringify(normalizedIdentifiers);
+        const script = `
+const tagIdentifiers = ${identifiersValue};
+const tagById = new Map();
+const tagByName = new Map();
+for (const tag of document.flattenedTags) {
+  try {
+    tagById.set(tag.id.primaryKey, tag);
+    if (!tagByName.has(tag.name)) tagByName.set(tag.name, tag);
+  } catch (e) {
+  }
+}
+const results = tagIdentifiers.map(identifier => {
+  const tag = tagById.get(identifier) || tagByName.get(identifier);
+  if (!tag) {
+    return {
+      id_or_name: identifier,
+      id: null,
+      name: null,
+      deleted: false,
+      error: "Tag not found."
+    };
+  }
+
+  const tagId = tag.id.primaryKey;
+  const tagName = tag.name;
+  deleteObject(tag);
+  return {
+    id_or_name: identifier,
+    id: tagId,
+    name: tagName,
+    deleted: true,
+    error: null
+  };
+});
+
+const deletedCount = results.filter(result => result.deleted).length;
+const failedCount = results.length - deletedCount;
+
+return {
+  summary: {
+    requested: tagIdentifiers.length,
+    deleted: deletedCount,
+    failed: failedCount
+  },
+  partial_success: deletedCount > 0 && failedCount > 0,
+  results: results
+};
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
 }

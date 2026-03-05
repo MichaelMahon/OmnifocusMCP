@@ -15,6 +15,7 @@ from omnifocus_mcp.tools.perspectives import list_perspectives  # noqa: E402,F40
 from omnifocus_mcp.tools.projects import (  # noqa: E402,F401
     complete_project,
     create_project,
+    delete_projects_batch,
     delete_project,
     delete_projects_batch,
     get_project,
@@ -64,11 +65,13 @@ from omnifocus_mcp.resources import (  # noqa: E402,F401
 
 create_folder = folders_tools.create_folder
 delete_folder = folders_tools.delete_folder
+delete_folders_batch = folders_tools.delete_folders_batch
 get_folder = folders_tools.get_folder
 list_folders = folders_tools.list_folders
 update_folder = folders_tools.update_folder
 create_tag = tags_tools.create_tag
 delete_tag = tags_tools.delete_tag
+delete_tags_batch = tags_tools.delete_tags_batch
 list_tags = tags_tools.list_tags
 search_tags = tags_tools.search_tags
 update_tag = tags_tools.update_tag

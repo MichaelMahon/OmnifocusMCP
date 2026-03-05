@@ -214,3 +214,154 @@ return {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@typed_tool(mcp)
+async def delete_folders_batch(folder_ids_or_names: list[str]) -> str:
+    """delete multiple folders by id or exact name in one omnijs call.
+
+    destructive operation. this permanently removes folders and may move
+    contained projects based on omnifocus behavior. use update_folder for
+    non-destructive edits. before calling this tool, always show the user the
+    target folder list and ask for explicit confirmation.
+    """
+    if len(folder_ids_or_names) == 0:
+        raise ValueError(
+            "folder_ids_or_names must contain at least one folder id or name."
+        )
+
+    normalized_folder_ids_or_names: list[str] = []
+    seen_folder_ids_or_names: set[str] = set()
+    for folder_id_or_name in folder_ids_or_names:
+        if not isinstance(folder_id_or_name, str):
+            raise ValueError("each folder id or name must be a string.")
+        normalized_folder_id_or_name = folder_id_or_name.strip()
+        if normalized_folder_id_or_name == "":
+            raise ValueError("each folder id or name must be a non-empty string.")
+        if normalized_folder_id_or_name in seen_folder_ids_or_names:
+            raise ValueError(
+                "folder_ids_or_names must not contain duplicates: "
+                f"{normalized_folder_id_or_name}"
+            )
+        seen_folder_ids_or_names.add(normalized_folder_id_or_name)
+        normalized_folder_ids_or_names.append(normalized_folder_id_or_name)
+
+    folder_ids_or_names_value = json.dumps(normalized_folder_ids_or_names)
+    script = f"""
+const folderIdsOrNames = {folder_ids_or_names_value};
+const folders = document.flattenedFolders.slice();
+const results = folderIdsOrNames.map(idOrName => {{
+  const folder = folders.find(item => item.id.primaryKey === idOrName || item.name === idOrName);
+  if (!folder) {{
+    return {{
+      id_or_name: idOrName,
+      id: null,
+      name: null,
+      deleted: false,
+      error: "not found"
+    }};
+  }}
+
+  const resolvedId = folder.id.primaryKey;
+  const resolvedName = folder.name;
+  try {{
+    deleteObject(folder);
+    return {{
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: true,
+      error: null
+    }};
+  }} catch (e) {{
+    const errorMessage = e && e.message ? String(e.message) : String(e);
+    return {{
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: false,
+      error: errorMessage
+    }};
+  }}
+}});
+
+const deletedCount = results.filter(result => result.deleted).length;
+const failedCount = results.length - deletedCount;
+
+return {{
+  summary: {{
+    requested: results.length,
+    deleted: deletedCount,
+    failed: failedCount
+  }},
+  partial_success: deletedCount > 0 && failedCount > 0,
+  results: results
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
+async def delete_folders_batch(folder_ids_or_names: list[str]) -> str:
+    """delete multiple folders by id or name in a single omnijs call."""
+    if len(folder_ids_or_names) == 0:
+        raise ValueError(
+            "folder_ids_or_names must contain at least one folder identifier."
+        )
+
+    normalized_identifiers: list[str] = []
+    for folder_id_or_name in folder_ids_or_names:
+        normalized_identifier = folder_id_or_name.strip()
+        if normalized_identifier == "":
+            raise ValueError("each folder identifier must be a non-empty string.")
+        normalized_identifiers.append(normalized_identifier)
+
+    identifiers_value = json.dumps(normalized_identifiers)
+    script = f"""
+const folderIdentifiers = {identifiers_value};
+const folderById = new Map();
+const folderByName = new Map();
+for (const folder of document.flattenedFolders) {{
+  try {{
+    folderById.set(folder.id.primaryKey, folder);
+    if (!folderByName.has(folder.name)) folderByName.set(folder.name, folder);
+  }} catch (e) {{
+  }}
+}}
+const results = folderIdentifiers.map(identifier => {{
+  const folder = folderById.get(identifier) || folderByName.get(identifier);
+  if (!folder) {{
+    return {{
+      id_or_name: identifier,
+      id: null,
+      name: null,
+      deleted: false,
+      error: "Folder not found."
+    }};
+  }}
+  const folderId = folder.id.primaryKey;
+  const folderName = folder.name;
+  deleteObject(folder);
+  return {{
+    id_or_name: identifier,
+    id: folderId,
+    name: folderName,
+    deleted: true,
+    error: null
+  }};
+}});
+const deletedCount = results.filter(result => result.deleted).length;
+const failedCount = results.length - deletedCount;
+return {{
+  summary: {{
+    requested: folderIdentifiers.length,
+    deleted: deletedCount,
+    failed: failedCount
+  }},
+  partial_success: deletedCount > 0 && failedCount > 0,
+  results: results
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)

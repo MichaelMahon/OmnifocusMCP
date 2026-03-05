@@ -261,3 +261,149 @@ return {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@typed_tool(mcp)
+async def delete_tags_batch(tag_ids_or_names: list[str]) -> str:
+    """delete multiple tags by id or exact name in one omnijs call.
+
+    destructive operation. this removes tags from the database and unassigns
+    them from linked tasks. use update_tag for non-destructive edits. before
+    calling this tool, always show the user the target tag list and ask for
+    explicit confirmation.
+    """
+    if len(tag_ids_or_names) == 0:
+        raise ValueError("tag_ids_or_names must contain at least one tag id or name.")
+
+    normalized_tag_ids_or_names: list[str] = []
+    seen_tag_ids_or_names: set[str] = set()
+    for tag_id_or_name in tag_ids_or_names:
+        if not isinstance(tag_id_or_name, str):
+            raise ValueError("each tag id or name must be a string.")
+        normalized_tag_id_or_name = tag_id_or_name.strip()
+        if normalized_tag_id_or_name == "":
+            raise ValueError("each tag id or name must be a non-empty string.")
+        if normalized_tag_id_or_name in seen_tag_ids_or_names:
+            raise ValueError(
+                f"tag_ids_or_names must not contain duplicates: {normalized_tag_id_or_name}"
+            )
+        seen_tag_ids_or_names.add(normalized_tag_id_or_name)
+        normalized_tag_ids_or_names.append(normalized_tag_id_or_name)
+
+    tag_ids_or_names_value = json.dumps(normalized_tag_ids_or_names)
+    script = f"""
+const tagIdsOrNames = {tag_ids_or_names_value};
+const tags = document.flattenedTags.slice();
+const results = tagIdsOrNames.map(idOrName => {{
+  const tag = tags.find(item => item.id.primaryKey === idOrName || item.name === idOrName);
+  if (!tag) {{
+    return {{
+      id_or_name: idOrName,
+      id: null,
+      name: null,
+      deleted: false,
+      error: "not found"
+    }};
+  }}
+
+  const resolvedId = tag.id.primaryKey;
+  const resolvedName = tag.name;
+  try {{
+    deleteObject(tag);
+    return {{
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: true,
+      error: null
+    }};
+  }} catch (e) {{
+    const errorMessage = e && e.message ? String(e.message) : String(e);
+    return {{
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: false,
+      error: errorMessage
+    }};
+  }}
+}});
+
+const deletedCount = results.filter(result => result.deleted).length;
+const failedCount = results.length - deletedCount;
+
+return {{
+  summary: {{
+    requested: results.length,
+    deleted: deletedCount,
+    failed: failedCount
+  }},
+  partial_success: deletedCount > 0 && failedCount > 0,
+  results: results
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
+async def delete_tags_batch(tag_ids_or_names: list[str]) -> str:
+    """delete multiple tags by id or name in a single omnijs call."""
+    if len(tag_ids_or_names) == 0:
+        raise ValueError("tag_ids_or_names must contain at least one tag identifier.")
+
+    normalized_identifiers: list[str] = []
+    for tag_id_or_name in tag_ids_or_names:
+        normalized_identifier = tag_id_or_name.strip()
+        if normalized_identifier == "":
+            raise ValueError("each tag identifier must be a non-empty string.")
+        normalized_identifiers.append(normalized_identifier)
+
+    identifiers_value = json.dumps(normalized_identifiers)
+    script = f"""
+const tagIdentifiers = {identifiers_value};
+const tagById = new Map();
+const tagByName = new Map();
+for (const tag of document.flattenedTags) {{
+  try {{
+    tagById.set(tag.id.primaryKey, tag);
+    if (!tagByName.has(tag.name)) tagByName.set(tag.name, tag);
+  }} catch (e) {{
+  }}
+}}
+const results = tagIdentifiers.map(identifier => {{
+  const tag = tagById.get(identifier) || tagByName.get(identifier);
+  if (!tag) {{
+    return {{
+      id_or_name: identifier,
+      id: null,
+      name: null,
+      deleted: false,
+      error: "Tag not found."
+    }};
+  }}
+  const tagId = tag.id.primaryKey;
+  const tagName = tag.name;
+  deleteObject(tag);
+  return {{
+    id_or_name: identifier,
+    id: tagId,
+    name: tagName,
+    deleted: true,
+    error: null
+  }};
+}});
+const deletedCount = results.filter(result => result.deleted).length;
+const failedCount = results.length - deletedCount;
+return {{
+  summary: {{
+    requested: tagIdentifiers.length,
+    deleted: deletedCount,
+    failed: failedCount
+  }},
+  partial_success: deletedCount > 0 && failedCount > 0,
+  results: results
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)

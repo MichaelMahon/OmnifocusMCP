@@ -675,6 +675,94 @@ return {{
 
 
 @typed_tool(mcp)
+async def delete_projects_batch(project_ids_or_names: list[str]) -> str:
+    """delete multiple projects by id or exact name in one omnijs call.
+
+    destructive operation. this permanently removes projects and their tasks.
+    use update_project, move_project, or set_project_status for non-destructive
+    changes. before calling this tool, always show the user the target project
+    list and ask for explicit confirmation.
+    """
+    if len(project_ids_or_names) == 0:
+        raise ValueError(
+            "project_ids_or_names must contain at least one project id or name."
+        )
+
+    normalized_project_ids_or_names: list[str] = []
+    seen_project_ids_or_names: set[str] = set()
+    for project_id_or_name in project_ids_or_names:
+        if not isinstance(project_id_or_name, str):
+            raise ValueError("each project id or name must be a string.")
+        normalized_project_id_or_name = project_id_or_name.strip()
+        if normalized_project_id_or_name == "":
+            raise ValueError("each project id or name must be a non-empty string.")
+        if normalized_project_id_or_name in seen_project_ids_or_names:
+            raise ValueError(
+                "project_ids_or_names must not contain duplicates: "
+                f"{normalized_project_id_or_name}"
+            )
+        seen_project_ids_or_names.add(normalized_project_id_or_name)
+        normalized_project_ids_or_names.append(normalized_project_id_or_name)
+
+    project_ids_or_names_value = json.dumps(normalized_project_ids_or_names)
+    script = f"""
+const projectIdsOrNames = {project_ids_or_names_value};
+const projects = document.flattenedProjects.slice();
+const results = projectIdsOrNames.map(idOrName => {{
+  const project = projects.find(item => {{
+    return item.id.primaryKey === idOrName || item.name === idOrName;
+  }});
+  if (!project) {{
+    return {{
+      id_or_name: idOrName,
+      id: null,
+      name: null,
+      deleted: false,
+      error: "not found"
+    }};
+  }}
+
+  const resolvedId = project.id.primaryKey;
+  const resolvedName = project.name;
+  try {{
+    deleteObject(project);
+    return {{
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: true,
+      error: null
+    }};
+  }} catch (e) {{
+    const errorMessage = e && e.message ? String(e.message) : String(e);
+    return {{
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: false,
+      error: errorMessage
+    }};
+  }}
+}});
+
+const deletedCount = results.filter(result => result.deleted).length;
+const failedCount = results.length - deletedCount;
+
+return {{
+  summary: {{
+    requested: results.length,
+    deleted: deletedCount,
+    failed: failedCount
+  }},
+  partial_success: deletedCount > 0 && failedCount > 0,
+  results: results
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
 async def move_project(project_id_or_name: str, folder: str | None = None) -> str:
     """move a project by id or name to a folder or top level."""
     if project_id_or_name.strip() == "":
