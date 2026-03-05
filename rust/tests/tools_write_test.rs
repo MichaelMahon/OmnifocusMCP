@@ -1141,6 +1141,11 @@ async fn delete_projects_batch_happy_path() {
     assert_eq!(result["summary"]["deleted"], 2);
     assert_eq!(result["summary"]["failed"], 0);
     assert_eq!(result["partial_success"], false);
+    assert_eq!(result["results"][0]["id_or_name"], "p1");
+    assert_eq!(result["results"][0]["id"], "p1");
+    assert_eq!(result["results"][0]["name"], "Project One");
+    assert_eq!(result["results"][0]["deleted"], true);
+    assert_eq!(result["results"][0]["error"], serde_json::Value::Null);
 }
 
 #[tokio::test]
@@ -1199,6 +1204,12 @@ async fn delete_tags_batch_happy_path() {
     assert_eq!(result["summary"]["requested"], 2);
     assert_eq!(result["summary"]["deleted"], 2);
     assert_eq!(result["summary"]["failed"], 0);
+    assert_eq!(result["partial_success"], false);
+    assert_eq!(result["results"][0]["id_or_name"], "tag-1");
+    assert_eq!(result["results"][0]["id"], "tag-1");
+    assert_eq!(result["results"][0]["name"], "Urgent");
+    assert_eq!(result["results"][0]["deleted"], true);
+    assert_eq!(result["results"][0]["error"], serde_json::Value::Null);
 }
 
 #[tokio::test]
@@ -1222,6 +1233,11 @@ async fn delete_tags_batch_partial_success() {
     assert_eq!(result["summary"]["deleted"], 1);
     assert_eq!(result["summary"]["failed"], 1);
     assert_eq!(result["partial_success"], true);
+    assert_eq!(result["results"][1]["id_or_name"], "missing-tag");
+    assert_eq!(result["results"][1]["id"], serde_json::Value::Null);
+    assert_eq!(result["results"][1]["name"], serde_json::Value::Null);
+    assert_eq!(result["results"][1]["deleted"], false);
+    assert_eq!(result["results"][1]["error"], "not found");
 }
 
 #[tokio::test]
@@ -1259,6 +1275,12 @@ async fn delete_folders_batch_happy_path() {
     assert_eq!(result["summary"]["requested"], 2);
     assert_eq!(result["summary"]["deleted"], 2);
     assert_eq!(result["summary"]["failed"], 0);
+    assert_eq!(result["partial_success"], false);
+    assert_eq!(result["results"][0]["id_or_name"], "folder-1");
+    assert_eq!(result["results"][0]["id"], "folder-1");
+    assert_eq!(result["results"][0]["name"], "Areas");
+    assert_eq!(result["results"][0]["deleted"], true);
+    assert_eq!(result["results"][0]["error"], serde_json::Value::Null);
 }
 
 #[tokio::test]
@@ -1282,6 +1304,11 @@ async fn delete_folders_batch_partial_success() {
     assert_eq!(result["summary"]["deleted"], 1);
     assert_eq!(result["summary"]["failed"], 1);
     assert_eq!(result["partial_success"], true);
+    assert_eq!(result["results"][1]["id_or_name"], "missing-folder");
+    assert_eq!(result["results"][1]["id"], serde_json::Value::Null);
+    assert_eq!(result["results"][1]["name"], serde_json::Value::Null);
+    assert_eq!(result["results"][1]["deleted"], false);
+    assert_eq!(result["results"][1]["error"], "not found");
 }
 
 #[tokio::test]
