@@ -46,11 +46,16 @@ Goal:
       - all three tool families resolve by id or exact name, and emit not-found
         errors with the searched identifier when resolution fails.
 
-3. [ ] define batch scope:
+3. [x] define batch scope:
       - add `delete_projects_batch`
       - add `delete_tags_batch`
       - add `delete_folders_batch`
       - keep existing `delete_tasks_batch` unchanged unless minor parity alignment is needed.
+      scope notes:
+      - confirmed this iteration adds exactly three new batch-delete tools:
+        `delete_projects_batch`, `delete_tags_batch`, and `delete_folders_batch`.
+      - existing `delete_tasks_batch` remains in place as the baseline contract for
+        partial-success semantics and summary/result structure alignment.
 
 ---
 
