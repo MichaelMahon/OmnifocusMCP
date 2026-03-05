@@ -1300,6 +1300,231 @@ describe("tool happy paths", () => {
     });
   });
 
+  test("delete_projects_batch returns summary with itemized results", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      summary: { requested: 2, deleted: 2, failed: 0 },
+      partial_success: false,
+      results: [
+        { id_or_name: "p1", id: "p1", name: "Project One", deleted: true, error: null },
+        { id_or_name: "Project Two", id: "p2", name: "Project Two", deleted: true, error: null },
+      ],
+    });
+    const handler = registeredTools.get("delete_projects_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({ project_ids_or_names: ["p1", "Project Two"] });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      summary: { requested: 2, deleted: 2, failed: 0 },
+      partial_success: false,
+      results: [
+        { id_or_name: "p1", id: "p1", name: "Project One", deleted: true, error: null },
+        { id_or_name: "Project Two", id: "p2", name: "Project Two", deleted: true, error: null },
+      ],
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const projectIdsOrNames = ["p1","Project Two"];');
+    expect(script).toContain("partial_success");
+  });
+
+  test("delete_projects_batch supports partial success", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      summary: { requested: 2, deleted: 1, failed: 1 },
+      partial_success: true,
+      results: [
+        { id_or_name: "p1", id: "p1", name: "Project One", deleted: true, error: null },
+        { id_or_name: "missing", id: null, name: null, deleted: false, error: "not found" },
+      ],
+    });
+    const handler = registeredTools.get("delete_projects_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({ project_ids_or_names: ["p1", "missing"] });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      summary: { requested: 2, deleted: 1, failed: 1 },
+      partial_success: true,
+      results: [
+        { id_or_name: "p1", id: "p1", name: "Project One", deleted: true, error: null },
+        { id_or_name: "missing", id: null, name: null, deleted: false, error: "not found" },
+      ],
+    });
+  });
+
+  test("delete_projects_batch returns error for empty array", async () => {
+    const handler = registeredTools.get("delete_projects_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({ project_ids_or_names: [] });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "project_ids_or_names must contain at least one project id or name.",
+    });
+  });
+
+  test("delete_projects_batch returns error for empty trimmed item", async () => {
+    const handler = registeredTools.get("delete_projects_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({ project_ids_or_names: ["p1", "   "] });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "each project id or name must be a non-empty string.",
+    });
+  });
+
+  test("delete_projects_batch returns error for duplicates", async () => {
+    const handler = registeredTools.get("delete_projects_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({ project_ids_or_names: ["p1", "p1"] });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "project_ids_or_names must not contain duplicates: p1",
+    });
+  });
+
+  test("delete_tags_batch returns summary with itemized results", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      summary: { requested: 2, deleted: 2, failed: 0 },
+      partial_success: false,
+      results: [
+        { id_or_name: "tag-1", id: "tag-1", name: "Urgent", deleted: true, error: null },
+        { id_or_name: "Home", id: "tag-2", name: "Home", deleted: true, error: null },
+      ],
+    });
+    const handler = registeredTools.get("delete_tags_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({ tag_ids_or_names: ["tag-1", "Home"] });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      summary: { requested: 2, deleted: 2, failed: 0 },
+      partial_success: false,
+      results: [
+        { id_or_name: "tag-1", id: "tag-1", name: "Urgent", deleted: true, error: null },
+        { id_or_name: "Home", id: "tag-2", name: "Home", deleted: true, error: null },
+      ],
+    });
+  });
+
+  test("delete_tags_batch supports partial success", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      summary: { requested: 2, deleted: 1, failed: 1 },
+      partial_success: true,
+      results: [
+        { id_or_name: "tag-1", id: "tag-1", name: "Urgent", deleted: true, error: null },
+        { id_or_name: "missing-tag", id: null, name: null, deleted: false, error: "not found" },
+      ],
+    });
+    const handler = registeredTools.get("delete_tags_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({ tag_ids_or_names: ["tag-1", "missing-tag"] });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      summary: { requested: 2, deleted: 1, failed: 1 },
+      partial_success: true,
+      results: [
+        { id_or_name: "tag-1", id: "tag-1", name: "Urgent", deleted: true, error: null },
+        { id_or_name: "missing-tag", id: null, name: null, deleted: false, error: "not found" },
+      ],
+    });
+  });
+
+  test("delete_tags_batch returns error for empty array", async () => {
+    const handler = registeredTools.get("delete_tags_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({ tag_ids_or_names: [] });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "tag_ids_or_names must contain at least one tag id or name.",
+    });
+  });
+
+  test("delete_tags_batch returns error for empty trimmed item", async () => {
+    const handler = registeredTools.get("delete_tags_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({ tag_ids_or_names: ["tag-1", "   "] });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "each tag id or name must be a non-empty string.",
+    });
+  });
+
+  test("delete_tags_batch returns error for duplicates", async () => {
+    const handler = registeredTools.get("delete_tags_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({ tag_ids_or_names: ["tag-a", "tag-a"] });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "tag_ids_or_names must not contain duplicates: tag-a",
+    });
+  });
+
+  test("delete_folders_batch returns summary with itemized results", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      summary: { requested: 2, deleted: 2, failed: 0 },
+      partial_success: false,
+      results: [
+        { id_or_name: "folder-1", id: "folder-1", name: "Areas", deleted: true, error: null },
+        { id_or_name: "Work", id: "folder-2", name: "Work", deleted: true, error: null },
+      ],
+    });
+    const handler = registeredTools.get("delete_folders_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({ folder_ids_or_names: ["folder-1", "Work"] });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      summary: { requested: 2, deleted: 2, failed: 0 },
+      partial_success: false,
+      results: [
+        { id_or_name: "folder-1", id: "folder-1", name: "Areas", deleted: true, error: null },
+        { id_or_name: "Work", id: "folder-2", name: "Work", deleted: true, error: null },
+      ],
+    });
+  });
+
+  test("delete_folders_batch supports partial success", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      summary: { requested: 2, deleted: 1, failed: 1 },
+      partial_success: true,
+      results: [
+        { id_or_name: "folder-1", id: "folder-1", name: "Areas", deleted: true, error: null },
+        { id_or_name: "missing-folder", id: null, name: null, deleted: false, error: "not found" },
+      ],
+    });
+    const handler = registeredTools.get("delete_folders_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({ folder_ids_or_names: ["folder-1", "missing-folder"] });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      summary: { requested: 2, deleted: 1, failed: 1 },
+      partial_success: true,
+      results: [
+        { id_or_name: "folder-1", id: "folder-1", name: "Areas", deleted: true, error: null },
+        { id_or_name: "missing-folder", id: null, name: null, deleted: false, error: "not found" },
+      ],
+    });
+  });
+
+  test("delete_folders_batch returns error for empty array", async () => {
+    const handler = registeredTools.get("delete_folders_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({ folder_ids_or_names: [] });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "folder_ids_or_names must contain at least one folder id or name.",
+    });
+  });
+
+  test("delete_folders_batch returns error for empty trimmed item", async () => {
+    const handler = registeredTools.get("delete_folders_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({ folder_ids_or_names: ["folder-1", "   "] });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "each folder id or name must be a non-empty string.",
+    });
+  });
+
+  test("delete_folders_batch returns error for duplicates", async () => {
+    const handler = registeredTools.get("delete_folders_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({ folder_ids_or_names: ["folder-z", "folder-z"] });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "folder_ids_or_names must not contain duplicates: folder-z",
+    });
+  });
+
   test("set_project_status returns error for unsupported status value", async () => {
     const handler = registeredTools.get("set_project_status");
     expect(handler).toBeDefined();

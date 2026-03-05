@@ -1296,6 +1296,281 @@ async def test_delete_tasks_batch_empty_string_validation_error(server_module: A
 
 
 @pytest.mark.asyncio
+async def test_delete_projects_batch_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "summary": {"requested": 2, "deleted": 2, "failed": 0},
+        "partial_success": False,
+        "results": [
+            {
+                "id_or_name": "p1",
+                "id": "p1",
+                "name": "Project One",
+                "deleted": True,
+                "error": None,
+            },
+            {
+                "id_or_name": "Project Two",
+                "id": "p2",
+                "name": "Project Two",
+                "deleted": True,
+                "error": None,
+            },
+        ],
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.delete_projects_batch(["p1", "Project Two"])
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const projectIdsOrNames = ["p1", "Project Two"];' in script
+    assert "summary" in script
+    assert "partial_success" in script
+
+
+@pytest.mark.asyncio
+async def test_delete_projects_batch_partial_success(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "summary": {"requested": 2, "deleted": 1, "failed": 1},
+        "partial_success": True,
+        "results": [
+            {
+                "id_or_name": "p1",
+                "id": "p1",
+                "name": "Project One",
+                "deleted": True,
+                "error": None,
+            },
+            {
+                "id_or_name": "missing-project",
+                "id": None,
+                "name": None,
+                "deleted": False,
+                "error": "not found",
+            },
+        ],
+    }
+    configured = mock_server_run_omnijs(payload)
+    server = configured["server"]
+
+    result = await server.delete_projects_batch(["p1", "missing-project"])
+
+    assert json.loads(result) == payload
+
+
+@pytest.mark.asyncio
+async def test_delete_projects_batch_empty_array_validation_error(
+    server_module: Any,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="project_ids_or_names must contain at least one project id or name.",
+    ):
+        await server_module.delete_projects_batch([])
+
+
+@pytest.mark.asyncio
+async def test_delete_projects_batch_empty_item_validation_error(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="each project id or name must be a non-empty string."):
+        await server_module.delete_projects_batch(["p1", "   "])
+
+
+@pytest.mark.asyncio
+async def test_delete_projects_batch_duplicate_validation_error(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="project_ids_or_names must not contain duplicates: p1"):
+        await server_module.delete_projects_batch(["p1", "p1"])
+
+
+@pytest.mark.asyncio
+async def test_delete_tags_batch_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "summary": {"requested": 2, "deleted": 2, "failed": 0},
+        "partial_success": False,
+        "results": [
+            {
+                "id_or_name": "tag-1",
+                "id": "tag-1",
+                "name": "Urgent",
+                "deleted": True,
+                "error": None,
+            },
+            {
+                "id_or_name": "Home",
+                "id": "tag-2",
+                "name": "Home",
+                "deleted": True,
+                "error": None,
+            },
+        ],
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.delete_tags_batch(["tag-1", "Home"])
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const tagIdsOrNames = ["tag-1", "Home"];' in script
+    assert "summary" in script
+    assert "partial_success" in script
+
+
+@pytest.mark.asyncio
+async def test_delete_tags_batch_partial_success(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "summary": {"requested": 2, "deleted": 1, "failed": 1},
+        "partial_success": True,
+        "results": [
+            {
+                "id_or_name": "tag-1",
+                "id": "tag-1",
+                "name": "Urgent",
+                "deleted": True,
+                "error": None,
+            },
+            {
+                "id_or_name": "missing-tag",
+                "id": None,
+                "name": None,
+                "deleted": False,
+                "error": "not found",
+            },
+        ],
+    }
+    configured = mock_server_run_omnijs(payload)
+    server = configured["server"]
+
+    result = await server.delete_tags_batch(["tag-1", "missing-tag"])
+
+    assert json.loads(result) == payload
+
+
+@pytest.mark.asyncio
+async def test_delete_tags_batch_empty_array_validation_error(server_module: Any) -> None:
+    with pytest.raises(
+        ValueError, match="tag_ids_or_names must contain at least one tag id or name."
+    ):
+        await server_module.delete_tags_batch([])
+
+
+@pytest.mark.asyncio
+async def test_delete_tags_batch_empty_item_validation_error(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="each tag id or name must be a non-empty string."):
+        await server_module.delete_tags_batch(["tag-1", "   "])
+
+
+@pytest.mark.asyncio
+async def test_delete_tags_batch_duplicate_validation_error(server_module: Any) -> None:
+    with pytest.raises(
+        ValueError, match="tag_ids_or_names must not contain duplicates: duplicate-tag"
+    ):
+        await server_module.delete_tags_batch(["duplicate-tag", "duplicate-tag"])
+
+
+@pytest.mark.asyncio
+async def test_delete_folders_batch_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "summary": {"requested": 2, "deleted": 2, "failed": 0},
+        "partial_success": False,
+        "results": [
+            {
+                "id_or_name": "folder-1",
+                "id": "folder-1",
+                "name": "Areas",
+                "deleted": True,
+                "error": None,
+            },
+            {
+                "id_or_name": "Work",
+                "id": "folder-2",
+                "name": "Work",
+                "deleted": True,
+                "error": None,
+            },
+        ],
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.delete_folders_batch(["folder-1", "Work"])
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const folderIdsOrNames = ["folder-1", "Work"];' in script
+    assert "summary" in script
+    assert "partial_success" in script
+
+
+@pytest.mark.asyncio
+async def test_delete_folders_batch_partial_success(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "summary": {"requested": 2, "deleted": 1, "failed": 1},
+        "partial_success": True,
+        "results": [
+            {
+                "id_or_name": "folder-1",
+                "id": "folder-1",
+                "name": "Areas",
+                "deleted": True,
+                "error": None,
+            },
+            {
+                "id_or_name": "missing-folder",
+                "id": None,
+                "name": None,
+                "deleted": False,
+                "error": "not found",
+            },
+        ],
+    }
+    configured = mock_server_run_omnijs(payload)
+    server = configured["server"]
+
+    result = await server.delete_folders_batch(["folder-1", "missing-folder"])
+
+    assert json.loads(result) == payload
+
+
+@pytest.mark.asyncio
+async def test_delete_folders_batch_empty_array_validation_error(server_module: Any) -> None:
+    with pytest.raises(
+        ValueError,
+        match="folder_ids_or_names must contain at least one folder id or name.",
+    ):
+        await server_module.delete_folders_batch([])
+
+
+@pytest.mark.asyncio
+async def test_delete_folders_batch_empty_item_validation_error(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="each folder id or name must be a non-empty string."):
+        await server_module.delete_folders_batch(["folder-1", "   "])
+
+
+@pytest.mark.asyncio
+async def test_delete_folders_batch_duplicate_validation_error(server_module: Any) -> None:
+    with pytest.raises(
+        ValueError, match="folder_ids_or_names must not contain duplicates: folder-dup"
+    ):
+        await server_module.delete_folders_batch(["folder-dup", "folder-dup"])
+
+
+@pytest.mark.asyncio
 async def test_move_tasks_batch_happy_path(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
