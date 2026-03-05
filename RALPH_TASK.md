@@ -151,10 +151,17 @@ Goal:
       - delete exceptions are caught per-item inside OmniJS; successful deletes
         continue and final summary/`partial_success` reflect mixed outcomes.
 
-11. [ ] keep destructive safety guidance in tool descriptions:
+11. [x] keep destructive safety guidance in tool descriptions:
        - explicitly state these are destructive operations
        - require explicit user confirmation before use
        - point to non-destructive alternatives where relevant.
+      implementation notes:
+      - validated batch-delete descriptions/docstrings for projects, tags, and
+        folders in python/typescript/rust all explicitly mark these operations
+        as destructive.
+      - all three runtimes instruct explicit user confirmation before execution.
+      - each tool points to non-destructive alternatives (`update_*`, `move_*`,
+        or `set_project_status`) where appropriate.
 
 ---
 
@@ -162,12 +169,23 @@ Goal:
 
 ### success criteria
 
-12. [ ] add/extend tests in Python for each new batch delete tool:
+12. [x] add/extend tests in Python for each new batch delete tool:
        - happy path
        - partial success (mixed found/not-found)
        - validation errors (empty array, empty item, duplicates).
+      implementation notes:
+      - confirmed Python coverage in `python/tests/test_tools_write.py` for:
+        `delete_projects_batch`, `delete_tags_batch`, and `delete_folders_batch`.
+      - each tool has happy-path, partial-success, empty-array, empty-item, and
+        duplicate-identifier validation tests.
 
-13. [ ] add/extend tests in TypeScript with the same cases and response-shape checks.
+13. [x] add/extend tests in TypeScript with the same cases and response-shape checks.
+      implementation notes:
+      - confirmed TypeScript coverage in `typescript/tests/tools-happy.test.ts` for:
+        `delete_projects_batch`, `delete_tags_batch`, and `delete_folders_batch`.
+      - each tool has summary/response-shape happy-path assertions, partial-success
+        behavior checks, and validation error tests for empty arrays, empty trimmed
+        identifiers, and duplicate identifiers.
 
 14. [ ] add/extend tests in Rust with the same cases and response-shape checks.
 

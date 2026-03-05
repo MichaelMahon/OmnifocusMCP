@@ -1210,10 +1210,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<DeleteFoldersBatchParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result =
-            delete_folders_batch_tool(self.runner.as_ref(), params.folder_ids_or_names)
-                .await
-                .map_err(to_mcp_error)?;
+        let result = delete_folders_batch_tool(self.runner.as_ref(), params.folder_ids_or_names)
+            .await
+            .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 

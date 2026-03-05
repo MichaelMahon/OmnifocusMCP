@@ -8,9 +8,7 @@ use omnifocus_mcp::{
     error::OmniFocusError,
     jxa::{escape_for_jxa, JxaRunner},
     tools::{
-        folders::{
-            create_folder, delete_folder, delete_folders_batch, get_folder, update_folder,
-        },
+        folders::{create_folder, delete_folder, delete_folders_batch, get_folder, update_folder},
         projects::{
             complete_project, create_project, delete_project, delete_projects_batch, move_project,
             set_project_status, uncomplete_project, update_project,
@@ -1215,9 +1213,12 @@ async fn delete_tags_batch_partial_success() {
             ]
         }),
     };
-    let result = delete_tags_batch(&runner, vec!["tag-1".to_string(), "missing-tag".to_string()])
-        .await
-        .expect("delete_tags_batch should succeed");
+    let result = delete_tags_batch(
+        &runner,
+        vec!["tag-1".to_string(), "missing-tag".to_string()],
+    )
+    .await
+    .expect("delete_tags_batch should succeed");
     assert_eq!(result["summary"]["deleted"], 1);
     assert_eq!(result["summary"]["failed"], 1);
     assert_eq!(result["partial_success"], true);
@@ -1295,7 +1296,11 @@ async fn delete_folders_batch_validation_errors() {
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
-        delete_folders_batch(&runner, vec!["folder-z".to_string(), "folder-z".to_string()]).await,
+        delete_folders_batch(
+            &runner,
+            vec!["folder-z".to_string(), "folder-z".to_string()]
+        )
+        .await,
         Err(OmniFocusError::Validation(_))
     ));
 }

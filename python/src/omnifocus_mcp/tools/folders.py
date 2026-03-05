@@ -300,5 +300,3 @@ return {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
-
-
