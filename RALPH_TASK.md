@@ -130,13 +130,26 @@ Goal:
       - validated shared behavior: one OmniJS call, per-item results with
         `{ id_or_name, id, name, deleted, error }`, and batch summary fields.
 
-9. [ ] implement `delete_folders_batch` in all three runtimes with one OmniJS call
+9. [x] implement `delete_folders_batch` in all three runtimes with one OmniJS call
       per invocation and per-item result reporting.
+      implementation notes:
+      - removed duplicate `delete_folders_batch` implementations so each runtime
+        now has a single canonical tool path.
+      - aligned batch-delete folder behavior with shared contract:
+        one OmniJS call, per-item result keys, and summary/partial-success output.
 
-10. [ ] preserve non-throwing partial-success behavior:
+10. [x] preserve non-throwing partial-success behavior:
        - missing objects become per-item failures
        - successful deletes continue
        - summary reflects mixed outcomes.
+      implementation notes:
+      - verified `delete_projects_batch`, `delete_tags_batch`, and
+        `delete_folders_batch` across python/typescript/rust all resolve each
+        requested identifier independently.
+      - not-found entities are returned as per-item failures (`deleted: false`,
+        `error: "not found"`) and do not abort the batch.
+      - delete exceptions are caught per-item inside OmniJS; successful deletes
+        continue and final summary/`partial_success` reflect mixed outcomes.
 
 11. [ ] keep destructive safety guidance in tool descriptions:
        - explicitly state these are destructive operations

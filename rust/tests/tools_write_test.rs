@@ -8,12 +8,14 @@ use omnifocus_mcp::{
     error::OmniFocusError,
     jxa::{escape_for_jxa, JxaRunner},
     tools::{
-        folders::{create_folder, delete_folder, get_folder, update_folder},
-        projects::{
-            complete_project, create_project, delete_project, move_project, set_project_status,
-            uncomplete_project, update_project,
+        folders::{
+            create_folder, delete_folder, delete_folders_batch, get_folder, update_folder,
         },
-        tags::{create_tag, delete_tag, update_tag},
+        projects::{
+            complete_project, create_project, delete_project, delete_projects_batch, move_project,
+            set_project_status, uncomplete_project, update_project,
+        },
+        tags::{create_tag, delete_tag, delete_tags_batch, update_tag},
         tasks::{
             complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
             delete_tasks_batch, duplicate_task, move_task, move_tasks_batch, set_task_repetition,
@@ -1118,6 +1120,182 @@ async fn delete_tasks_batch_validation_errors() {
     ));
     assert!(matches!(
         delete_tasks_batch(&runner, vec!["   ".to_string()]).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+}
+
+#[tokio::test]
+async fn delete_projects_batch_happy_path() {
+    let runner = MockRunner {
+        payload: json!({
+            "summary": {"requested": 2, "deleted": 2, "failed": 0},
+            "partial_success": false,
+            "results": [
+                {"id_or_name": "p1", "id": "p1", "name": "Project One", "deleted": true, "error": null},
+                {"id_or_name": "Project Two", "id": "p2", "name": "Project Two", "deleted": true, "error": null}
+            ]
+        }),
+    };
+    let result = delete_projects_batch(&runner, vec!["p1".to_string(), "Project Two".to_string()])
+        .await
+        .expect("delete_projects_batch should succeed");
+    assert_eq!(result["summary"]["requested"], 2);
+    assert_eq!(result["summary"]["deleted"], 2);
+    assert_eq!(result["summary"]["failed"], 0);
+    assert_eq!(result["partial_success"], false);
+}
+
+#[tokio::test]
+async fn delete_projects_batch_partial_success() {
+    let runner = MockRunner {
+        payload: json!({
+            "summary": {"requested": 2, "deleted": 1, "failed": 1},
+            "partial_success": true,
+            "results": [
+                {"id_or_name": "p1", "id": "p1", "name": "Project One", "deleted": true, "error": null},
+                {"id_or_name": "missing", "id": null, "name": null, "deleted": false, "error": "not found"}
+            ]
+        }),
+    };
+    let result = delete_projects_batch(&runner, vec!["p1".to_string(), "missing".to_string()])
+        .await
+        .expect("delete_projects_batch should succeed");
+    assert_eq!(result["summary"]["deleted"], 1);
+    assert_eq!(result["summary"]["failed"], 1);
+    assert_eq!(result["partial_success"], true);
+    assert_eq!(result["results"][1]["error"], "not found");
+}
+
+#[tokio::test]
+async fn delete_projects_batch_validation_errors() {
+    let runner = MockRunner { payload: json!({}) };
+    assert!(matches!(
+        delete_projects_batch(&runner, Vec::new()).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        delete_projects_batch(&runner, vec!["   ".to_string()]).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        delete_projects_batch(&runner, vec!["p1".to_string(), "p1".to_string()]).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+}
+
+#[tokio::test]
+async fn delete_tags_batch_happy_path() {
+    let runner = MockRunner {
+        payload: json!({
+            "summary": {"requested": 2, "deleted": 2, "failed": 0},
+            "partial_success": false,
+            "results": [
+                {"id_or_name": "tag-1", "id": "tag-1", "name": "Urgent", "deleted": true, "error": null},
+                {"id_or_name": "Home", "id": "tag-2", "name": "Home", "deleted": true, "error": null}
+            ]
+        }),
+    };
+    let result = delete_tags_batch(&runner, vec!["tag-1".to_string(), "Home".to_string()])
+        .await
+        .expect("delete_tags_batch should succeed");
+    assert_eq!(result["summary"]["requested"], 2);
+    assert_eq!(result["summary"]["deleted"], 2);
+    assert_eq!(result["summary"]["failed"], 0);
+}
+
+#[tokio::test]
+async fn delete_tags_batch_partial_success() {
+    let runner = MockRunner {
+        payload: json!({
+            "summary": {"requested": 2, "deleted": 1, "failed": 1},
+            "partial_success": true,
+            "results": [
+                {"id_or_name": "tag-1", "id": "tag-1", "name": "Urgent", "deleted": true, "error": null},
+                {"id_or_name": "missing-tag", "id": null, "name": null, "deleted": false, "error": "not found"}
+            ]
+        }),
+    };
+    let result = delete_tags_batch(&runner, vec!["tag-1".to_string(), "missing-tag".to_string()])
+        .await
+        .expect("delete_tags_batch should succeed");
+    assert_eq!(result["summary"]["deleted"], 1);
+    assert_eq!(result["summary"]["failed"], 1);
+    assert_eq!(result["partial_success"], true);
+}
+
+#[tokio::test]
+async fn delete_tags_batch_validation_errors() {
+    let runner = MockRunner { payload: json!({}) };
+    assert!(matches!(
+        delete_tags_batch(&runner, Vec::new()).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        delete_tags_batch(&runner, vec!["   ".to_string()]).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        delete_tags_batch(&runner, vec!["tag-a".to_string(), "tag-a".to_string()]).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+}
+
+#[tokio::test]
+async fn delete_folders_batch_happy_path() {
+    let runner = MockRunner {
+        payload: json!({
+            "summary": {"requested": 2, "deleted": 2, "failed": 0},
+            "partial_success": false,
+            "results": [
+                {"id_or_name": "folder-1", "id": "folder-1", "name": "Areas", "deleted": true, "error": null},
+                {"id_or_name": "Work", "id": "folder-2", "name": "Work", "deleted": true, "error": null}
+            ]
+        }),
+    };
+    let result = delete_folders_batch(&runner, vec!["folder-1".to_string(), "Work".to_string()])
+        .await
+        .expect("delete_folders_batch should succeed");
+    assert_eq!(result["summary"]["requested"], 2);
+    assert_eq!(result["summary"]["deleted"], 2);
+    assert_eq!(result["summary"]["failed"], 0);
+}
+
+#[tokio::test]
+async fn delete_folders_batch_partial_success() {
+    let runner = MockRunner {
+        payload: json!({
+            "summary": {"requested": 2, "deleted": 1, "failed": 1},
+            "partial_success": true,
+            "results": [
+                {"id_or_name": "folder-1", "id": "folder-1", "name": "Areas", "deleted": true, "error": null},
+                {"id_or_name": "missing-folder", "id": null, "name": null, "deleted": false, "error": "not found"}
+            ]
+        }),
+    };
+    let result = delete_folders_batch(
+        &runner,
+        vec!["folder-1".to_string(), "missing-folder".to_string()],
+    )
+    .await
+    .expect("delete_folders_batch should succeed");
+    assert_eq!(result["summary"]["deleted"], 1);
+    assert_eq!(result["summary"]["failed"], 1);
+    assert_eq!(result["partial_success"], true);
+}
+
+#[tokio::test]
+async fn delete_folders_batch_validation_errors() {
+    let runner = MockRunner { payload: json!({}) };
+    assert!(matches!(
+        delete_folders_batch(&runner, Vec::new()).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        delete_folders_batch(&runner, vec!["   ".to_string()]).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        delete_folders_batch(&runner, vec!["folder-z".to_string(), "folder-z".to_string()]).await,
         Err(OmniFocusError::Validation(_))
     ));
 }
