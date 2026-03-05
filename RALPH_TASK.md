@@ -63,23 +63,45 @@ Goal:
 
 ### success criteria
 
-4. [ ] define identical tool input schemas in Python/TypeScript/Rust:
+4. [x] define identical tool input schemas in Python/TypeScript/Rust:
       - `project_ids_or_names: string[]` for projects
       - `tag_ids_or_names: string[]` for tags
       - `folder_ids_or_names: string[]` for folders
       each required and non-empty.
+      schema notes:
+      - each new batch tool accepts exactly one required array field with the
+        names above and no fallback aliases.
+      - each field maps directly to runtime-native array types:
+        `list[str]` (python), `z.array(z.string())` (typescript),
+        `Vec<String>` (rust).
+      - runtime-level validation enforces non-empty arrays and trimmed non-empty
+        string identifiers.
 
-5. [ ] define identical response shape for all new batch delete tools:
+5. [x] define identical response shape for all new batch delete tools:
       - summary block (`requested`, `deleted`, `failed`)
       - `partial_success` boolean
       - per-item results array with:
         `id_or_name`, resolved `id` (if found), `name` (if available), `deleted`, `error`.
+      response notes:
+      - all three tools return one object with:
+        `summary`, `partial_success`, and `results`.
+      - `summary` is `{ requested, deleted, failed }`.
+      - each `results` item uses the same keys:
+        `{ id_or_name, id, name, deleted, error }`, with `id`/`name` nullable
+        when resolution fails.
 
-6. [ ] define validation rules (shared across runtimes):
+6. [x] define validation rules (shared across runtimes):
       - reject empty arrays
       - reject empty/whitespace identifiers
       - reject duplicate identifiers within a request
       - return actionable validation errors.
+      validation notes:
+      - empty request arrays fail fast with an error naming the required field.
+      - each identifier is trimmed; blank values fail with per-tool field wording.
+      - duplicates are detected on normalized (trimmed) identifiers and rejected
+        before OmniJS execution.
+      - error messages are actionable and include either the field name or the
+        duplicate identifier value.
 
 ---
 
