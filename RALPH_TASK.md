@@ -31,10 +31,20 @@ Goal:
       - tag deletion removes the tag assignment from linked tasks (`taskCount` is reported)
       - folder deletion removes the folder; OmniFocus may move contained projects to top level (`projectCount`/`subfolderCount` are reported)
 
-2. [ ] confirm existing single-delete tools and response contracts in all runtimes:
+2. [x] confirm existing single-delete tools and response contracts in all runtimes:
       - `delete_project`
       - `delete_tag`
       - `delete_folder`
+      contract verification notes:
+      - `delete_project` exists in `python`, `typescript`, and `rust`; all accept
+        one identifier (`project_id_or_name`) and return `{ id, name, deleted, taskCount }`.
+      - `delete_tag` exists in `python`, `typescript`, and `rust`; all accept one
+        identifier (`tag_name_or_id`) and return `{ id, name, deleted, taskCount }`.
+      - `delete_folder` exists in `python`, `typescript`, and `rust`; all accept
+        one identifier (`folder_name_or_id`) and return
+        `{ id, name, deleted, projectCount, subfolderCount }`.
+      - all three tool families resolve by id or exact name, and emit not-found
+        errors with the searched identifier when resolution fails.
 
 3. [ ] define batch scope:
       - add `delete_projects_batch`
