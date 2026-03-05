@@ -705,6 +705,186 @@ return {
   );
 
   server.tool(
+    "delete_projects_batch",
+    "delete multiple projects by id or exact name in a single omnijs call. destructive operation: this permanently removes each matched project and its tasks. before calling, always show the user which projects are targeted and ask for explicit confirmation.",
+    {
+      project_ids_or_names: z
+        .array(z.string())
+        .min(1)
+        .describe("non-empty list of project identifiers (id primaryKey or exact name)"),
+    },
+    async ({ project_ids_or_names }) => {
+      try {
+        if (project_ids_or_names.length === 0) {
+          throw new Error("project_ids_or_names must contain at least one project identifier.");
+        }
+
+        const normalizedIdsOrNames: string[] = [];
+        const seenIdsOrNames = new Set<string>();
+        for (const projectIdOrName of project_ids_or_names) {
+          const normalizedIdOrName = projectIdOrName.trim();
+          if (normalizedIdOrName === "") {
+            throw new Error("each project identifier must be a non-empty string.");
+          }
+          if (seenIdsOrNames.has(normalizedIdOrName)) {
+            throw new Error(
+              `project_ids_or_names must not contain duplicates: ${normalizedIdOrName}`
+            );
+          }
+          seenIdsOrNames.add(normalizedIdOrName);
+          normalizedIdsOrNames.push(normalizedIdOrName);
+        }
+
+        const script = `
+const projectIdsOrNames = ${JSON.stringify(normalizedIdsOrNames)};
+const projectById = new Map();
+const projectByName = new Map();
+for (const project of document.flattenedProjects) {
+  try {
+    const projectId = project.id.primaryKey;
+    projectById.set(projectId, project);
+    if (!projectByName.has(project.name)) {
+      projectByName.set(project.name, project);
+    }
+  } catch (e) {
+  }
+}
+
+const results = projectIdsOrNames.map(projectIdOrName => {
+  const project = projectById.get(projectIdOrName) || projectByName.get(projectIdOrName);
+  if (!project) {
+    return {
+      id_or_name: projectIdOrName,
+      id: null,
+      name: null,
+      deleted: false,
+      error: "not found"
+    };
+  }
+
+  const resolvedId = project.id.primaryKey;
+  const resolvedName = project.name;
+  deleteObject(project);
+  return {
+    id_or_name: projectIdOrName,
+    id: resolvedId,
+    name: resolvedName,
+    deleted: true,
+    error: null
+  };
+});
+
+const deletedCount = results.filter(result => result.deleted).length;
+const failedCount = results.length - deletedCount;
+return {
+  summary: {
+    requested: results.length,
+    deleted: deletedCount,
+    failed: failedCount
+  },
+  partial_success: deletedCount > 0 && failedCount > 0,
+  results: results
+};
+`.trim();
+        const result = await runOmniJs(script);
+        return textResult(result);
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
+    "delete_projects_batch",
+    "delete multiple projects by id or exact name in a single omnijs call. destructive operation: this permanently removes projects and their tasks. use update_project, move_project, or set_project_status for non-destructive changes. before calling this tool, always show the user the target project list and ask for explicit confirmation.",
+    {
+      project_ids_or_names: z.array(z.string()).min(1).describe("project ids or exact names to delete"),
+    },
+    async ({ project_ids_or_names }) => {
+      try {
+        if (project_ids_or_names.length === 0) {
+          throw new Error("project_ids_or_names must contain at least one project id or name.");
+        }
+        const normalizedProjectIdsOrNames = project_ids_or_names.map((projectIdOrName) => {
+          const normalizedProjectIdOrName = projectIdOrName.trim();
+          if (normalizedProjectIdOrName === "") {
+            throw new Error("each project id or name must be a non-empty string.");
+          }
+          return normalizedProjectIdOrName;
+        });
+        const seenProjectIdsOrNames = new Set<string>();
+        for (const normalizedProjectIdOrName of normalizedProjectIdsOrNames) {
+          if (seenProjectIdsOrNames.has(normalizedProjectIdOrName)) {
+            throw new Error(
+              `project_ids_or_names must not contain duplicates: ${normalizedProjectIdOrName}`
+            );
+          }
+          seenProjectIdsOrNames.add(normalizedProjectIdOrName);
+        }
+
+        const projectIdsOrNamesValue = JSON.stringify(normalizedProjectIdsOrNames);
+        const script = `
+const projectIdsOrNames = ${projectIdsOrNamesValue};
+const projects = document.flattenedProjects.slice();
+const results = projectIdsOrNames.map(idOrName => {
+  const project = projects.find(item => {
+    return item.id.primaryKey === idOrName || item.name === idOrName;
+  });
+  if (!project) {
+    return {
+      id_or_name: idOrName,
+      id: null,
+      name: null,
+      deleted: false,
+      error: "not found"
+    };
+  }
+
+  const resolvedId = project.id.primaryKey;
+  const resolvedName = project.name;
+  try {
+    deleteObject(project);
+    return {
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: true,
+      error: null
+    };
+  } catch (e) {
+    const errorMessage = e && e.message ? String(e.message) : String(e);
+    return {
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: false,
+      error: errorMessage
+    };
+  }
+});
+
+const deletedCount = results.filter(result => result.deleted).length;
+const failedCount = results.length - deletedCount;
+
+return {
+  summary: {
+    requested: results.length,
+    deleted: deletedCount,
+    failed: failedCount
+  },
+  partial_success: deletedCount > 0 && failedCount > 0,
+  results: results
+};
+`.trim();
+        const result = await runOmniJs(script);
+        return textResult(result);
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
     "move_project",
     "move a project by id or name to a folder or top level.",
     {

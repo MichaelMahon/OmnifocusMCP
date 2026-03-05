@@ -256,4 +256,81 @@ return {
     }
   );
 
+  server.tool(
+    "delete_folders_batch",
+    "delete multiple folders by id or exact name in a single omnijs call.",
+    {
+      folder_ids_or_names: z
+        .array(z.string().min(1))
+        .min(1)
+        .describe("required non-empty array of folder ids or exact names"),
+    },
+    async ({ folder_ids_or_names }) => {
+      try {
+        if (folder_ids_or_names.length === 0) {
+          throw new Error("folder_ids_or_names must contain at least one folder identifier.");
+        }
+        const normalizedIdentifiers = folder_ids_or_names.map((identifier) => {
+          const normalizedIdentifier = identifier.trim();
+          if (normalizedIdentifier === "") {
+            throw new Error("each folder identifier must be a non-empty string.");
+          }
+          return normalizedIdentifier;
+        });
+        const identifiersValue = JSON.stringify(normalizedIdentifiers);
+        const script = `
+const folderIdentifiers = ${identifiersValue};
+const folderById = new Map();
+const folderByName = new Map();
+for (const folder of document.flattenedFolders) {
+  try {
+    folderById.set(folder.id.primaryKey, folder);
+    if (!folderByName.has(folder.name)) folderByName.set(folder.name, folder);
+  } catch (e) {
+  }
+}
+const results = folderIdentifiers.map(identifier => {
+  const folder = folderById.get(identifier) || folderByName.get(identifier);
+  if (!folder) {
+    return {
+      id_or_name: identifier,
+      id: null,
+      name: null,
+      deleted: false,
+      error: "Folder not found."
+    };
+  }
+
+  const folderId = folder.id.primaryKey;
+  const folderName = folder.name;
+  deleteObject(folder);
+  return {
+    id_or_name: identifier,
+    id: folderId,
+    name: folderName,
+    deleted: true,
+    error: null
+  };
+});
+
+const deletedCount = results.filter(result => result.deleted).length;
+const failedCount = results.length - deletedCount;
+
+return {
+  summary: {
+    requested: folderIdentifiers.length,
+    deleted: deletedCount,
+    failed: failedCount
+  },
+  partial_success: deletedCount > 0 && failedCount > 0,
+  results: results
+};
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
 }

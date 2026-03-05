@@ -109,8 +109,18 @@ Goal:
 
 ### success criteria
 
-7. [ ] implement `delete_projects_batch` in all three runtimes with one OmniJS call
+7. [x] implement `delete_projects_batch` in all three runtimes with one OmniJS call
       per invocation and per-item result reporting.
+      implementation notes:
+      - added `delete_projects_batch` in:
+        - `python/src/omnifocus_mcp/tools/projects.py`
+        - `typescript/src/tools/projects.ts`
+        - `rust/src/tools/projects.rs` + `rust/src/server.rs`
+      - each runtime validates non-empty array, trimmed non-empty identifiers, and
+        duplicate identifiers before executing OmniJS.
+      - each runtime performs one OmniJS call that resolves by id or exact name and
+        returns `{ summary, partial_success, results }` with per-item
+        `{ id_or_name, id, name, deleted, error }`.
 
 8. [ ] implement `delete_tags_batch` in all three runtimes with one OmniJS call
       per invocation and per-item result reporting.

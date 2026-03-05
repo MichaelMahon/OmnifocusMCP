@@ -15,7 +15,6 @@ from omnifocus_mcp.tools.perspectives import list_perspectives  # noqa: E402,F40
 from omnifocus_mcp.tools.projects import (  # noqa: E402,F401
     complete_project,
     create_project,
-    delete_projects_batch,
     delete_project,
     delete_projects_batch,
     get_project,

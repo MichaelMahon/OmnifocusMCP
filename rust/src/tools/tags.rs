@@ -276,3 +276,73 @@ return {{
     );
     runner.run_omnijs(&script).await
 }
+
+pub async fn delete_tags_batch<R: JxaRunner>(
+    runner: &R,
+    tag_ids_or_names: Vec<String>,
+) -> Result<Value> {
+    if tag_ids_or_names.is_empty() {
+        return Err(OmniFocusError::Validation(
+            "tag_ids_or_names must contain at least one tag identifier.".to_string(),
+        ));
+    }
+
+    let mut normalized_identifiers: Vec<String> = Vec::with_capacity(tag_ids_or_names.len());
+    for tag_id_or_name in tag_ids_or_names {
+        let normalized_identifier = tag_id_or_name.trim();
+        if normalized_identifier.is_empty() {
+            return Err(OmniFocusError::Validation(
+                "each tag identifier must be a non-empty string.".to_string(),
+            ));
+        }
+        normalized_identifiers.push(normalized_identifier.to_string());
+    }
+
+    let identifiers_value = serde_json::to_string(&normalized_identifiers)?;
+    let script = format!(
+        r#"const tagIdentifiers = {identifiers_value};
+const tagById = new Map();
+const tagByName = new Map();
+for (const tag of document.flattenedTags) {{
+  try {{
+    tagById.set(tag.id.primaryKey, tag);
+    if (!tagByName.has(tag.name)) tagByName.set(tag.name, tag);
+  }} catch (e) {{
+  }}
+}}
+const results = tagIdentifiers.map(identifier => {{
+  const tag = tagById.get(identifier) || tagByName.get(identifier);
+  if (!tag) {{
+    return {{
+      id_or_name: identifier,
+      id: null,
+      name: null,
+      deleted: false,
+      error: "Tag not found."
+    }};
+  }}
+  const tagId = tag.id.primaryKey;
+  const tagName = tag.name;
+  deleteObject(tag);
+  return {{
+    id_or_name: identifier,
+    id: tagId,
+    name: tagName,
+    deleted: true,
+    error: null
+  }};
+}});
+const deletedCount = results.filter(result => result.deleted).length;
+const failedCount = results.length - deletedCount;
+return {{
+  summary: {{
+    requested: tagIdentifiers.length,
+    deleted: deletedCount,
+    failed: failedCount
+  }},
+  partial_success: deletedCount > 0 && failedCount > 0,
+  results: results
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
