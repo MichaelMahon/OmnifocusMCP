@@ -31,3 +31,6 @@ rust/target/
 
 # OS/editor files
 .DS_Store
+
+# local task scratch file for ralph loop
+RALPH_TASK.md
