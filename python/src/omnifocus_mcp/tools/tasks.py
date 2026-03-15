@@ -796,8 +796,7 @@ async def get_task_counts(
         raise ValueError("tag must not be empty when provided.")
     if tags is not None and any(tag_name.strip() == "" for tag_name in tags):
         raise ValueError("tags entries must not be empty when provided.")
-    if tagFilterMode not in ("any", "all"):
-        raise ValueError("tagFilterMode must be one of: any, all.")
+    normalized_tag_filter_mode = _normalize_tag_filter_mode_input(tagFilterMode)
     if maxEstimatedMinutes is not None and maxEstimatedMinutes < 0:
         raise ValueError("maxEstimatedMinutes must be greater than or equal to 0.")
 
@@ -815,7 +814,7 @@ async def get_task_counts(
     tag_names_filter = (
         "null" if len(merged_tag_names) == 0 else json.dumps(merged_tag_names)
     )
-    tag_filter_mode_filter = escape_for_jxa(tagFilterMode)
+    tag_filter_mode_filter = escape_for_jxa(normalized_tag_filter_mode)
     flagged_filter = "null" if flagged is None else ("true" if flagged else "false")
     due_before_filter = "null" if dueBefore is None else escape_for_jxa(dueBefore)
     due_after_filter = "null" if dueAfter is None else escape_for_jxa(dueAfter)
