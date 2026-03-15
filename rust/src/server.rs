@@ -654,9 +654,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(
-        description = "remove one notification from a task by task_id and notification_id."
-    )]
+    #[tool(description = "remove one notification from a task by task_id and notification_id.")]
     async fn remove_notification(
         &self,
         Parameters(params): Parameters<RemoveNotificationParams>,
@@ -1176,9 +1174,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(
-        description = "update a tag by id or name, modifying provided name and/or status."
-    )]
+    #[tool(description = "update a tag by id or name, modifying provided name and/or status.")]
     async fn update_tag(
         &self,
         Parameters(params): Parameters<UpdateTagParams>,
@@ -1259,9 +1255,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(
-        description = "update a folder by id or name, modifying provided name and/or status."
-    )]
+    #[tool(description = "update a folder by id or name, modifying provided name and/or status.")]
     async fn update_folder(
         &self,
         Parameters(params): Parameters<UpdateFolderParams>,

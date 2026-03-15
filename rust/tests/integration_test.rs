@@ -199,25 +199,8 @@ async fn test_read_tools_return_valid_json() -> Result<(), Box<dyn std::error::E
     }
 
     let listed = list_tasks(
-        &runner,
-        None,
-        None,
-        None,
-        "any",
-        None,
-        "all",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        "asc",
-        20,
+        &runner, None, None, None, "any", None, "all", None, None, None, None, None, None, None,
+        None, None, None, "asc", 20,
     )
     .await?;
     if let Some(first) = listed.first() {
@@ -593,7 +576,8 @@ async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Erro
         .await?;
         assert!(searched.iter().any(|item| item.id == task_id));
 
-        let created_notification = add_notification(&runner, &task_id, Some(&due_date_iso), None).await?;
+        let created_notification =
+            add_notification(&runner, &task_id, Some(&due_date_iso), None).await?;
         let created_notification_id = require_str_field(&created_notification, "id");
         notification_id = Some(created_notification_id.clone());
 
@@ -617,7 +601,8 @@ async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Erro
         let tag_two_id = require_str_field(&tag_two, "id");
         extra_tag_ids.push(tag_one_id.clone());
         extra_tag_ids.push(tag_two_id.clone());
-        let deleted_tags = delete_tags_batch(&runner, vec![tag_one_id.clone(), tag_two_id.clone()]).await?;
+        let deleted_tags =
+            delete_tags_batch(&runner, vec![tag_one_id.clone(), tag_two_id.clone()]).await?;
         assert_eq!(
             deleted_tags
                 .get("summary")
@@ -628,14 +613,17 @@ async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Erro
         );
         extra_tag_ids.clear();
 
-        let folder_one = create_folder(&runner, &unique_name("Parity batch folder one"), None).await?;
-        let folder_two = create_folder(&runner, &unique_name("Parity batch folder two"), None).await?;
+        let folder_one =
+            create_folder(&runner, &unique_name("Parity batch folder one"), None).await?;
+        let folder_two =
+            create_folder(&runner, &unique_name("Parity batch folder two"), None).await?;
         let folder_one_id = require_str_field(&folder_one, "id");
         let folder_two_id = require_str_field(&folder_two, "id");
         extra_folder_ids.push(folder_one_id.clone());
         extra_folder_ids.push(folder_two_id.clone());
         let deleted_folders =
-            delete_folders_batch(&runner, vec![folder_one_id.clone(), folder_two_id.clone()]).await?;
+            delete_folders_batch(&runner, vec![folder_one_id.clone(), folder_two_id.clone()])
+                .await?;
         assert_eq!(
             deleted_folders
                 .get("summary")
@@ -646,18 +634,35 @@ async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Erro
         );
         extra_folder_ids.clear();
 
-        let project_one =
-            create_project(&runner, &unique_name("Parity batch project one"), None, None, None, None, None)
-                .await?;
-        let project_two =
-            create_project(&runner, &unique_name("Parity batch project two"), None, None, None, None, None)
-                .await?;
+        let project_one = create_project(
+            &runner,
+            &unique_name("Parity batch project one"),
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .await?;
+        let project_two = create_project(
+            &runner,
+            &unique_name("Parity batch project two"),
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .await?;
         let project_one_id = require_str_field(&project_one, "id");
         let project_two_id = require_str_field(&project_two, "id");
         extra_project_ids.push(project_one_id.clone());
         extra_project_ids.push(project_two_id.clone());
-        let deleted_projects =
-            delete_projects_batch(&runner, vec![project_one_id.clone(), project_two_id.clone()]).await?;
+        let deleted_projects = delete_projects_batch(
+            &runner,
+            vec![project_one_id.clone(), project_two_id.clone()],
+        )
+        .await?;
         assert_eq!(
             deleted_projects
                 .get("summary")
