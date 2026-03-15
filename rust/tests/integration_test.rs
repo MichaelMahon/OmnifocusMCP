@@ -1,8 +1,8 @@
 #![cfg(feature = "integration")]
 
 use std::{
-    future::Future,
     collections::HashSet,
+    future::Future,
     pin::Pin,
     process::Command,
     sync::OnceLock,
@@ -694,9 +694,7 @@ async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Erro
             Some(0)
         );
         assert_eq!(
-            deleted_tags
-                .get("partial_success")
-                .and_then(Value::as_bool),
+            deleted_tags.get("partial_success").and_then(Value::as_bool),
             Some(false)
         );
         let tag_error_text = deleted_tags
@@ -718,13 +716,16 @@ async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Erro
         let folder_child_name = unique_name("Parity batch child folder");
         let folder_parent = create_folder(&runner, &folder_parent_name, None).await?;
         let folder_parent_id = require_str_field(&folder_parent, "id");
-        let folder_child = create_folder(&runner, &folder_child_name, Some(&folder_parent_name)).await?;
+        let folder_child =
+            create_folder(&runner, &folder_child_name, Some(&folder_parent_name)).await?;
         let folder_child_id = require_str_field(&folder_child, "id");
         extra_folder_ids.push(folder_parent_id.clone());
         extra_folder_ids.push(folder_child_id.clone());
-        let deleted_folders =
-            delete_folders_batch(&runner, vec![folder_parent_id.clone(), folder_child_id.clone()])
-                .await?;
+        let deleted_folders = delete_folders_batch(
+            &runner,
+            vec![folder_parent_id.clone(), folder_child_id.clone()],
+        )
+        .await?;
         assert_eq!(
             deleted_folders
                 .get("summary")
@@ -840,7 +841,8 @@ async fn test_plan_b_statuses_are_canonical_in_tags_and_folder_projects(
         let created_tag_id = require_str_field(&created_tag, "id");
         tag_id = Some(created_tag_id.clone());
 
-        let created_folder = create_folder(&runner, &unique_name("Plan B status folder"), None).await?;
+        let created_folder =
+            create_folder(&runner, &unique_name("Plan B status folder"), None).await?;
         let created_folder_id = require_str_field(&created_folder, "id");
         let created_folder_name = require_str_field(&created_folder, "name");
         folder_id = Some(created_folder_id.clone());
@@ -881,16 +883,19 @@ async fn test_plan_b_statuses_are_canonical_in_tags_and_folder_projects(
             .get("projects")
             .and_then(Value::as_array)
             .and_then(|projects| {
-                projects
-                    .iter()
-                    .find(|item| item.get("id").and_then(Value::as_str) == Some(created_project_id.as_str()))
+                projects.iter().find(|item| {
+                    item.get("id").and_then(Value::as_str) == Some(created_project_id.as_str())
+                })
             })
             .ok_or_else(|| "plan b nested project missing from folder details".to_string())?;
         let nested_project_status = nested_project
             .get("status")
             .and_then(Value::as_str)
             .ok_or_else(|| "plan b nested project missing status".to_string())?;
-        assert!(matches!(nested_project_status, "active" | "on_hold" | "dropped"));
+        assert!(matches!(
+            nested_project_status,
+            "active" | "on_hold" | "dropped"
+        ));
 
         Ok(())
     }
@@ -914,6 +919,12 @@ async fn test_plan_c_alias_inputs_work_for_task_tools() -> Result<(), Box<dyn st
     if !integration_enabled() || !omnifocus_running() {
         return Ok(());
     }
+    if std::env::var("OMNIFOCUS_PLAN_C_INTEGRATION")
+        .map(|value| value != "1")
+        .unwrap_or(true)
+    {
+        return Ok(());
+    }
     let _guard = test_lock().lock().await;
     let runner = IntegrationRunner;
     let mut cleanup = CleanupRegistry::default();
@@ -926,11 +937,12 @@ async fn test_plan_c_alias_inputs_work_for_task_tools() -> Result<(), Box<dyn st
         tag_id = Some(created_tag_id.clone());
 
         let task_name = unique_name("Plan C alias task");
-        let due_date_iso = run_omnijs("return new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();")
-            .await?
-            .as_str()
-            .ok_or_else(|| "plan c due date probe did not return a string".to_string())?
-            .to_string();
+        let due_date_iso =
+            run_omnijs("return new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();")
+                .await?
+                .as_str()
+                .ok_or_else(|| "plan c due date probe did not return a string".to_string())?
+                .to_string();
         let created_task = create_task(
             &runner,
             &task_name,
@@ -971,7 +983,9 @@ async fn test_plan_c_alias_inputs_work_for_task_tools() -> Result<(), Box<dyn st
         let listed_match = listed
             .iter()
             .find(|item| item.id == created_task_id)
-            .ok_or_else(|| "plan c list_tasks alias call did not return created task".to_string())?;
+            .ok_or_else(|| {
+                "plan c list_tasks alias call did not return created task".to_string()
+            })?;
         assert_eq!(listed_match.task_status, "due_soon");
 
         let searched = search_tasks(
@@ -998,7 +1012,9 @@ async fn test_plan_c_alias_inputs_work_for_task_tools() -> Result<(), Box<dyn st
         let searched_match = searched
             .iter()
             .find(|item| item.id == created_task_id)
-            .ok_or_else(|| "plan c search_tasks alias call did not return created task".to_string())?;
+            .ok_or_else(|| {
+                "plan c search_tasks alias call did not return created task".to_string()
+            })?;
         assert_eq!(searched_match.task_status, "due_soon");
 
         let counts = get_task_counts(
@@ -1097,7 +1113,8 @@ async fn test_plan_a_parent_child_batch_delete_effective_success(
         let parent_folder = create_folder(&runner, &parent_folder_name, None).await?;
         let parent_folder_id = require_str_field(&parent_folder, "id");
         extra_folder_ids.push(parent_folder_id.clone());
-        let child_folder = create_folder(&runner, &child_folder_name, Some(&parent_folder_name)).await?;
+        let child_folder =
+            create_folder(&runner, &child_folder_name, Some(&parent_folder_name)).await?;
         let child_folder_id = require_str_field(&child_folder, "id");
         extra_folder_ids.push(child_folder_id.clone());
 

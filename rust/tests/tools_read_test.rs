@@ -16,8 +16,8 @@ use omnifocus_mcp::{
         tasks::{
             add_notification, duplicate_task, get_inbox, get_task,
             get_task_counts_with_added_changed, list_notifications, list_subtasks,
-            list_tasks as list_tasks_impl,
-            list_tasks_with_added_changed, remove_notification, search_tasks_with_added_changed,
+            list_tasks as list_tasks_impl, list_tasks_with_added_changed, remove_notification,
+            search_tasks_with_added_changed,
         },
     },
 };
@@ -93,10 +93,6 @@ async fn get_task_counts<R: JxaRunner>(
     defer_after: Option<&str>,
     completed_before: Option<&str>,
     completed_after: Option<&str>,
-    added_after: Option<&str>,
-    added_before: Option<&str>,
-    changed_after: Option<&str>,
-    changed_before: Option<&str>,
     max_estimated_minutes: Option<i32>,
 ) -> Result<omnifocus_mcp::types::TaskCountsResult, OmniFocusError> {
     get_task_counts_with_added_changed(
@@ -112,10 +108,10 @@ async fn get_task_counts<R: JxaRunner>(
         defer_after,
         completed_before,
         completed_after,
-        added_after,
-        added_before,
-        changed_after,
-        changed_before,
+        None,
+        None,
+        None,
+        None,
         max_estimated_minutes,
     )
     .await
@@ -965,8 +961,23 @@ async fn plan_c_unknown_alias_values_return_canonical_error_options() {
     let runner = MockRunner { payload: json!([]) };
 
     let list_error = list_tasks_with_duration(
-        &runner, None, None, None, "any", None, "available", None, None, None, None, None, None,
-        None, None, "backwards", 10,
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "backwards",
+        10,
     )
     .await
     .expect_err("invalid sort order should fail");
@@ -989,24 +1000,8 @@ async fn plan_c_unknown_alias_values_return_canonical_error_options() {
     ));
 
     let search_error = search_tasks(
-        &runner,
-        "ship",
-        None,
-        None,
-        None,
-        "any",
-        None,
-        "later",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        "asc",
-        10,
+        &runner, "ship", None, None, None, "any", None, "later", None, None, None, None, None,
+        None, None, None, "asc", 10,
     )
     .await
     .expect_err("invalid status should fail");
@@ -1051,8 +1046,23 @@ async fn plan_c_unknown_alias_values_keep_actionable_errors() {
     let runner = MockRunner { payload: json!([]) };
 
     match list_tasks_with_duration(
-        &runner, None, None, None, "any", None, "available", None, None, None, None, None, None,
-        None, None, "backwards", 100,
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "backwards",
+        100,
     )
     .await
     {
@@ -1401,6 +1411,16 @@ async fn get_task_counts_script_includes_filters_and_counts() {
         Some(vec!["Home".to_string()]),
         "any",
         Some(true),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
         None,
         None,
         None,
@@ -2883,13 +2903,6 @@ async fn plan_c_aliases_normalize_to_canonical_values_in_scoped_task_tools() {
         None,
         None,
         None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
     )
     .await
     .expect("task counts aliases should parse");
@@ -2908,35 +2921,36 @@ async fn plan_c_unknown_values_keep_canonical_actionable_errors() {
     };
 
     let invalid_sort = list_tasks_with_duration(
-        &runner, None, None, None, "any", None, "available", None, None, None, None, None, None,
-        None, None, "backwards", 5,
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "backwards",
+        5,
     )
     .await
     .expect_err("invalid sort order should fail");
     assert!(invalid_sort
         .to_string()
         .contains("sortOrder must be one of: asc, desc."));
-    assert!(invalid_sort.to_string().contains("received: \"backwards\"."));
+    assert!(invalid_sort
+        .to_string()
+        .contains("received: \"backwards\"."));
 
     let invalid_status = search_tasks(
-        &runner,
-        "audit",
-        None,
-        None,
-        None,
-        "any",
-        None,
-        "later",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        "asc",
-        5,
+        &runner, "audit", None, None, None, "any", None, "later", None, None, None, None, None,
+        None, None, None, "asc", 5,
     )
     .await
     .expect_err("invalid status should fail");
@@ -3529,4 +3543,3 @@ async fn added_changed_invalid_date_errors_bubble_up_for_all_new_filter_fields()
         assert_eq!(counts_error.to_string(), message);
     }
 }
-

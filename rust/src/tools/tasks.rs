@@ -27,10 +27,7 @@ fn normalize_tag_filter_mode_input(value: &str) -> Result<&'static str> {
 }
 
 fn normalize_task_status_input(value: &str) -> Result<&'static str> {
-    let normalized_value = value
-        .trim()
-        .to_ascii_lowercase()
-        .replace(['-', ' '], "_");
+    let normalized_value = value.trim().to_ascii_lowercase().replace(['-', ' '], "_");
     match normalized_value.as_str() {
         "available" => Ok("available"),
         "due_soon" | "duesoon" => Ok("due_soon"),
@@ -843,12 +840,13 @@ pub async fn list_tasks_with_added_changed<R: JxaRunner>(
             }
         })
         .unwrap_or_else(|| "null".to_string());
-    let effective_status =
-        if (completed_before.is_some() || completed_after.is_some()) && normalized_status != "completed" {
-            "all"
-        } else {
-            normalized_status
-        };
+    let effective_status = if (completed_before.is_some() || completed_after.is_some())
+        && normalized_status != "completed"
+    {
+        "all"
+    } else {
+        normalized_status
+    };
     let status_filter = escape_for_jxa(effective_status);
     let due_before_filter = due_before
         .map(escape_for_jxa)
@@ -1801,12 +1799,13 @@ pub async fn search_tasks_with_added_changed<R: JxaRunner>(
             }
         })
         .unwrap_or_else(|| "null".to_string());
-    let effective_status =
-        if (completed_before.is_some() || completed_after.is_some()) && normalized_status != "completed" {
-            "all"
-        } else {
-            normalized_status
-        };
+    let effective_status = if (completed_before.is_some() || completed_after.is_some())
+        && normalized_status != "completed"
+    {
+        "all"
+    } else {
+        normalized_status
+    };
     let status_filter = escape_for_jxa(effective_status);
     let due_before_filter = due_before
         .map(escape_for_jxa)
