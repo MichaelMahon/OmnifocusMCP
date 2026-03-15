@@ -638,6 +638,122 @@ integrationDescribe("typescript integration", () => {
   );
 
   test(
+    "test_plan_c_alias_calls_match_canonical_behavior",
+    { timeout: INTEGRATION_TIMEOUT_MS },
+    async () => {
+      const createProject = getHandler("create_project");
+      const createTask = getHandler("create_task");
+      const createTag = getHandler("create_tag");
+      const deleteTag = getHandler("delete_tag");
+      const listTasks = getHandler("list_tasks");
+      const searchTasks = getHandler("search_tasks");
+      const getTaskCounts = getHandler("get_task_counts");
+
+      const extraTagIds: string[] = [];
+      let taskId: string | null = null;
+      try {
+        const projectName = `${TEST_PREFIX} TS Plan C Alias Project ${Date.now()}`;
+        const createdProject = parseToolResult(await createProject({ name: projectName })) as {
+          id: string;
+        };
+        cleanupProjectIds.push(createdProject.id);
+
+        const tagA = parseToolResult(
+          await createTag({ name: `${TEST_PREFIX} TS Plan C Alias Tag A ${Date.now()}` })
+        ) as { id: string; name: string };
+        const tagB = parseToolResult(
+          await createTag({ name: `${TEST_PREFIX} TS Plan C Alias Tag B ${Date.now()}` })
+        ) as { id: string; name: string };
+        extraTagIds.push(tagA.id, tagB.id);
+
+        const dueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        const taskName = `${TEST_PREFIX} TS Plan C Alias Task ${Date.now()}`;
+        const createdTask = parseToolResult(
+          await createTask({
+            name: taskName,
+            note: "plan c alias integration probe",
+            project: projectName,
+            dueDate,
+            tags: [tagA.name, tagB.name],
+          })
+        ) as { id: string };
+        taskId = createdTask.id;
+        cleanupTaskIds.push(taskId);
+
+        const canonicalList = parseToolResult(
+          await listTasks({
+            project: projectName,
+            tags: [tagA.name, tagB.name],
+            tagFilterMode: "all",
+            status: "due_soon",
+            sortOrder: "desc",
+            limit: 50,
+          })
+        ) as Array<Record<string, unknown>>;
+        const aliasList = parseToolResult(
+          await listTasks({
+            project: projectName,
+            tags: [tagA.name, tagB.name],
+            tagFilterMode: "AND",
+            status: "due soon",
+            sortOrder: "descending",
+            limit: 50,
+          })
+        ) as Array<Record<string, unknown>>;
+        expect(canonicalList.some((item) => String(item.id) === taskId)).toBe(true);
+        expect(aliasList.some((item) => String(item.id) === taskId)).toBe(true);
+
+        const canonicalSearch = parseToolResult(
+          await searchTasks({
+            query: "plan c alias integration probe",
+            project: projectName,
+            tagFilterMode: "any",
+            status: "due_soon",
+            sortOrder: "asc",
+            limit: 50,
+          })
+        ) as Array<Record<string, unknown>>;
+        const aliasSearch = parseToolResult(
+          await searchTasks({
+            query: "plan c alias integration probe",
+            project: projectName,
+            tagFilterMode: "OR",
+            status: "due-soon",
+            sortOrder: "ascending",
+            limit: 50,
+          })
+        ) as Array<Record<string, unknown>>;
+        expect(canonicalSearch.some((item) => String(item.id) === taskId)).toBe(true);
+        expect(aliasSearch.some((item) => String(item.id) === taskId)).toBe(true);
+
+        const canonicalCounts = parseToolResult(
+          await getTaskCounts({
+            project: projectName,
+            tags: [tagA.name, tagB.name],
+            tagFilterMode: "all",
+          })
+        ) as { total?: number };
+        const aliasCounts = parseToolResult(
+          await getTaskCounts({
+            project: projectName,
+            tags: [tagA.name, tagB.name],
+            tagFilterMode: "AND",
+          })
+        ) as { total?: number };
+        expect(canonicalCounts.total).toBe(aliasCounts.total);
+      } finally {
+        for (const id of extraTagIds) {
+          try {
+            await deleteTag({ tag_name_or_id: id });
+          } catch {
+            continue;
+          }
+        }
+      }
+    }
+  );
+
+  test(
     "test_plan_b_statuses_are_canonical_in_tags_and_folder_projects",
     { timeout: INTEGRATION_TIMEOUT_MS },
     async () => {
@@ -708,6 +824,74 @@ integrationDescribe("typescript integration", () => {
             await deleteFolder({ folder_name_or_id: folderId });
           } catch {
             folderId = null;
+          }
+        }
+      }
+    }
+  );
+
+  test(
+    "test_plan_c_alias_inputs_work_for_task_tools",
+    { timeout: INTEGRATION_TIMEOUT_MS },
+    async () => {
+      const createTag = getHandler("create_tag");
+      const deleteTag = getHandler("delete_tag");
+      const createTask = getHandler("create_task");
+      const listTasks = getHandler("list_tasks");
+      const searchTasks = getHandler("search_tasks");
+      const getTaskCounts = getHandler("get_task_counts");
+
+      let tagId: string | null = null;
+      try {
+        const tagName = `${TEST_PREFIX} TS Plan C Alias Tag ${Date.now()}`;
+        const createdTag = parseToolResult(await createTag({ name: tagName })) as { id: string };
+        tagId = createdTag.id;
+
+        const taskName = `${TEST_PREFIX} TS Plan C Alias Task ${Date.now()}`;
+        const dueDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
+        const createdTask = parseToolResult(
+          await createTask({ name: taskName, dueDate, tags: [tagName] })
+        ) as { id: string };
+        cleanupTaskIds.push(createdTask.id);
+
+        const listed = parseToolResult(
+          await listTasks({
+            tags: [tagName],
+            tagFilterMode: "AND",
+            status: "due soon",
+            sortOrder: "descending",
+            limit: 100,
+          })
+        ) as Array<Record<string, unknown>>;
+        const listedMatch = listed.find((item) => String(item.id) === createdTask.id);
+        expect(listedMatch).toBeDefined();
+        expect(String(listedMatch?.taskStatus)).toBe("due_soon");
+
+        const searched = parseToolResult(
+          await searchTasks({
+            query: taskName,
+            tags: [tagName],
+            tagFilterMode: "and",
+            status: "due-soon",
+            sortOrder: "descending",
+            limit: 100,
+          })
+        ) as Array<Record<string, unknown>>;
+        const searchedMatch = searched.find((item) => String(item.id) === createdTask.id);
+        expect(searchedMatch).toBeDefined();
+        expect(String(searchedMatch?.taskStatus)).toBe("due_soon");
+
+        const counts = parseToolResult(
+          await getTaskCounts({ tags: [tagName], tagFilterMode: "AND" })
+        ) as { total?: number };
+        expect(typeof counts.total).toBe("number");
+        expect((counts.total ?? 0) >= 1).toBe(true);
+      } finally {
+        if (tagId !== null) {
+          try {
+            await deleteTag({ tag_name_or_id: tagId });
+          } catch {
+            tagId = null;
           }
         }
       }

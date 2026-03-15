@@ -981,15 +981,17 @@ async def test_plan_c_aliases_are_normalized_for_list_and_search(
 @pytest.mark.asyncio
 async def test_plan_c_alias_unknown_values_remain_strict(server_module: Any) -> None:
     with pytest.raises(
-        ValueError, match=r"sortOrder must be one of: asc, desc\. received: 'backwards'\."
+        ValueError, match=r"sortOrder must be one of: asc, desc\. received: 'sideways'\."
     ):
         await server_module.list_tasks(sortOrder="sideways")
     with pytest.raises(
         ValueError,
-        match="status must be one of: available, due_soon, overdue, completed, all.",
+        match=r"status must be one of: available, due_soon, overdue, on_hold, completed, all\. received: 'tomorrowish'\.",
     ):
         await server_module.search_tasks(query="alias strict", status="tomorrowish")
-    with pytest.raises(ValueError, match="tagFilterMode must be one of: any, all."):
+    with pytest.raises(
+        ValueError, match=r"tagFilterMode must be one of: any, all\. received: 'xor'\."
+    ):
         await server_module.get_task_counts(tagFilterMode="xor")
 
 

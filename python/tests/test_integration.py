@@ -66,6 +66,7 @@ from omnifocus_mcp.tools.tasks import (
     complete_task,
     create_task,
     delete_task,
+    get_task_counts,
     get_inbox,
     get_task,
     list_notifications,
@@ -661,6 +662,69 @@ async def test_plan_b_statuses_are_canonical_in_tags_and_folder_projects(
         )
         assert isinstance(matching_project, dict)
         assert matching_project.get("status") in allowed_statuses
+    finally:
+        if tag_id is not None:
+            try:
+                await delete_tag(tag_name_or_id=tag_id)
+            except Exception:
+                pass
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_plan_c_alias_inputs_work_for_task_tools(
+    cleanup_registry: dict[str, list[str]],
+) -> None:
+    tag_id: str | None = None
+    try:
+        tag_name = _test_name("Plan C alias tag")
+        created_tag = _parse_json(await create_tag(name=tag_name))
+        assert isinstance(created_tag, dict)
+        tag_id = created_tag.get("id")
+        assert isinstance(tag_id, str)
+
+        task_name = _test_name("Plan C alias task")
+        due_date = (datetime.now(timezone.utc) + timedelta(days=2)).replace(microsecond=0)
+        due_date_iso = due_date.isoformat().replace("+00:00", "Z")
+        created_task = _parse_json(
+            await create_task(name=task_name, dueDate=due_date_iso, tags=[tag_name])
+        )
+        assert isinstance(created_task, dict)
+        task_id = created_task.get("id")
+        assert isinstance(task_id, str)
+        cleanup_registry["task_ids"].append(task_id)
+
+        listed = _parse_json(
+            await list_tasks(
+                tags=[tag_name], tagFilterMode="AND", status="due soon", sortOrder="descending", limit=100
+            )
+        )
+        assert isinstance(listed, list)
+        assert any(
+            isinstance(item, dict) and item.get("id") == task_id and item.get("taskStatus") == "due_soon"
+            for item in listed
+        )
+
+        searched = _parse_json(
+            await search_tasks(
+                query=task_name,
+                tags=[tag_name],
+                tagFilterMode="and",
+                status="due-soon",
+                sortOrder="descending",
+                limit=100,
+            )
+        )
+        assert isinstance(searched, list)
+        assert any(
+            isinstance(item, dict) and item.get("id") == task_id and item.get("taskStatus") == "due_soon"
+            for item in searched
+        )
+
+        counts = _parse_json(await get_task_counts(tags=[tag_name], tagFilterMode="AND"))
+        assert isinstance(counts, dict)
+        assert isinstance(counts.get("total"), int)
+        assert counts["total"] >= 1
     finally:
         if tag_id is not None:
             try:
