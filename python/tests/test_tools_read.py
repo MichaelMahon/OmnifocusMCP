@@ -911,7 +911,9 @@ async def test_get_task_counts_happy_path(
 async def test_get_task_counts_validation_errors(server_module: Any) -> None:
     with pytest.raises(ValueError, match="project must not be empty when provided."):
         await server_module.get_task_counts(project="  ")
-    with pytest.raises(ValueError, match="tagFilterMode must be one of: any, all."):
+    with pytest.raises(
+        ValueError, match=r"tagFilterMode must be one of: any, all\. received: 'invalid'\."
+    ):
         await server_module.get_task_counts(tagFilterMode="invalid")
     with pytest.raises(
         ValueError, match="maxEstimatedMinutes must be greater than or equal to 0."
@@ -940,6 +942,55 @@ async def test_get_task_counts_tag_filter_mode_alias_maps_to_all(
     await server.get_task_counts(project="Errands", tagFilterMode="AND")
     script = state["calls"][0]["script"]
     assert 'const tagFilterMode = "all";' in script
+
+
+@pytest.mark.asyncio
+async def test_plan_c_aliases_are_normalized_for_list_and_search(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(
+        tags=["Home", "Work"],
+        tagFilterMode="AND",
+        status="due soon",
+        sortOrder="Descending",
+        limit=5,
+    )
+    list_script = state["calls"][-1]["script"]
+    assert 'const tagFilterMode = "all";' in list_script
+    assert 'const statusFilter = "due_soon";' in list_script
+    assert 'const sortOrder = "desc";' in list_script
+
+    await server.search_tasks(
+        query="alias probe",
+        tags=["Home", "Work"],
+        tagFilterMode="OR",
+        status="Due-Soon",
+        sortOrder="Ascending",
+        limit=5,
+    )
+    search_script = state["calls"][-1]["script"]
+    assert 'const tagFilterMode = "any";' in search_script
+    assert 'const statusFilter = "due_soon";' in search_script
+    assert 'const sortOrder = "asc";' in search_script
+
+
+@pytest.mark.asyncio
+async def test_plan_c_alias_unknown_values_remain_strict(server_module: Any) -> None:
+    with pytest.raises(
+        ValueError, match=r"sortOrder must be one of: asc, desc\. received: 'backwards'\."
+    ):
+        await server_module.list_tasks(sortOrder="sideways")
+    with pytest.raises(
+        ValueError,
+        match="status must be one of: available, due_soon, overdue, completed, all.",
+    ):
+        await server_module.search_tasks(query="alias strict", status="tomorrowish")
+    with pytest.raises(ValueError, match="tagFilterMode must be one of: any, all."):
+        await server_module.get_task_counts(tagFilterMode="xor")
 
 
 @pytest.mark.asyncio
@@ -1988,15 +2039,17 @@ async def test_list_tasks_invalid_status_validation_error(server_module: Any) ->
 async def test_plan_c_unknown_alias_values_keep_actionable_errors(
     server_module: Any,
 ) -> None:
-    with pytest.raises(ValueError, match="sortOrder must be one of: asc, desc."):
+    with pytest.raises(
+        ValueError, match=r"sortOrder must be one of: asc, desc\. received: 'backwards'\."
+    ):
         await server_module.list_tasks(sortOrder="backwards")
     with pytest.raises(
-        ValueError, match="tagFilterMode must be one of: any, all."
+        ValueError, match=r"tagFilterMode must be one of: any, all\. received: 'xor'\."
     ):
         await server_module.get_task_counts(tagFilterMode="xor")
     with pytest.raises(
         ValueError,
-        match="status must be one of: available, due_soon, overdue, on_hold, completed, all.",
+        match=r"status must be one of: available, due_soon, overdue, on_hold, completed, all\. received: 'later'\.",
     ):
         await server_module.search_tasks(query="ship", status="later")
 

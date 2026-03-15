@@ -967,7 +967,7 @@ async fn validation_errors_for_read_tools() {
 async fn plan_c_unknown_alias_values_return_canonical_error_options() {
     let runner = MockRunner { payload: json!([]) };
 
-    let list_error = list_tasks(
+    let list_error = list_tasks_with_duration(
         &runner,
         None,
         None,
@@ -984,6 +984,8 @@ async fn plan_c_unknown_alias_values_return_canonical_error_options() {
         None,
         None,
         None,
+        None,
+        None,
         "backwards",
         10,
     )
@@ -991,7 +993,8 @@ async fn plan_c_unknown_alias_values_return_canonical_error_options() {
     .expect_err("invalid sort order should fail");
     assert!(matches!(
         list_error,
-        OmniFocusError::Validation(ref message) if message == "sortOrder must be one of: asc, desc."
+        OmniFocusError::Validation(ref message)
+            if message.contains("sortOrder must be one of: asc, desc.")
     ));
 
     let counts_error = get_task_counts(
@@ -1002,7 +1005,8 @@ async fn plan_c_unknown_alias_values_return_canonical_error_options() {
     .expect_err("invalid tag filter mode should fail");
     assert!(matches!(
         counts_error,
-        OmniFocusError::Validation(ref message) if message == "tagFilterMode must be one of: any, all."
+        OmniFocusError::Validation(ref message)
+            if message.contains("tagFilterMode must be one of: any, all.")
     ));
 
     let search_error = search_tasks(
@@ -1030,7 +1034,7 @@ async fn plan_c_unknown_alias_values_return_canonical_error_options() {
     assert!(matches!(
         search_error,
         OmniFocusError::Validation(ref message)
-            if message == "status must be one of: available, due_soon, overdue, completed, all."
+            if message == "status must be one of: available, due_soon, overdue, on_hold, completed, all. received: \"later\"."
     ));
 }
 

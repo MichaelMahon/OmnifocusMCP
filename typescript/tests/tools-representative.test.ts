@@ -617,25 +617,24 @@ describe("representative read and write tool handlers", () => {
       sortOrder: "backwards",
       limit: 5,
     });
-    expect(JSON.parse(listResult.content[0].text)).toEqual({
-      error: "sortOrder must be one of: asc, desc.",
-    });
+    const listError = String((JSON.parse(listResult.content[0].text) as { error: string }).error);
+    expect(listError).toContain("sortOrder must be one of: asc, desc.");
 
     const countsResult = await getTool("get_task_counts")({
       tagFilterMode: "xor",
     });
-    expect(JSON.parse(countsResult.content[0].text)).toEqual({
-      error: "tagFilterMode must be one of: any, all.",
-    });
+    const countsError = String((JSON.parse(countsResult.content[0].text) as { error: string }).error);
+    expect(countsError).toContain("tagFilterMode must be one of: any, all.");
 
     const searchResult = await getTool("search_tasks")({
       query: "ship",
       status: "later",
       limit: 5,
     });
-    expect(JSON.parse(searchResult.content[0].text)).toEqual({
-      error: "status must be one of: available, due_soon, overdue, completed, all.",
-    });
+    const searchError = String((JSON.parse(searchResult.content[0].text) as { error: string }).error);
+    expect(searchError).toContain(
+      "status must be one of: available, due_soon, overdue, on_hold, completed, all."
+    );
   });
 
   test("list_tasks duration filter 15 minutes is included in script", async () => {
