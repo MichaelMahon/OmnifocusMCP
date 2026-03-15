@@ -409,28 +409,57 @@ async def test_new_feature_parity_matrix(cleanup_registry: dict[str, list[str]])
         assert removed_notification.get("removed") is True
         notification_id = None
 
-        tag_one = _parse_json(await create_tag(name=_test_name("Parity batch tag one")))
-        tag_two = _parse_json(await create_tag(name=_test_name("Parity batch tag two")))
-        assert isinstance(tag_one, dict) and isinstance(tag_two, dict)
-        tag_one_id = tag_one.get("id")
-        tag_two_id = tag_two.get("id")
-        assert isinstance(tag_one_id, str) and isinstance(tag_two_id, str)
-        created_tag_ids.extend([tag_one_id, tag_two_id])
-        deleted_tags = _parse_json(await delete_tags_batch([tag_one_id, tag_two_id]))
+        tag_parent = _parse_json(await create_tag(name=_test_name("Parity batch parent tag")))
+        assert isinstance(tag_parent, dict)
+        tag_parent_name = tag_parent.get("name")
+        assert isinstance(tag_parent_name, str)
+        tag_child = _parse_json(
+            await create_tag(name=_test_name("Parity batch child tag"), parent=tag_parent_name)
+        )
+        assert isinstance(tag_child, dict)
+        tag_parent_id = tag_parent.get("id")
+        tag_child_id = tag_child.get("id")
+        assert isinstance(tag_parent_id, str) and isinstance(tag_child_id, str)
+        created_tag_ids.extend([tag_parent_id, tag_child_id])
+        deleted_tags = _parse_json(await delete_tags_batch([tag_parent_id, tag_child_id]))
         assert isinstance(deleted_tags, dict)
         assert deleted_tags.get("summary", {}).get("deleted") == 2
+        assert deleted_tags.get("summary", {}).get("failed") == 0
+        assert deleted_tags.get("partial_success") is False
+        tag_error_text = " ".join(
+            str(item.get("error", ""))
+            for item in deleted_tags.get("results", [])
+            if isinstance(item, dict) and item.get("error")
+        ).lower()
+        assert "invalid object instance" not in tag_error_text
         created_tag_ids = []
 
-        folder_one = _parse_json(await create_folder(name=_test_name("Parity batch folder one")))
-        folder_two = _parse_json(await create_folder(name=_test_name("Parity batch folder two")))
-        assert isinstance(folder_one, dict) and isinstance(folder_two, dict)
-        folder_one_id = folder_one.get("id")
-        folder_two_id = folder_two.get("id")
-        assert isinstance(folder_one_id, str) and isinstance(folder_two_id, str)
-        created_folder_ids.extend([folder_one_id, folder_two_id])
-        deleted_folders = _parse_json(await delete_folders_batch([folder_one_id, folder_two_id]))
+        folder_parent = _parse_json(await create_folder(name=_test_name("Parity batch parent folder")))
+        assert isinstance(folder_parent, dict)
+        folder_parent_name = folder_parent.get("name")
+        assert isinstance(folder_parent_name, str)
+        folder_child = _parse_json(
+            await create_folder(
+                name=_test_name("Parity batch child folder"),
+                parent=folder_parent_name,
+            )
+        )
+        assert isinstance(folder_child, dict)
+        folder_parent_id = folder_parent.get("id")
+        folder_child_id = folder_child.get("id")
+        assert isinstance(folder_parent_id, str) and isinstance(folder_child_id, str)
+        created_folder_ids.extend([folder_parent_id, folder_child_id])
+        deleted_folders = _parse_json(await delete_folders_batch([folder_parent_id, folder_child_id]))
         assert isinstance(deleted_folders, dict)
         assert deleted_folders.get("summary", {}).get("deleted") == 2
+        assert deleted_folders.get("summary", {}).get("failed") == 0
+        assert deleted_folders.get("partial_success") is False
+        folder_error_text = " ".join(
+            str(item.get("error", ""))
+            for item in deleted_folders.get("results", [])
+            if isinstance(item, dict) and item.get("error")
+        ).lower()
+        assert "invalid object instance" not in folder_error_text
         created_folder_ids = []
 
         project_one = _parse_json(await create_project(name=_test_name("Parity batch project one")))
@@ -463,5 +492,86 @@ async def test_new_feature_parity_matrix(cleanup_registry: dict[str, list[str]])
         for project_id in reversed(created_batch_project_ids):
             try:
                 await delete_project(project_id_or_name=project_id)
+            except Exception:
+                continue
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_plan_a_parent_child_batch_delete_effective_success() -> None:
+    prefix = _test_name("Plan A hierarchy")
+    created_tag_ids: list[str] = []
+    created_folder_ids: list[str] = []
+    try:
+        parent_tag_name = f"{prefix} parent tag"
+        child_tag_name = f"{prefix} child tag"
+        parent_tag = _parse_json(await create_tag(name=parent_tag_name))
+        assert isinstance(parent_tag, dict)
+        parent_tag_id = parent_tag.get("id")
+        assert isinstance(parent_tag_id, str)
+        created_tag_ids.append(parent_tag_id)
+
+        child_tag = _parse_json(await create_tag(name=child_tag_name, parent=parent_tag_name))
+        assert isinstance(child_tag, dict)
+        child_tag_id = child_tag.get("id")
+        assert isinstance(child_tag_id, str)
+        created_tag_ids.append(child_tag_id)
+
+        deleted_tags = _parse_json(await delete_tags_batch([parent_tag_id, child_tag_id]))
+        assert isinstance(deleted_tags, dict)
+        assert deleted_tags.get("summary", {}).get("deleted") == 2
+        assert deleted_tags.get("summary", {}).get("failed") == 0
+        assert deleted_tags.get("partial_success") is False
+        tag_results = deleted_tags.get("results")
+        assert isinstance(tag_results, list)
+        assert all(isinstance(item, dict) and item.get("deleted") is True for item in tag_results)
+        assert all(
+            isinstance(item, dict)
+            and "invalid" not in str(item.get("error", "")).lower()
+            and "instance" not in str(item.get("error", "")).lower()
+            for item in tag_results
+        )
+        created_tag_ids = []
+
+        parent_folder_name = f"{prefix} parent folder"
+        child_folder_name = f"{prefix} child folder"
+        parent_folder = _parse_json(await create_folder(name=parent_folder_name))
+        assert isinstance(parent_folder, dict)
+        parent_folder_id = parent_folder.get("id")
+        assert isinstance(parent_folder_id, str)
+        created_folder_ids.append(parent_folder_id)
+
+        child_folder = _parse_json(await create_folder(name=child_folder_name, parent=parent_folder_name))
+        assert isinstance(child_folder, dict)
+        child_folder_id = child_folder.get("id")
+        assert isinstance(child_folder_id, str)
+        created_folder_ids.append(child_folder_id)
+
+        deleted_folders = _parse_json(await delete_folders_batch([parent_folder_id, child_folder_id]))
+        assert isinstance(deleted_folders, dict)
+        assert deleted_folders.get("summary", {}).get("deleted") == 2
+        assert deleted_folders.get("summary", {}).get("failed") == 0
+        assert deleted_folders.get("partial_success") is False
+        folder_results = deleted_folders.get("results")
+        assert isinstance(folder_results, list)
+        assert all(
+            isinstance(item, dict) and item.get("deleted") is True for item in folder_results
+        )
+        assert all(
+            isinstance(item, dict)
+            and "invalid" not in str(item.get("error", "")).lower()
+            and "instance" not in str(item.get("error", "")).lower()
+            for item in folder_results
+        )
+        created_folder_ids = []
+    finally:
+        for tag_id in reversed(created_tag_ids):
+            try:
+                await delete_tag(tag_name_or_id=tag_id)
+            except Exception:
+                continue
+        for folder_id in reversed(created_folder_ids):
+            try:
+                await delete_folder(folder_name_or_id=folder_id)
             except Exception:
                 continue
