@@ -964,6 +964,77 @@ async fn validation_errors_for_read_tools() {
 }
 
 #[tokio::test]
+async fn plan_c_unknown_alias_values_return_canonical_error_options() {
+    let runner = MockRunner { payload: json!([]) };
+
+    let list_error = list_tasks(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "backwards",
+        10,
+    )
+    .await
+    .expect_err("invalid sort order should fail");
+    assert!(matches!(
+        list_error,
+        OmniFocusError::Validation(ref message) if message == "sortOrder must be one of: asc, desc."
+    ));
+
+    let counts_error = get_task_counts(
+        &runner, None, None, None, "xor", None, None, None, None, None, None, None, None, None,
+        None, None, None,
+    )
+    .await
+    .expect_err("invalid tag filter mode should fail");
+    assert!(matches!(
+        counts_error,
+        OmniFocusError::Validation(ref message) if message == "tagFilterMode must be one of: any, all."
+    ));
+
+    let search_error = search_tasks(
+        &runner,
+        "ship",
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "later",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "asc",
+        10,
+    )
+    .await
+    .expect_err("invalid status should fail");
+    assert!(matches!(
+        search_error,
+        OmniFocusError::Validation(ref message)
+            if message == "status must be one of: available, due_soon, overdue, completed, all."
+    ));
+}
+
+#[tokio::test]
 async fn get_inbox_script_includes_completion_and_children_fields() {
     let last_script = Arc::new(Mutex::new(String::new()));
     let runner = CapturingRunner {

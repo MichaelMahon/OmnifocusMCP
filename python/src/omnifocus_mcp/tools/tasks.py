@@ -14,7 +14,9 @@ def _normalize_tag_filter_mode_input(value: str) -> Literal["any", "all"]:
         return "all"
     if normalized_value == "or":
         return "any"
-    raise ValueError("tagFilterMode must be one of: any, all.")
+    raise ValueError(
+        f"tagFilterMode must be one of: any, all. received: {value!r}."
+    )
 
 
 def _normalize_task_status_input(
@@ -27,7 +29,10 @@ def _normalize_task_status_input(
         return "on_hold"
     if normalized_value in ("due_soon", "duesoon"):
         return "due_soon"
-    raise ValueError("status must be one of: available, due_soon, overdue, on_hold, completed, all.")
+    raise ValueError(
+        "status must be one of: available, due_soon, overdue, on_hold, completed, all. "
+        f"received: {value!r}."
+    )
 
 
 def _normalize_sort_order_input(value: str) -> Literal["asc", "desc"]:
@@ -38,7 +43,7 @@ def _normalize_sort_order_input(value: str) -> Literal["asc", "desc"]:
         return "asc"
     if normalized_value == "descending":
         return "desc"
-    raise ValueError("sortOrder must be one of: asc, desc.")
+    raise ValueError(f"sortOrder must be one of: asc, desc. received: {value!r}.")
 
 
 @typed_tool(mcp)
@@ -133,6 +138,8 @@ async def list_tasks(
 
     added_* and changed_* filters expect ISO 8601 date strings; changed maps to
     the task's last modified timestamp (`task.modified`).
+    accepted aliases: sortOrder `ascending`/`descending`, status `due soon` or
+    `due-soon`, and tagFilterMode `and`/`or` (case-insensitive).
     sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes,
     project, flagged, addedDate, changedDate, plannedDate, and aliases
     added/modified/planned.
@@ -793,7 +800,8 @@ async def get_task_counts(
 
     added_* and changed_* filters expect ISO 8601 date strings; changed maps to
     the task's last modified timestamp (`task.modified`). much faster than
-    list_tasks for answering 'how many' questions.
+    list_tasks for answering 'how many' questions. tagFilterMode accepts
+    canonical `any`/`all` plus aliases `and`/`or` (case-insensitive).
     """
     if project is not None and project.strip() == "":
         raise ValueError("project must not be empty when provided.")
@@ -1070,6 +1078,8 @@ async def search_tasks(
 
     added_* and changed_* filters expect ISO 8601 date strings; changed maps to
     the task's last modified timestamp (`task.modified`).
+    accepted aliases: sortOrder `ascending`/`descending`, status `due soon` or
+    `due-soon`, and tagFilterMode `and`/`or` (case-insensitive).
     sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes,
     project, flagged, addedDate, changedDate, plannedDate, and aliases
     added/modified/planned.

@@ -536,6 +536,32 @@ describe("representative read and write tool handlers", () => {
     });
   });
 
+  test("plan c unknown alias values return canonical error options", async () => {
+    const listResult = await getTool("list_tasks")({
+      sortOrder: "backwards",
+      limit: 5,
+    });
+    expect(JSON.parse(listResult.content[0].text)).toEqual({
+      error: "sortOrder must be one of: asc, desc.",
+    });
+
+    const countsResult = await getTool("get_task_counts")({
+      tagFilterMode: "xor",
+    });
+    expect(JSON.parse(countsResult.content[0].text)).toEqual({
+      error: "tagFilterMode must be one of: any, all.",
+    });
+
+    const searchResult = await getTool("search_tasks")({
+      query: "ship",
+      status: "later",
+      limit: 5,
+    });
+    expect(JSON.parse(searchResult.content[0].text)).toEqual({
+      error: "status must be one of: available, due_soon, overdue, completed, all.",
+    });
+  });
+
   test("list_tasks duration filter 15 minutes is included in script", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "task-15", name: "short task" }]);
     await getTool("list_tasks")({

@@ -485,7 +485,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     }
 
     #[tool(
-        description = "list tasks with optional project/tag filters, status, date ranges, and sorting. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. sortBy accepts dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned. returns task summaries."
+        description = "list tasks with optional project/tag filters, status, date ranges, and sorting. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. accepted aliases (case-insensitive): sortOrder ascending/descending, status due soon or due-soon, and tagFilterMode and/or. sortBy accepts dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned. returns task summaries."
     )]
     async fn list_tasks(
         &self,
@@ -546,7 +546,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     }
 
     #[tool(
-        description = "get aggregate task counts for any filter combination without listing individual tasks. added_* and changed_* filters must be ISO 8601 date strings; changed means the task's last modified timestamp. much faster than list_tasks for answering 'how many' questions."
+        description = "get aggregate task counts for any filter combination without listing individual tasks. added_* and changed_* filters must be ISO 8601 date strings; changed means the task's last modified timestamp. tagFilterMode accepts canonical any/all and aliases and/or (case-insensitive). much faster than list_tasks for answering 'how many' questions."
     )]
     async fn get_task_counts(
         &self,
@@ -670,7 +670,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     }
 
     #[tool(
-        description = "search tasks by case-insensitive name/note text with optional filters and sorting. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. sortBy accepts dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned. returns task summaries."
+        description = "search tasks by case-insensitive name/note text with optional filters and sorting. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. accepted aliases (case-insensitive): sortOrder ascending/descending, status due soon or due-soon, and tagFilterMode and/or. sortBy accepts dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned. returns task summaries."
     )]
     async fn search_tasks(
         &self,

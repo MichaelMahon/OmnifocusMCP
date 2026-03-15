@@ -14,7 +14,7 @@ function normalizeTagFilterModeInput(value: string): "any" | "all" {
   if (normalizedValue === "or") {
     return "any";
   }
-  throw new Error("tagFilterMode must be one of: any, all.");
+  throw new Error(`tagFilterMode must be one of: any, all. received: ${JSON.stringify(value)}.`);
 }
 
 function normalizeTaskStatusInput(value: string): TaskStatus {
@@ -35,7 +35,9 @@ function normalizeTaskStatusInput(value: string): TaskStatus {
   if (normalizedValue === "due_soon" || normalizedValue === "duesoon") {
     return "due_soon";
   }
-  throw new Error("status must be one of: available, due_soon, overdue, on_hold, completed, all.");
+  throw new Error(
+    `status must be one of: available, due_soon, overdue, on_hold, completed, all. received: ${JSON.stringify(value)}.`
+  );
 }
 
 function normalizeSortOrderInput(value: string): "asc" | "desc" {
@@ -49,7 +51,7 @@ function normalizeSortOrderInput(value: string): "asc" | "desc" {
   if (normalizedValue === "descending") {
     return "desc";
   }
-  throw new Error("sortOrder must be one of: asc, desc.");
+  throw new Error(`sortOrder must be one of: asc, desc. received: ${JSON.stringify(value)}.`);
 }
 
 export function register(server: Server): void {
@@ -68,7 +70,7 @@ export function register(server: Server): void {
 
   server.tool(
     "list_tasks",
-    "list tasks with optional filters for project, tag/tags, flagged state, status, date ranges, and sorting. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned.",
+    "list tasks with optional filters for project, tag/tags, flagged state, status, date ranges, and sorting. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. accepted aliases (case-insensitive): sortOrder ascending/descending, status due soon or due-soon, and tagFilterMode and/or. sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned.",
     {
       project: z.string().min(1).optional(),
       tag: z.string().min(1).optional(),
@@ -171,7 +173,7 @@ export function register(server: Server): void {
 
   server.tool(
     "get_task_counts",
-    "get aggregate task counts for any filter combination without listing individual tasks. added_* and changed_* filters must be ISO 8601 date strings; changed means the task's last modified timestamp. much faster than list_tasks for answering 'how many' questions.",
+    "get aggregate task counts for any filter combination without listing individual tasks. added_* and changed_* filters must be ISO 8601 date strings; changed means the task's last modified timestamp. tagFilterMode accepts canonical any/all and aliases and/or (case-insensitive). much faster than list_tasks for answering 'how many' questions.",
     {
       project: z.string().min(1).optional(),
       tag: z.string().min(1).optional(),
@@ -598,7 +600,7 @@ return {
 
   server.tool(
     "search_tasks",
-    "search tasks by case-insensitive query across name and note with optional filters and sorting. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned.",
+    "search tasks by case-insensitive query across name and note with optional filters and sorting. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. accepted aliases (case-insensitive): sortOrder ascending/descending, status due soon or due-soon, and tagFilterMode and/or. sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned.",
     {
       query: z.string().min(1),
       project: z.string().min(1).optional(),

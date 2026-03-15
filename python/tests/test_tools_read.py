@@ -609,6 +609,75 @@ async def test_list_tasks_tags_filter_merges_tag_and_tags_union(
 
 
 @pytest.mark.asyncio
+async def test_list_tasks_alias_inputs_normalize_to_canonical_values(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(
+        tags=["Home", "Deep"],
+        tagFilterMode="AND",
+        status="due soon",
+        sortOrder="Descending",
+        limit=5,
+    )
+
+    script = state["calls"][0]["script"]
+    assert 'const tagFilterMode = "all";' in script
+    assert 'const statusFilter = "due_soon";' in script
+    assert 'const sortOrder = "desc";' in script
+
+
+@pytest.mark.asyncio
+async def test_search_tasks_alias_inputs_normalize_to_canonical_values(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.search_tasks(
+        query="audit",
+        tags=["Home", "Deep"],
+        tagFilterMode="or",
+        status="Due-Soon",
+        sortOrder="ascending",
+        limit=5,
+    )
+
+    script = state["calls"][0]["script"]
+    assert 'const tagFilterMode = "any";' in script
+    assert 'const statusFilter = "due_soon";' in script
+    assert 'const sortOrder = "asc";' in script
+
+
+@pytest.mark.asyncio
+async def test_get_task_counts_alias_input_normalizes_to_canonical_values(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs(
+        {
+            "total": 0,
+            "available": 0,
+            "completed": 0,
+            "overdue": 0,
+            "dueSoon": 0,
+            "flagged": 0,
+            "deferred": 0,
+        }
+    )
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.get_task_counts(tags=["Home"], tagFilterMode="OR")
+
+    script = state["calls"][0]["script"]
+    assert 'const tagFilterMode = "any";' in script
+
+
+@pytest.mark.asyncio
 async def test_list_tasks_tags_filter_ignores_empty_tags_array(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:

@@ -34,10 +34,12 @@ fn normalize_task_status_input(value: &str) -> Result<&'static str> {
         "available" => Ok("available"),
         "due_soon" | "duesoon" => Ok("due_soon"),
         "overdue" => Ok("overdue"),
+        "on_hold" | "onhold" => Ok("on_hold"),
         "completed" => Ok("completed"),
         "all" => Ok("all"),
         _ => Err(OmniFocusError::Validation(
-            "status must be one of: available, due_soon, overdue, completed, all.".to_string(),
+            "status must be one of: available, due_soon, overdue, on_hold, completed, all."
+                .to_string(),
         )),
     }
 }
@@ -988,6 +990,9 @@ const filteredTasks = document.flattenedTasks
         statusMatches = dueDate !== null && dueDate < now;
       }} else if (statusFilter === "due_soon") {{
         statusMatches = dueDate !== null && dueDate >= now && dueDate <= soon;
+      }} else if (statusFilter === "on_hold") {{
+        const projectStatus = task.containingProject ? String(task.containingProject.status || "").toLowerCase() : "";
+        statusMatches = projectStatus.includes("onhold") || projectStatus.includes("on hold") || projectStatus.includes("on_hold");
       }}
     }}
     if (!statusMatches) return false;
@@ -1948,6 +1953,9 @@ const filteredTasks = document.flattenedTasks
         statusMatches = dueDate !== null && dueDate < now;
       }} else if (statusFilter === "due_soon") {{
         statusMatches = dueDate !== null && dueDate >= now && dueDate <= soon;
+      }} else if (statusFilter === "on_hold") {{
+        const projectStatus = task.containingProject ? String(task.containingProject.status || "").toLowerCase() : "";
+        statusMatches = projectStatus.includes("onhold") || projectStatus.includes("on hold") || projectStatus.includes("on_hold");
       }}
     }}
     if (!statusMatches) return false;
