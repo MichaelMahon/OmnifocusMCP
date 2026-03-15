@@ -1615,7 +1615,43 @@ async fn list_tags_sort_and_status_filter_are_in_script() {
     assert!(
         script.contains(r#"statusFilter === "all" || normalizeTagStatus(tag) === statusFilter"#)
     );
+    assert!(script.contains(r#".replace(/^\[object_/g, "")"#));
+    assert!(script.contains(r#".replace(/status/g, " ")"#));
+    assert!(script.contains(r#"flattened.includes("onhold")"#));
+    assert!(script.contains(r#"if (flattened.includes("dropped")) return "dropped";"#));
+    assert!(script.contains(r#"if (flattened.includes("active")) return "active";"#));
     assert!(script.contains("return sortedTags.slice(0, 7);"));
+}
+
+#[tokio::test]
+async fn get_folder_script_normalizes_status_artifacts() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!({
+            "id": "folder-1",
+            "name": "Work",
+            "status": "active",
+            "parentName": null,
+            "projects": [],
+            "subfolders": []
+        }),
+        last_script: last_script.clone(),
+    };
+
+    let folder = get_folder(&runner, "folder-1")
+        .await
+        .expect("folder should parse");
+    assert_eq!(folder["status"], "active");
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#".replace(/^\[object_/g, "")"#));
+    assert!(script.contains(r#".replace(/status/g, " ")"#));
+    assert!(script.contains(r#"flattened.includes("onhold")"#));
+    assert!(script.contains(r#"if (flattened.includes("dropped")) return "dropped";"#));
+    assert!(script.contains(r#"if (flattened.includes("active")) return "active";"#));
 }
 
 #[tokio::test]

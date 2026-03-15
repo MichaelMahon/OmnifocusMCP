@@ -1472,6 +1472,9 @@ async def test_list_tags_status_filter_and_sorting_script(
     )
     assert '.replace(/^\\[object_/g, "")' in script
     assert '.replace(/status/g, " ")' in script
+    assert '.replace(/[:.=]/g, " ")' in script
+    assert '.replace(/[_-]/g, " ")' in script
+    assert "/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)" in script
     assert 'flattened.includes("onhold")' in script
     assert 'if (flattened.includes("dropped")) return "dropped";' in script
     assert 'if (flattened.includes("active")) return "active";' in script
@@ -1546,6 +1549,9 @@ async def test_get_folder_happy_path_criterion16(
     assert "subfolders: folder.folders.map" in script
     assert '.replace(/^\\[object_/g, "")' in script
     assert '.replace(/status/g, " ")' in script
+    assert '.replace(/[:.=]/g, " ")' in script
+    assert '.replace(/[_-]/g, " ")' in script
+    assert "/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)" in script
     assert 'flattened.includes("onhold")' in script
     assert 'if (flattened.includes("dropped")) return "dropped";' in script
     assert 'if (flattened.includes("active")) return "active";' in script
