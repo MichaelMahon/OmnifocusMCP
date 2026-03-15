@@ -436,10 +436,9 @@ async def test_new_feature_parity_matrix(cleanup_registry: dict[str, list[str]])
         assert removed_notification.get("removed") is True
         notification_id = None
 
-        tag_parent = _parse_json(await create_tag(name=_test_name("Parity batch parent tag")))
+        tag_parent_name = _test_name("Parity batch parent tag")
+        tag_parent = _parse_json(await create_tag(name=tag_parent_name))
         assert isinstance(tag_parent, dict)
-        tag_parent_name = tag_parent.get("name")
-        assert isinstance(tag_parent_name, str)
         tag_child = _parse_json(
             await create_tag(name=_test_name("Parity batch child tag"), parent=tag_parent_name)
         )
@@ -461,10 +460,9 @@ async def test_new_feature_parity_matrix(cleanup_registry: dict[str, list[str]])
         assert "invalid object instance" not in tag_error_text
         created_tag_ids = []
 
-        folder_parent = _parse_json(await create_folder(name=_test_name("Parity batch parent folder")))
+        folder_parent_name = _test_name("Parity batch parent folder")
+        folder_parent = _parse_json(await create_folder(name=folder_parent_name))
         assert isinstance(folder_parent, dict)
-        folder_parent_name = folder_parent.get("name")
-        assert isinstance(folder_parent_name, str)
         folder_child = _parse_json(
             await create_folder(
                 name=_test_name("Parity batch child folder"),

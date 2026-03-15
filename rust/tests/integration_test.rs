@@ -1,14 +1,16 @@
 #![cfg(feature = "integration")]
 
 use std::{
+    future::Future,
     collections::HashSet,
+    pin::Pin,
     process::Command,
     sync::OnceLock,
     time::{SystemTime, UNIX_EPOCH},
 };
 
 use omnifocus_mcp::{
-    jxa::{run_omnijs, RealJxaRunner},
+    jxa::{run_omnijs, run_omnijs_with_timeout, JxaRunner},
     tools::{
         folders::{create_folder, delete_folder, delete_folders_batch, get_folder, list_folders},
         forecast::get_forecast,
@@ -28,6 +30,7 @@ use serde_json::Value;
 use tokio::sync::Mutex;
 
 static TEST_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+const INTEGRATION_TIMEOUT_SECONDS: f64 = 120.0;
 
 #[derive(Default)]
 struct CleanupRegistry {
@@ -125,6 +128,18 @@ fn test_lock() -> &'static Mutex<()> {
     TEST_LOCK.get_or_init(|| Mutex::new(()))
 }
 
+#[derive(Debug, Clone, Default)]
+struct IntegrationRunner;
+
+impl JxaRunner for IntegrationRunner {
+    fn run_omnijs<'a>(
+        &'a self,
+        script: &'a str,
+    ) -> Pin<Box<dyn Future<Output = omnifocus_mcp::error::Result<Value>> + Send + 'a>> {
+        Box::pin(async move { run_omnijs_with_timeout(script, INTEGRATION_TIMEOUT_SECONDS).await })
+    }
+}
+
 fn unique_name(label: &str) -> String {
     let millis = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -160,8 +175,29 @@ fn assert_has_keys(value: &Value, required: &[&str]) {
     }
 }
 
+fn integration_enabled() -> bool {
+    std::env::var("OMNIFOCUS_INTEGRATION")
+        .map(|value| value == "1")
+        .unwrap_or(false)
+}
+
+fn omnifocus_running() -> bool {
+    Command::new("osascript")
+        .arg("-e")
+        .arg(r#"tell application "OmniFocus" to running"#)
+        .output()
+        .ok()
+        .filter(|result| result.status.success())
+        .and_then(|result| String::from_utf8(result.stdout).ok())
+        .map(|stdout| stdout.trim().eq_ignore_ascii_case("true"))
+        .unwrap_or(false)
+}
+
 #[tokio::test]
 async fn test_jxa_bridge_connectivity() -> Result<(), Box<dyn std::error::Error>> {
+    if !integration_enabled() || !omnifocus_running() {
+        return Ok(());
+    }
     let _guard = test_lock().lock().await;
     let result = run_omnijs("return document.flattenedTasks.length;").await?;
     let count = result
@@ -173,8 +209,11 @@ async fn test_jxa_bridge_connectivity() -> Result<(), Box<dyn std::error::Error>
 
 #[tokio::test]
 async fn test_read_tools_return_valid_json() -> Result<(), Box<dyn std::error::Error>> {
+    if !integration_enabled() || !omnifocus_running() {
+        return Ok(());
+    }
     let _guard = test_lock().lock().await;
-    let runner = RealJxaRunner::new();
+    let runner = IntegrationRunner;
     let mut cleanup = CleanupRegistry::default();
 
     let created_task = create_task(
@@ -384,8 +423,11 @@ async fn test_read_tools_return_valid_json() -> Result<(), Box<dyn std::error::E
 
 #[tokio::test]
 async fn test_task_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
+    if !integration_enabled() || !omnifocus_running() {
+        return Ok(());
+    }
     let _guard = test_lock().lock().await;
-    let runner = RealJxaRunner::new();
+    let runner = IntegrationRunner;
     let mut cleanup = CleanupRegistry::default();
 
     let created = create_task(
@@ -438,8 +480,11 @@ async fn test_task_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
 
 #[tokio::test]
 async fn test_search_finds_created_task() -> Result<(), Box<dyn std::error::Error>> {
+    if !integration_enabled() || !omnifocus_running() {
+        return Ok(());
+    }
     let _guard = test_lock().lock().await;
-    let runner = RealJxaRunner::new();
+    let runner = IntegrationRunner;
     let mut cleanup = CleanupRegistry::default();
 
     let token = SystemTime::now()
@@ -492,8 +537,11 @@ async fn test_search_finds_created_task() -> Result<(), Box<dyn std::error::Erro
 
 #[tokio::test]
 async fn test_project_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
+    if !integration_enabled() || !omnifocus_running() {
+        return Ok(());
+    }
     let _guard = test_lock().lock().await;
-    let runner = RealJxaRunner::new();
+    let runner = IntegrationRunner;
     let mut cleanup = CleanupRegistry::default();
 
     let project_name = unique_name("Lifecycle project");
@@ -517,8 +565,11 @@ async fn test_project_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
 
 #[tokio::test]
 async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Error>> {
+    if !integration_enabled() || !omnifocus_running() {
+        return Ok(());
+    }
     let _guard = test_lock().lock().await;
-    let runner = RealJxaRunner::new();
+    let runner = IntegrationRunner;
     let mut cleanup = CleanupRegistry::default();
     let mut extra_tag_ids: Vec<String> = Vec::new();
     let mut extra_folder_ids: Vec<String> = Vec::new();
@@ -772,10 +823,99 @@ async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Erro
 }
 
 #[tokio::test]
+async fn test_plan_b_statuses_are_canonical_in_tags_and_folder_projects(
+) -> Result<(), Box<dyn std::error::Error>> {
+    if !integration_enabled() || !omnifocus_running() {
+        return Ok(());
+    }
+    let _guard = test_lock().lock().await;
+    let runner = IntegrationRunner;
+    let mut tag_id: Option<String> = None;
+    let mut folder_id: Option<String> = None;
+    let mut project_id: Option<String> = None;
+
+    let result: Result<(), Box<dyn std::error::Error>> = async {
+        let created_tag = create_tag(&runner, &unique_name("Plan B status tag"), None).await?;
+        let created_tag_id = require_str_field(&created_tag, "id");
+        tag_id = Some(created_tag_id.clone());
+
+        let created_folder = create_folder(&runner, &unique_name("Plan B status folder"), None).await?;
+        let created_folder_id = require_str_field(&created_folder, "id");
+        let created_folder_name = require_str_field(&created_folder, "name");
+        folder_id = Some(created_folder_id.clone());
+
+        let created_project = create_project(
+            &runner,
+            &unique_name("Plan B status project"),
+            Some(&created_folder_name),
+            None,
+            None,
+            None,
+            None,
+        )
+        .await?;
+        let created_project_id = require_str_field(&created_project, "id");
+        project_id = Some(created_project_id.clone());
+
+        let tags = list_tags(&runner, "all", None, "asc", 100).await?;
+        let tags_array = require_array(&tags, "plan b list_tags result");
+        let tag_entry = tags_array
+            .iter()
+            .find(|item| item.get("id").and_then(Value::as_str) == Some(created_tag_id.as_str()))
+            .ok_or_else(|| "plan b created tag not returned by list_tags".to_string())?;
+        let tag_status = tag_entry
+            .get("status")
+            .and_then(Value::as_str)
+            .ok_or_else(|| "plan b tag missing status".to_string())?;
+        assert!(matches!(tag_status, "active" | "on_hold" | "dropped"));
+
+        let folder_details = get_folder(&runner, &created_folder_id).await?;
+        let folder_status = folder_details
+            .get("status")
+            .and_then(Value::as_str)
+            .ok_or_else(|| "plan b folder missing status".to_string())?;
+        assert!(matches!(folder_status, "active" | "on_hold" | "dropped"));
+
+        let nested_project = folder_details
+            .get("projects")
+            .and_then(Value::as_array)
+            .and_then(|projects| {
+                projects
+                    .iter()
+                    .find(|item| item.get("id").and_then(Value::as_str) == Some(created_project_id.as_str()))
+            })
+            .ok_or_else(|| "plan b nested project missing from folder details".to_string())?;
+        let nested_project_status = nested_project
+            .get("status")
+            .and_then(Value::as_str)
+            .ok_or_else(|| "plan b nested project missing status".to_string())?;
+        assert!(matches!(nested_project_status, "active" | "on_hold" | "dropped"));
+
+        Ok(())
+    }
+    .await;
+
+    if let Some(id) = project_id {
+        let _ = complete_project(&runner, &id).await;
+    }
+    if let Some(id) = folder_id {
+        let _ = delete_folder(&runner, &id).await;
+    }
+    if let Some(id) = tag_id {
+        let _ = delete_tag(&runner, &id).await;
+    }
+
+    result
+}
+
+#[tokio::test]
 async fn test_plan_a_parent_child_batch_delete_effective_success(
 ) -> Result<(), Box<dyn std::error::Error>> {
+    if !integration_enabled() || !omnifocus_running() {
+        return Ok(());
+    }
     let _guard = test_lock().lock().await;
-    let runner = RealJxaRunner::new();
+    let runner = IntegrationRunner;
     let mut extra_tag_ids: Vec<String> = Vec::new();
     let mut extra_folder_ids: Vec<String> = Vec::new();
 

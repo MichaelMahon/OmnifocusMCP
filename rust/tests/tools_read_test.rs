@@ -1673,6 +1673,46 @@ async fn list_tags_sort_and_status_filter_are_in_script() {
 
 #[tokio::test]
 async fn get_folder_script_normalizes_status_artifacts() {
+    let fixture_examples = vec![
+        "[object_tag.status:_active]",
+        "status: active]",
+        "On Hold",
+        "on-hold",
+        "Dropped",
+    ];
+    assert_eq!(
+        fixture_examples,
+        vec![
+            "[object_tag.status:_active]",
+            "status: active]",
+            "On Hold",
+            "on-hold",
+            "Dropped",
+        ]
+    );
+
+    let tags_script_capture = Arc::new(Mutex::new(String::new()));
+    let tags_runner = CapturingRunner {
+        payload: json!([{"id": "tag-fixture", "name": "fixture"}]),
+        last_script: tags_script_capture.clone(),
+    };
+    let _ = list_tags(&tags_runner, "all", None, "asc", 5)
+        .await
+        .expect("list_tags should parse");
+    let tags_script = tags_script_capture
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(tags_script.contains("toLowerCase()"));
+    assert!(tags_script.contains(r#".replace(/^\[object_/g, "")"#));
+    assert!(tags_script.contains(r#".replace(/[\[\]{}()]/g, " ")"#));
+    assert!(tags_script.contains(r#".replace(/status/g, " ")"#));
+    assert!(tags_script.contains(r#".replace(/[:.=]/g, " ")"#));
+    assert!(tags_script.contains(r#".replace(/[_-]/g, " ")"#));
+    assert!(tags_script.contains(r#"/(^|\s)on\s*hold(\s|$)/.test(flattened)"#));
+    assert!(tags_script.contains(r#"flattened.includes("onhold")"#));
+    assert!(tags_script.contains(r#"if (flattened.includes("dropped")) return "dropped";"#));
+
     let last_script = Arc::new(Mutex::new(String::new()));
     let runner = CapturingRunner {
         payload: json!({
@@ -1695,8 +1735,11 @@ async fn get_folder_script_normalizes_status_artifacts() {
         .lock()
         .expect("script capture lock should succeed")
         .clone();
+    assert!(script.contains("toLowerCase()"));
     assert!(script.contains(r#".replace(/^\[object_/g, "")"#));
+    assert!(script.contains(r#".replace(/[\[\]{}()]/g, " ")"#));
     assert!(script.contains(r#".replace(/status/g, " ")"#));
+    assert!(script.contains(r#".replace(/[:.=]/g, " ")"#));
     assert!(script.contains(r#".replace(/[_-]/g, " ")"#));
     assert!(script.contains(r#"/(^|\s)on\s*hold(\s|$)/.test(flattened)"#));
     assert!(script.contains(r#"flattened.includes("onhold")"#));

@@ -448,13 +448,12 @@ integrationDescribe("typescript integration", () => {
         expect(removed.removed).toBe(true);
         notificationId = null;
 
-        const tagParent = parseToolResult(
-          await createTag({ name: `${TEST_PREFIX} TS Batch Parent Tag ${Date.now()}` })
-        ) as { id: string; name: string };
+        const tagParentName = `${TEST_PREFIX} TS Batch Parent Tag ${Date.now()}`;
+        const tagParent = parseToolResult(await createTag({ name: tagParentName })) as { id: string };
         const tagChild = parseToolResult(
           await createTag({
             name: `${TEST_PREFIX} TS Batch Child Tag ${Date.now()}`,
-            parent: tagParent.name,
+            parent: tagParentName,
           })
         ) as { id: string };
         extraTagIds.push(tagParent.id, tagChild.id);
@@ -475,13 +474,14 @@ integrationDescribe("typescript integration", () => {
         expect(tagErrors.includes("invalid object instance")).toBe(false);
         extraTagIds.length = 0;
 
+        const folderParentName = `${TEST_PREFIX} TS Batch Parent Folder ${Date.now()}`;
         const folderParent = parseToolResult(
-          await createFolder({ name: `${TEST_PREFIX} TS Batch Parent Folder ${Date.now()}` })
-        ) as { id: string; name: string };
+          await createFolder({ name: folderParentName })
+        ) as { id: string };
         const folderChild = parseToolResult(
           await createFolder({
             name: `${TEST_PREFIX} TS Batch Child Folder ${Date.now()}`,
-            parent: folderParent.name,
+            parent: folderParentName,
           })
         ) as { id: string };
         extraFolderIds.push(folderParent.id, folderChild.id);
@@ -631,6 +631,83 @@ integrationDescribe("typescript integration", () => {
             await deleteFolder({ folder_name_or_id: id });
           } catch {
             continue;
+          }
+        }
+      }
+    }
+  );
+
+  test(
+    "test_plan_b_statuses_are_canonical_in_tags_and_folder_projects",
+    { timeout: INTEGRATION_TIMEOUT_MS },
+    async () => {
+      const createTag = getHandler("create_tag");
+      const listTags = getHandler("list_tags");
+      const deleteTag = getHandler("delete_tag");
+      const createFolder = getHandler("create_folder");
+      const getFolder = getHandler("get_folder");
+      const deleteFolder = getHandler("delete_folder");
+      const createProject = getHandler("create_project");
+      const completeProject = getHandler("complete_project");
+
+      const allowedStatuses = new Set(["active", "on_hold", "dropped"]);
+      let tagId: string | null = null;
+      let folderId: string | null = null;
+      let projectId: string | null = null;
+      try {
+        const createdTag = parseToolResult(
+          await createTag({ name: `${TEST_PREFIX} TS Plan B Status Tag ${Date.now()}` })
+        ) as { id: string };
+        tagId = createdTag.id;
+
+        const createdFolder = parseToolResult(
+          await createFolder({ name: `${TEST_PREFIX} TS Plan B Status Folder ${Date.now()}` })
+        ) as { id: string; name: string };
+        folderId = createdFolder.id;
+
+        const createdProject = parseToolResult(
+          await createProject({
+            name: `${TEST_PREFIX} TS Plan B Status Project ${Date.now()}`,
+            folder: createdFolder.name,
+          })
+        ) as { id: string };
+        projectId = createdProject.id;
+
+        const tags = parseToolResult(await listTags({ statusFilter: "all", limit: 100 })) as Array<
+          Record<string, unknown>
+        >;
+        const tagEntry = tags.find((item) => String(item.id) === tagId);
+        expect(tagEntry).toBeDefined();
+        expect(allowedStatuses.has(String(tagEntry?.status))).toBe(true);
+
+        const folder = parseToolResult(
+          await getFolder({ folder_name_or_id: folderId })
+        ) as Record<string, unknown>;
+        expect(allowedStatuses.has(String(folder.status))).toBe(true);
+        const projects = (folder.projects ?? []) as Array<Record<string, unknown>>;
+        const nestedProject = projects.find((item) => String(item.id) === projectId);
+        expect(nestedProject).toBeDefined();
+        expect(allowedStatuses.has(String(nestedProject?.status))).toBe(true);
+      } finally {
+        if (tagId) {
+          try {
+            await deleteTag({ tag_name_or_id: tagId });
+          } catch {
+            tagId = null;
+          }
+        }
+        if (projectId) {
+          try {
+            await completeProject({ project_id_or_name: projectId });
+          } catch {
+            projectId = null;
+          }
+        }
+        if (folderId) {
+          try {
+            await deleteFolder({ folder_name_or_id: folderId });
+          } catch {
+            folderId = null;
           }
         }
       }

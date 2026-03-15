@@ -1131,7 +1131,7 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain('const sortBy = "totalTaskCount";');
     expect(script).toContain('const sortOrder = "desc";');
     expect(script).toContain('statusFilter === "all" || normalizeTagStatus(tag) === statusFilter');
-    expect(script).toContain('.replace(/^\\[object_/g, "")');
+    expect(script).toMatch(/\.replace\(\/\^\\?\[object_\/g, ""\)/);
     expect(script).toContain('.replace(/status/g, " ")');
     expect(script).toContain('.replace(/[:.=]/g, " ")');
     expect(script).toContain('.replace(/[_-]/g, " ")');

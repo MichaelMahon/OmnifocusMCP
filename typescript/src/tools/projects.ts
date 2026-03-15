@@ -284,14 +284,14 @@ const queryValue = ${queryValue};
 const normalizeProjectStatus = (project) => {
   const rawStatus = String(project.status || "").toLowerCase();
   const flattened = rawStatus
-    .replace(/^\[object_/g, "")
-    .replace(/[\[\]{}()]/g, " ")
+    .replace(/^\\[object_/g, "")
+    .replace(/[\\[\\]{}()]/g, " ")
     .replace(/status/g, " ")
     .replace(/[:.=]/g, " ")
     .replace(/[_-]/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/\\s+/g, " ")
     .trim();
-  if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) {
+  if (flattened.includes("onhold") || /(^|\\s)on\\s*hold(\\s|$)/.test(flattened)) {
     return "on_hold";
   }
   if (flattened.includes("completed")) return "completed";
