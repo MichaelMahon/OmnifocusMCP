@@ -36,9 +36,19 @@ document.flattenedTasks.forEach(task => {
   });
 });
 const normalizeTagStatus = (tag) => {
-  const rawStatus = String(tag.status || "").toLowerCase().trim();
-  if (rawStatus === "") return "active";
-  return rawStatus.replace(/\\s+/g, "_");
+  const rawStatus = String(tag.status || "").toLowerCase();
+  const flattened = rawStatus
+    .replace(/^\\[object_/g, "")
+    .replace(/[\\[\\]{}()]/g, " ")
+    .replace(/status/g, " ")
+    .replace(/[:.=]/g, " ")
+    .replace(/[_-]/g, " ")
+    .replace(/\\s+/g, " ")
+    .trim();
+  if (flattened.includes("onhold") || /(^|\\s)on\\s*hold(\\s|$)/.test(flattened)) return "on_hold";
+  if (flattened.includes("dropped")) return "dropped";
+  if (flattened.includes("active")) return "active";
+  return "active";
 };
 
 const compareValues = (left, right) => {
@@ -95,11 +105,18 @@ return sortedTags.slice(0, ${limit});
         const script = `
 const queryValue = ${queryValue};
 const normalizeTagStatus = (tag) => {
-  const rawStatus = String(tag.status || "").toLowerCase().trim();
-  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {
-    return "on_hold";
-  }
-  if (rawStatus.includes("dropped")) return "dropped";
+  const rawStatus = String(tag.status || "").toLowerCase();
+  const flattened = rawStatus
+    .replace(/^\\[object_/g, "")
+    .replace(/[\\[\\]{}()]/g, " ")
+    .replace(/status/g, " ")
+    .replace(/[:.=]/g, " ")
+    .replace(/[_-]/g, " ")
+    .replace(/\\s+/g, " ")
+    .trim();
+  if (flattened.includes("onhold") || /(^|\\s)on\\s*hold(\\s|$)/.test(flattened)) return "on_hold";
+  if (flattened.includes("dropped")) return "dropped";
+  if (flattened.includes("active")) return "active";
   return "active";
 };
 
@@ -210,9 +227,19 @@ if (statusValue !== null) {
 }
 
 const normalizeTagStatus = (tag) => {
-  const rawStatus = String(tag.status || "").toLowerCase().trim();
-  if (rawStatus === "") return "active";
-  return rawStatus.replace(/\\s+/g, "_");
+  const rawStatus = String(tag.status || "").toLowerCase();
+  const flattened = rawStatus
+    .replace(/^\\[object_/g, "")
+    .replace(/[\\[\\]{}()]/g, " ")
+    .replace(/status/g, " ")
+    .replace(/[:.=]/g, " ")
+    .replace(/[_-]/g, " ")
+    .replace(/\\s+/g, " ")
+    .trim();
+  if (flattened.includes("onhold") || /(^|\\s)on\\s*hold(\\s|$)/.test(flattened)) return "on_hold";
+  if (flattened.includes("dropped")) return "dropped";
+  if (flattened.includes("active")) return "active";
+  return "active";
 };
 
 return {

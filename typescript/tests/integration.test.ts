@@ -417,30 +417,58 @@ integrationDescribe("typescript integration", () => {
         expect(removed.removed).toBe(true);
         notificationId = null;
 
-        const tagOne = parseToolResult(
-          await createTag({ name: `${TEST_PREFIX} TS Batch Tag One ${Date.now()}` })
+        const tagParent = parseToolResult(
+          await createTag({ name: `${TEST_PREFIX} TS Batch Parent Tag ${Date.now()}` })
+        ) as { id: string; name: string };
+        const tagChild = parseToolResult(
+          await createTag({
+            name: `${TEST_PREFIX} TS Batch Child Tag ${Date.now()}`,
+            parent: tagParent.name,
+          })
         ) as { id: string };
-        const tagTwo = parseToolResult(
-          await createTag({ name: `${TEST_PREFIX} TS Batch Tag Two ${Date.now()}` })
-        ) as { id: string };
-        extraTagIds.push(tagOne.id, tagTwo.id);
+        extraTagIds.push(tagParent.id, tagChild.id);
         const deletedTags = parseToolResult(
-          await deleteTagsBatch({ tag_ids_or_names: [tagOne.id, tagTwo.id] })
-        ) as { summary?: { deleted?: number } };
+          await deleteTagsBatch({ tag_ids_or_names: [tagParent.id, tagChild.id] })
+        ) as {
+          summary?: { deleted?: number; failed?: number };
+          partial_success?: boolean;
+          results?: Array<{ error?: unknown }>;
+        };
         expect(deletedTags.summary?.deleted).toBe(2);
+        expect(deletedTags.summary?.failed).toBe(0);
+        expect(deletedTags.partial_success).toBe(false);
+        const tagErrors = (deletedTags.results ?? [])
+          .map((item) => String(item.error ?? ""))
+          .join(" ")
+          .toLowerCase();
+        expect(tagErrors.includes("invalid object instance")).toBe(false);
         extraTagIds.length = 0;
 
-        const folderOne = parseToolResult(
-          await createFolder({ name: `${TEST_PREFIX} TS Batch Folder One ${Date.now()}` })
+        const folderParent = parseToolResult(
+          await createFolder({ name: `${TEST_PREFIX} TS Batch Parent Folder ${Date.now()}` })
+        ) as { id: string; name: string };
+        const folderChild = parseToolResult(
+          await createFolder({
+            name: `${TEST_PREFIX} TS Batch Child Folder ${Date.now()}`,
+            parent: folderParent.name,
+          })
         ) as { id: string };
-        const folderTwo = parseToolResult(
-          await createFolder({ name: `${TEST_PREFIX} TS Batch Folder Two ${Date.now()}` })
-        ) as { id: string };
-        extraFolderIds.push(folderOne.id, folderTwo.id);
+        extraFolderIds.push(folderParent.id, folderChild.id);
         const deletedFolders = parseToolResult(
-          await deleteFoldersBatch({ folder_ids_or_names: [folderOne.id, folderTwo.id] })
-        ) as { summary?: { deleted?: number } };
+          await deleteFoldersBatch({ folder_ids_or_names: [folderParent.id, folderChild.id] })
+        ) as {
+          summary?: { deleted?: number; failed?: number };
+          partial_success?: boolean;
+          results?: Array<{ error?: unknown }>;
+        };
         expect(deletedFolders.summary?.deleted).toBe(2);
+        expect(deletedFolders.summary?.failed).toBe(0);
+        expect(deletedFolders.partial_success).toBe(false);
+        const folderErrors = (deletedFolders.results ?? [])
+          .map((item) => String(item.error ?? ""))
+          .join(" ")
+          .toLowerCase();
+        expect(folderErrors.includes("invalid object instance")).toBe(false);
         extraFolderIds.length = 0;
 
         const projectOne = parseToolResult(
@@ -483,6 +511,93 @@ integrationDescribe("typescript integration", () => {
         for (const id of extraProjectIds) {
           try {
             await deleteProject({ project_id_or_name: id });
+          } catch {
+            continue;
+          }
+        }
+      }
+    }
+  );
+
+  test(
+    "test_plan_a_parent_child_batch_delete_effective_success",
+    { timeout: INTEGRATION_TIMEOUT_MS },
+    async () => {
+      const createTag = getHandler("create_tag");
+      const deleteTag = getHandler("delete_tag");
+      const deleteTagsBatch = getHandler("delete_tags_batch");
+      const createFolder = getHandler("create_folder");
+      const deleteFolder = getHandler("delete_folder");
+      const deleteFoldersBatch = getHandler("delete_folders_batch");
+
+      const extraTagIds: string[] = [];
+      const extraFolderIds: string[] = [];
+      const prefix = `${TEST_PREFIX} hierarchy ${Date.now()}`;
+      try {
+        const parentTagName = `${prefix} parent tag`;
+        const childTagName = `${prefix} child tag`;
+        const parentTag = parseToolResult(await createTag({ name: parentTagName })) as { id: string };
+        const childTag = parseToolResult(
+          await createTag({ name: childTagName, parent: parentTagName })
+        ) as { id: string };
+        extraTagIds.push(parentTag.id, childTag.id);
+        const deletedTags = parseToolResult(
+          await deleteTagsBatch({ tag_ids_or_names: [parentTag.id, childTag.id] })
+        ) as {
+          summary?: { deleted?: number; failed?: number };
+          partial_success?: boolean;
+          results?: Array<{ deleted?: boolean; error?: unknown }>;
+        };
+        expect(deletedTags.summary?.deleted).toBe(2);
+        expect(deletedTags.summary?.failed).toBe(0);
+        expect(deletedTags.partial_success).toBe(false);
+        expect((deletedTags.results ?? []).every((item) => item.deleted === true)).toBe(true);
+        expect(
+          (deletedTags.results ?? []).every((item) => {
+            const message = String(item.error ?? "").toLowerCase();
+            return !(message.includes("invalid") && message.includes("instance"));
+          })
+        ).toBe(true);
+        extraTagIds.length = 0;
+
+        const parentFolderName = `${prefix} parent folder`;
+        const childFolderName = `${prefix} child folder`;
+        const parentFolder = parseToolResult(
+          await createFolder({ name: parentFolderName })
+        ) as { id: string };
+        const childFolder = parseToolResult(
+          await createFolder({ name: childFolderName, parent: parentFolderName })
+        ) as { id: string };
+        extraFolderIds.push(parentFolder.id, childFolder.id);
+        const deletedFolders = parseToolResult(
+          await deleteFoldersBatch({ folder_ids_or_names: [parentFolder.id, childFolder.id] })
+        ) as {
+          summary?: { deleted?: number; failed?: number };
+          partial_success?: boolean;
+          results?: Array<{ deleted?: boolean; error?: unknown }>;
+        };
+        expect(deletedFolders.summary?.deleted).toBe(2);
+        expect(deletedFolders.summary?.failed).toBe(0);
+        expect(deletedFolders.partial_success).toBe(false);
+        expect((deletedFolders.results ?? []).every((item) => item.deleted === true)).toBe(true);
+        expect(
+          (deletedFolders.results ?? []).every((item) => {
+            const message = String(item.error ?? "").toLowerCase();
+            return !(message.includes("invalid") && message.includes("instance"));
+          })
+        ).toBe(true);
+        extraFolderIds.length = 0;
+      } finally {
+        for (const id of extraTagIds) {
+          try {
+            await deleteTag({ tag_name_or_id: id });
+          } catch {
+            continue;
+          }
+        }
+        for (const id of extraFolderIds) {
+          try {
+            await deleteFolder({ folder_name_or_id: id });
           } catch {
             continue;
           }
