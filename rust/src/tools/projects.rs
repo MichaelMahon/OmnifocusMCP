@@ -117,7 +117,7 @@ const normalizeProjectStatus = (project) => {{
   const rawStatus = String(project.status || "").toLowerCase();
   const flattened = rawStatus
     .replace(/^\[object_/g, "")
-    .replace(/[\[\]{}()]/g, " ")
+    .replace(/[\[\]{{}}()]/g, " ")
     .replace(/status/g, " ")
     .replace(/[:.=]/g, " ")
     .replace(/[_-]/g, " ")
@@ -236,7 +236,7 @@ const normalizeProjectStatus = (project) => {{
   const rawStatus = String(project.status || "").toLowerCase();
   const flattened = rawStatus
     .replace(/^\[object_/g, "")
-    .replace(/[\[\]{}()]/g, " ")
+    .replace(/[\[\]{{}}()]/g, " ")
     .replace(/status/g, " ")
     .replace(/[:.=]/g, " ")
     .replace(/[_-]/g, " ")
@@ -288,7 +288,7 @@ const normalizeProjectStatus = (project) => {{
   const rawStatus = String(project.status || "").toLowerCase();
   const flattened = rawStatus
     .replace(/^\[object_/g, "")
-    .replace(/[\[\]{}()]/g, " ")
+    .replace(/[\[\]{{}}()]/g, " ")
     .replace(/status/g, " ")
     .replace(/[:.=]/g, " ")
     .replace(/[_-]/g, " ")
@@ -357,11 +357,20 @@ if (!project) {{
 
 const normalizeProjectStatus = (item) => {{
   const rawStatus = String(item.status || "").toLowerCase();
-  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {{
+  const flattened = rawStatus
+    .replace(/^\[object_/g, "")
+    .replace(/[\[\]{{}}()]/g, " ")
+    .replace(/status/g, " ")
+    .replace(/[:.=]/g, " ")
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) {{
     return "on_hold";
   }}
-  if (rawStatus.includes("completed")) return "completed";
-  if (rawStatus.includes("dropped")) return "dropped";
+  if (flattened.includes("completed")) return "completed";
+  if (flattened.includes("dropped")) return "dropped";
+  if (flattened.includes("active")) return "active";
   return "active";
 }};
 
@@ -889,11 +898,20 @@ if (!project) {{
 const has = (key) => Object.prototype.hasOwnProperty.call(updates, key);
 const normalizeProjectStatus = (item) => {{
   const rawStatus = String(item.status || "").toLowerCase();
-  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {{
+  const flattened = rawStatus
+    .replace(/^\[object_/g, "")
+    .replace(/[\[\]{{}}()]/g, " ")
+    .replace(/status/g, " ")
+    .replace(/[:.=]/g, " ")
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) {{
     return "on_hold";
   }}
-  if (rawStatus.includes("completed")) return "completed";
-  if (rawStatus.includes("dropped")) return "dropped";
+  if (flattened.includes("completed")) return "completed";
+  if (flattened.includes("dropped")) return "dropped";
+  if (flattened.includes("active")) return "active";
   return "active";
 }};
 const parseReviewInterval = (value) => {{
