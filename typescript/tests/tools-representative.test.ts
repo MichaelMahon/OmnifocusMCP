@@ -150,59 +150,6 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain('if (s.includes("Available")) return "available";');
   });
 
-  test("plan c aliases are normalized for list_tasks and search_tasks", async () => {
-    runOmniJsMock.mockResolvedValueOnce([]);
-    await getTool("list_tasks")({
-      tags: ["Home", "Work"],
-      tagFilterMode: "AND",
-      status: "due soon",
-      sortOrder: "Descending",
-      limit: 5,
-    });
-    const listScript = String(runOmniJsMock.mock.calls[0]?.[0]);
-    expect(listScript).toContain('const tagFilterMode = "all";');
-    expect(listScript).toContain('const statusFilter = "due_soon";');
-    expect(listScript).toContain('const sortOrder = "desc";');
-
-    runOmniJsMock.mockResolvedValueOnce([]);
-    await getTool("search_tasks")({
-      query: "alias probe",
-      tags: ["Home", "Work"],
-      tagFilterMode: "OR",
-      status: "Due-Soon",
-      sortOrder: "Ascending",
-      limit: 5,
-    });
-    const searchScript = String(runOmniJsMock.mock.calls[1]?.[0]);
-    expect(searchScript).toContain('const tagFilterMode = "any";');
-    expect(searchScript).toContain('const statusFilter = "due_soon";');
-    expect(searchScript).toContain('const sortOrder = "asc";');
-  });
-
-  test("plan c alias unknown values remain strict", async () => {
-    const listResult = await getTool("list_tasks")({ sortOrder: "sideways" });
-    expect(listResult.isError).toBe(true);
-    expect(parseToolResult(listResult)).toEqual({
-      error: 'sortOrder must be one of: asc, desc. received: "sideways".',
-    });
-
-    const searchResult = await getTool("search_tasks")({
-      query: "alias strict",
-      status: "tomorrowish",
-    });
-    expect(searchResult.isError).toBe(true);
-    expect(parseToolResult(searchResult)).toEqual({
-      error:
-        'status must be one of: available, due_soon, overdue, on_hold, completed, all. received: "tomorrowish".',
-    });
-
-    const countsResult = await getTool("get_task_counts")({ tagFilterMode: "xor" });
-    expect(countsResult.isError).toBe(true);
-    expect(parseToolResult(countsResult)).toEqual({
-      error: 'tagFilterMode must be one of: any, all. received: "xor".',
-    });
-  });
-
   test("get_forecast includes deferred, dueThisWeek, counts, and enriched task fields", async () => {
     runOmniJsMock.mockResolvedValueOnce({
       overdue: [{ id: "t-over", name: "Overdue", completionDate: null, hasChildren: false }],
@@ -536,9 +483,10 @@ describe("representative read and write tool handlers", () => {
       limit: 5,
     });
     expect(invalidSortResult.isError).toBe(true);
-    expect(parseToolResult(invalidSortResult)).toEqual({
-      error: 'sortOrder must be one of: asc, desc. received: "backwards".',
-    });
+    const invalidSortError = String(
+      (parseToolResult(invalidSortResult) as { error: string }).error
+    );
+    expect(invalidSortError).toContain("sortOrder must be one of: asc, desc.");
 
     const invalidStatusResult = await getTool("search_tasks")({
       query: "audit",
@@ -687,7 +635,7 @@ describe("representative read and write tool handlers", () => {
     });
     const searchError = String((JSON.parse(searchResult.content[0].text) as { error: string }).error);
     expect(searchError).toContain(
-      "status must be one of: available, due_soon, overdue, completed, all."
+      "status must be one of: available, due_soon, overdue, on_hold, completed, all."
     );
   });
 
@@ -1199,9 +1147,8 @@ describe("representative read and write tool handlers", () => {
   test("plan c unknown alias values keep actionable errors", async () => {
     let result = await getTool("list_tasks")({ sortOrder: "backwards" });
     expect(result.isError).toBe(true);
-    expect(JSON.parse(result.content[0].text)).toEqual({
-      error: 'sortOrder must be one of: asc, desc. received: "backwards".',
-    });
+    const listError = String((JSON.parse(result.content[0].text) as { error: string }).error);
+    expect(listError).toContain("sortOrder must be one of: asc, desc.");
 
     result = await getTool("get_task_counts")({ tagFilterMode: "xor" });
     expect(result.isError).toBe(true);

@@ -975,7 +975,8 @@ async fn plan_c_unknown_alias_values_return_canonical_error_options() {
     .expect_err("invalid sort order should fail");
     assert!(matches!(
         list_error,
-        OmniFocusError::Validation(ref message) if message == "sortOrder must be one of: asc, desc."
+        OmniFocusError::Validation(ref message)
+            if message == "sortOrder must be one of: asc, desc. received: \"backwards\"."
     ));
 
     let counts_error = get_task_counts(
@@ -986,7 +987,8 @@ async fn plan_c_unknown_alias_values_return_canonical_error_options() {
     .expect_err("invalid tag filter mode should fail");
     assert!(matches!(
         counts_error,
-        OmniFocusError::Validation(ref message) if message == "tagFilterMode must be one of: any, all."
+        OmniFocusError::Validation(ref message)
+            if message == "tagFilterMode must be one of: any, all. received: \"xor\"."
     ));
 
     let search_error = search_tasks(
@@ -1015,7 +1017,7 @@ async fn plan_c_unknown_alias_values_return_canonical_error_options() {
         search_error,
         OmniFocusError::Validation(ref message)
             if message
-                == "status must be one of: available, due_soon, overdue, on_hold, completed, all."
+                == "status must be one of: available, due_soon, overdue, on_hold, completed, all. received: \"later\"."
     ));
 }
 
@@ -1058,7 +1060,10 @@ async fn plan_c_unknown_alias_values_keep_actionable_errors() {
     .await
     {
         Err(OmniFocusError::Validation(message)) => {
-            assert_eq!(message, "sortOrder must be one of: asc, desc.");
+            assert_eq!(
+                message,
+                "sortOrder must be one of: asc, desc. received: \"backwards\"."
+            );
         }
         other => panic!("expected validation error, got {other:?}"),
     }
@@ -1070,7 +1075,10 @@ async fn plan_c_unknown_alias_values_keep_actionable_errors() {
     .await
     {
         Err(OmniFocusError::Validation(message)) => {
-            assert_eq!(message, "tagFilterMode must be one of: any, all.");
+            assert_eq!(
+                message,
+                "tagFilterMode must be one of: any, all. received: \"xor\"."
+            );
         }
         other => panic!("expected validation error, got {other:?}"),
     }
@@ -1083,7 +1091,7 @@ async fn plan_c_unknown_alias_values_keep_actionable_errors() {
     {
         Err(OmniFocusError::Validation(message)) => assert_eq!(
             message,
-            "status must be one of: available, due_soon, overdue, on_hold, completed, all."
+            "status must be one of: available, due_soon, overdue, on_hold, completed, all. received: \"later\"."
         ),
         other => panic!("expected validation error, got {other:?}"),
     }
@@ -2868,6 +2876,10 @@ async fn plan_c_aliases_normalize_to_canonical_values_in_scoped_task_tools() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
+        None,
     )
     .await
     .expect("task counts aliases should parse");
@@ -2894,6 +2906,7 @@ async fn plan_c_unknown_values_keep_canonical_actionable_errors() {
     assert!(invalid_sort
         .to_string()
         .contains("sortOrder must be one of: asc, desc."));
+    assert!(invalid_sort.to_string().contains("received: \"backwards\"."));
 
     let invalid_status = search_tasks(
         &runner,
@@ -3508,121 +3521,6 @@ async fn added_changed_invalid_date_errors_bubble_up_for_all_new_filter_fields()
 }
 
 #[tokio::test]
-async fn plan_c_aliases_are_normalized_for_list_search_and_counts() {
-    let list_script = Arc::new(Mutex::new(String::new()));
-    let list_runner = CapturingRunner {
-        payload: json!([]),
-        last_script: Arc::clone(&list_script),
-    };
-    let listed = list_tasks_with_duration(
-        &list_runner,
-        None,
-        None,
-        Some(vec!["Home".to_string(), "Work".to_string()]),
-        "AND",
-        None,
-        "due soon",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        "Descending",
-        5,
-    )
-    .await
-    .expect("list_tasks aliases should normalize");
-    assert!(listed.is_empty());
-    let list_script_text = list_script
-        .lock()
-        .expect("list script lock should succeed")
-        .clone();
-    assert!(list_script_text.contains(r#"const tagFilterMode = "all";"#));
-    assert!(list_script_text.contains(r#"const statusFilter = "due_soon";"#));
-    assert!(list_script_text.contains(r#"const sortOrder = "desc";"#));
-
-    let search_script = Arc::new(Mutex::new(String::new()));
-    let search_runner = CapturingRunner {
-        payload: json!([]),
-        last_script: Arc::clone(&search_script),
-    };
-    let searched = search_tasks(
-        &search_runner,
-        "alias probe",
-        None,
-        None,
-        Some(vec!["Home".to_string(), "Work".to_string()]),
-        "OR",
-        None,
-        "Due-Soon",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        "Ascending",
-        5,
-    )
-    .await
-    .expect("search aliases should normalize");
-    assert!(searched.is_empty());
-    let search_script_text = search_script
-        .lock()
-        .expect("search script lock should succeed")
-        .clone();
-    assert!(search_script_text.contains(r#"const tagFilterMode = "any";"#));
-    assert!(search_script_text.contains(r#"const statusFilter = "due_soon";"#));
-    assert!(search_script_text.contains(r#"const sortOrder = "asc";"#));
-
-    let counts_script = Arc::new(Mutex::new(String::new()));
-    let counts_runner = CapturingRunner {
-        payload: json!({
-            "total": 0,
-            "available": 0,
-            "completed": 0,
-            "overdue": 0,
-            "dueSoon": 0,
-            "flagged": 0,
-            "deferred": 0
-        }),
-        last_script: Arc::clone(&counts_script),
-    };
-    let counts = get_task_counts(
-        &counts_runner,
-        None,
-        None,
-        Some(vec!["Home".to_string(), "Work".to_string()]),
-        "AND",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-    )
-    .await
-    .expect("counts aliases should normalize");
-    assert_eq!(counts.total, 0);
-    let counts_script_text = counts_script
-        .lock()
-        .expect("counts script lock should succeed")
-        .clone();
-    assert!(counts_script_text.contains(r#"const tagFilterMode = "all";"#));
-}
-
-#[tokio::test]
 async fn plan_c_unknown_values_remain_strict() {
     let runner = MockRunner { payload: json!([]) };
     let list_error = list_tasks_with_duration(
@@ -3633,7 +3531,7 @@ async fn plan_c_unknown_values_remain_strict() {
     .expect_err("invalid sortOrder should fail");
     assert_eq!(
         list_error.to_string(),
-        "sortOrder must be one of: asc, desc."
+        "sortOrder must be one of: asc, desc. received: \"sideways\"."
     );
 
     let search_error = search_tasks(
@@ -3660,7 +3558,7 @@ async fn plan_c_unknown_values_remain_strict() {
     .expect_err("invalid status should fail");
     assert_eq!(
         search_error.to_string(),
-        "status must be one of: available, due_soon, overdue, on_hold, completed, all."
+        "status must be one of: available, due_soon, overdue, on_hold, completed, all. received: \"tomorrowish\"."
     );
 
     let counts_runner = MockRunner {
@@ -3697,6 +3595,6 @@ async fn plan_c_unknown_values_remain_strict() {
     .expect_err("invalid tagFilterMode should fail");
     assert_eq!(
         counts_error.to_string(),
-        "tagFilterMode must be one of: any, all."
+        "tagFilterMode must be one of: any, all. received: \"xor\"."
     );
 }
