@@ -173,6 +173,9 @@ integrationDescribe("typescript integration", () => {
       const getProject = getHandler("get_project");
       const listTags = getHandler("list_tags");
       const listFolders = getHandler("list_folders");
+      const getFolder = getHandler("get_folder");
+      const createFolder = getHandler("create_folder");
+      const deleteFolder = getHandler("delete_folder");
       const getForecast = getHandler("get_forecast");
       const listPerspectives = getHandler("list_perspectives");
 
@@ -221,9 +224,37 @@ integrationDescribe("typescript integration", () => {
 
       const tags = parseToolResult(await listTags({ statusFilter: "all", limit: 20 })) as unknown[];
       expect(Array.isArray(tags)).toBe(true);
+      for (const tag of tags as Array<Record<string, unknown>>) {
+        expect(["active", "on_hold", "dropped"]).toContain(String(tag.status));
+      }
 
       const folders = parseToolResult(await listFolders({ limit: 20 })) as unknown[];
       expect(Array.isArray(folders)).toBe(true);
+      let statusFolderId: string | null = null;
+      let createdStatusFolderId: string | null = null;
+      if (folders.length > 0) {
+        const firstFolder = folders[0] as Record<string, unknown>;
+        if (firstFolder.id !== undefined && firstFolder.id !== null) {
+          statusFolderId = String(firstFolder.id);
+        }
+      }
+      if (statusFolderId === null) {
+        const createdFolder = parseToolResult(
+          await createFolder({ name: `${TEST_PREFIX} TS Status Folder ${Date.now()}` })
+        ) as { id: string };
+        statusFolderId = createdFolder.id;
+        createdStatusFolderId = createdFolder.id;
+      }
+      const folderDetails = parseToolResult(
+        await getFolder({ folder_name_or_id: statusFolderId })
+      ) as Record<string, unknown>;
+      expect(["active", "on_hold", "dropped"]).toContain(String(folderDetails.status));
+      for (const projectItem of (folderDetails.projects as Array<Record<string, unknown>> | undefined) ?? []) {
+        expect(["active", "on_hold", "dropped"]).toContain(String(projectItem.status));
+      }
+      if (createdStatusFolderId !== null) {
+        await deleteFolder({ folder_name_or_id: createdStatusFolderId });
+      }
 
       const forecast = parseToolResult(await getForecast({ limit: 20 })) as Record<string, unknown>;
       expect(forecast).toHaveProperty("overdue");

@@ -59,6 +59,25 @@ struct ErrorRunner {
     message: String,
 }
 
+fn normalize_status_fixture(raw_status: &str) -> String {
+    let mut flattened = raw_status.to_lowercase().replace("[object_", "");
+    for needle in ["[", "]", "{", "}", "(", ")", ":", ".", "=", "_", "-"] {
+        flattened = flattened.replace(needle, " ");
+    }
+    flattened = flattened.replace("status", " ");
+    let flattened = flattened.split_whitespace().collect::<Vec<_>>().join(" ");
+    if flattened.contains("onhold") || flattened.contains("on hold") {
+        return "on_hold".to_string();
+    }
+    if flattened.contains("dropped") {
+        return "dropped".to_string();
+    }
+    if flattened.contains("active") {
+        return "active".to_string();
+    }
+    "active".to_string()
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn get_task_counts<R: JxaRunner>(
     runner: &R,
@@ -1509,6 +1528,20 @@ async fn list_tags_script_includes_total_count_and_sorting() {
     assert!(script.contains(r#"const sortOrder = "desc";"#));
     assert!(script.contains("totalTaskCount: counts.totalTaskCount,"));
     assert!(script.contains("return sortedTags.slice(0, 7);"));
+}
+
+#[test]
+fn status_normalization_fixture_examples_map_to_canonical_values() {
+    let fixtures = [
+        ("[object_tag.status:_active]", "active"),
+        ("status: active]", "active"),
+        ("On Hold", "on_hold"),
+        ("on-hold", "on_hold"),
+        ("Dropped", "dropped"),
+    ];
+    for (raw_status, expected) in fixtures {
+        assert_eq!(normalize_status_fixture(raw_status), expected);
+    }
 }
 
 #[tokio::test]

@@ -91,14 +91,14 @@ document.flattenedTasks.forEach(task => {
 const normalizeProjectStatus = (project) => {
   const rawStatus = String(project.status || "").toLowerCase();
   const flattened = rawStatus
-    .replace(/^\[object_/g, "")
-    .replace(/[\[\]{}()]/g, " ")
+    .replace(/^\\[object_/g, "")
+    .replace(/[\\[\\]{}()]/g, " ")
     .replace(/status/g, " ")
     .replace(/[:.=]/g, " ")
     .replace(/[_-]/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/\\s+/g, " ")
     .trim();
-  if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) {
+  if (flattened.includes("onhold") || /(^|\\s)on\\s*hold(\\s|$)/.test(flattened)) {
     return "on_hold";
   }
   if (flattened.includes("completed")) return "completed";
@@ -211,14 +211,14 @@ const folderFilter = ${folderFilter};
 const normalizeProjectStatus = (project) => {
   const rawStatus = String(project.status || "").toLowerCase();
   const flattened = rawStatus
-    .replace(/^\[object_/g, "")
-    .replace(/[\[\]{}()]/g, " ")
+    .replace(/^\\[object_/g, "")
+    .replace(/[\\[\\]{}()]/g, " ")
     .replace(/status/g, " ")
     .replace(/[:.=]/g, " ")
     .replace(/[_-]/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/\\s+/g, " ")
     .trim();
-  if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) {
+  if (flattened.includes("onhold") || /(^|\\s)on\\s*hold(\\s|$)/.test(flattened)) {
     return "on_hold";
   }
   if (flattened.includes("completed")) return "completed";
@@ -342,14 +342,14 @@ if (!project) {
 const normalizeProjectStatus = (item) => {
   const rawStatus = String(item.status || "").toLowerCase();
   const flattened = rawStatus
-    .replace(/^\[object_/g, "")
-    .replace(/[\[\]{}()]/g, " ")
+    .replace(/^\\[object_/g, "")
+    .replace(/[\\[\\]{}()]/g, " ")
     .replace(/status/g, " ")
     .replace(/[:.=]/g, " ")
     .replace(/[_-]/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/\\s+/g, " ")
     .trim();
-  if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) {
+  if (flattened.includes("onhold") || /(^|\\s)on\\s*hold(\\s|$)/.test(flattened)) {
     return "on_hold";
   }
   if (flattened.includes("completed")) return "completed";
@@ -839,14 +839,14 @@ const has = (key) => Object.prototype.hasOwnProperty.call(updates, key);
 const normalizeProjectStatus = (item) => {
   const rawStatus = String(item.status || "").toLowerCase();
   const flattened = rawStatus
-    .replace(/^\[object_/g, "")
-    .replace(/[\[\]{}()]/g, " ")
+    .replace(/^\\[object_/g, "")
+    .replace(/[\\[\\]{}()]/g, " ")
     .replace(/status/g, " ")
     .replace(/[:.=]/g, " ")
     .replace(/[_-]/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/\\s+/g, " ")
     .trim();
-  if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) {
+  if (flattened.includes("onhold") || /(^|\\s)on\\s*hold(\\s|$)/.test(flattened)) {
     return "on_hold";
   }
   if (flattened.includes("completed")) return "completed";

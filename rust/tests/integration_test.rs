@@ -10,7 +10,7 @@ use std::{
 use omnifocus_mcp::{
     jxa::{run_omnijs, RealJxaRunner},
     tools::{
-        folders::{create_folder, delete_folder, delete_folders_batch, list_folders},
+        folders::{create_folder, delete_folder, delete_folders_batch, get_folder, list_folders},
         forecast::get_forecast,
         perspectives::list_perspectives,
         projects::{
@@ -329,12 +329,32 @@ async fn test_read_tools_return_valid_json() -> Result<(), Box<dyn std::error::E
             ],
         );
     }
+    for item in tags_array {
+        if let Some(status) = item.get("status").and_then(Value::as_str) {
+            assert!(matches!(status, "active" | "on_hold" | "dropped"));
+        }
+    }
 
     let folders = list_folders(&runner, 20).await?;
     let folders_array = require_array(&folders, "list_folders result");
     if let Some(first) = folders_array.first() {
         assert_has_keys(first, &["id", "name", "parentName", "projectCount"]);
     }
+    let status_folder_name = unique_name("Status probe folder");
+    let status_folder = create_folder(&runner, &status_folder_name, None).await?;
+    let status_folder_id = require_str_field(&status_folder, "id");
+    let folder_details = get_folder(&runner, &status_folder_id).await?;
+    if let Some(folder_status) = folder_details.get("status").and_then(Value::as_str) {
+        assert!(matches!(folder_status, "active" | "on_hold" | "dropped"));
+    }
+    if let Some(projects) = folder_details.get("projects").and_then(Value::as_array) {
+        for project in projects {
+            if let Some(project_status) = project.get("status").and_then(Value::as_str) {
+                assert!(matches!(project_status, "active" | "on_hold" | "dropped"));
+            }
+        }
+    }
+    let _ = delete_folder(&runner, &status_folder_id).await;
 
     let forecast = get_forecast(&runner, 20).await?;
     assert_has_keys(
@@ -595,15 +615,11 @@ async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Erro
         assert_eq!(removed.get("removed").and_then(Value::as_bool), Some(true));
         notification_id = None;
 
-        let tag_parent = create_tag(&runner, &unique_name("Parity batch parent tag"), None).await?;
+        let tag_parent_name = unique_name("Parity batch parent tag");
+        let tag_child_name = unique_name("Parity batch child tag");
+        let tag_parent = create_tag(&runner, &tag_parent_name, None).await?;
         let tag_parent_id = require_str_field(&tag_parent, "id");
-        let tag_parent_name = require_str_field(&tag_parent, "name");
-        let tag_child = create_tag(
-            &runner,
-            &unique_name("Parity batch child tag"),
-            Some(&tag_parent_name),
-        )
-        .await?;
+        let tag_child = create_tag(&runner, &tag_child_name, Some(&tag_parent_name)).await?;
         let tag_child_id = require_str_field(&tag_child, "id");
         extra_tag_ids.push(tag_parent_id.clone());
         extra_tag_ids.push(tag_child_id.clone());
@@ -646,16 +662,11 @@ async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Erro
         assert!(!tag_error_text.contains("invalid object instance"));
         extra_tag_ids.clear();
 
-        let folder_parent =
-            create_folder(&runner, &unique_name("Parity batch parent folder"), None).await?;
+        let folder_parent_name = unique_name("Parity batch parent folder");
+        let folder_child_name = unique_name("Parity batch child folder");
+        let folder_parent = create_folder(&runner, &folder_parent_name, None).await?;
         let folder_parent_id = require_str_field(&folder_parent, "id");
-        let folder_parent_name = require_str_field(&folder_parent, "name");
-        let folder_child = create_folder(
-            &runner,
-            &unique_name("Parity batch child folder"),
-            Some(&folder_parent_name),
-        )
-        .await?;
+        let folder_child = create_folder(&runner, &folder_child_name, Some(&folder_parent_name)).await?;
         let folder_child_id = require_str_field(&folder_child, "id");
         extra_folder_ids.push(folder_parent_id.clone());
         extra_folder_ids.push(folder_child_id.clone());

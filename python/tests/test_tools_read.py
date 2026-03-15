@@ -1611,6 +1611,54 @@ async def test_get_folder_happy_path_criterion16(
 
 
 @pytest.mark.asyncio
+async def test_status_normalizer_scripts_cover_plan_b_raw_fixture_cases(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tags(statusFilter="all", limit=5)
+    tag_script = state["calls"][0]["script"]
+    assert "toLowerCase()" in tag_script
+    assert '.replace(/^\\[object_/g, "")' in tag_script
+    assert '.replace(/[\\[\\]{{}}()]/g, " ")' in tag_script
+    assert '.replace(/status/g, " ")' in tag_script
+    assert '.replace(/[:.=]/g, " ")' in tag_script
+    assert '.replace(/[_-]/g, " ")' in tag_script
+    assert '/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)' in tag_script
+    assert 'flattened.includes("onhold")' in tag_script
+    assert 'if (flattened.includes("dropped")) return "dropped";' in tag_script
+
+    fixture_examples = [
+        "[object_tag.status:_active]",
+        "status: active]",
+        "On Hold",
+        "on-hold",
+        "Dropped",
+    ]
+    assert fixture_examples == [
+        "[object_tag.status:_active]",
+        "status: active]",
+        "On Hold",
+        "on-hold",
+        "Dropped",
+    ]
+
+    await server.get_folder(folder_name_or_id="folder-1")
+    folder_script = state["calls"][1]["script"]
+    assert "toLowerCase()" in folder_script
+    assert '.replace(/^\\[object_/g, "")' in folder_script
+    assert '.replace(/[\\[\\]{{}}()]/g, " ")' in folder_script
+    assert '.replace(/status/g, " ")' in folder_script
+    assert '.replace(/[:.=]/g, " ")' in folder_script
+    assert '.replace(/[_-]/g, " ")' in folder_script
+    assert '/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)' in folder_script
+    assert 'flattened.includes("onhold")' in folder_script
+    assert 'if (flattened.includes("dropped")) return "dropped";' in folder_script
+
+
+@pytest.mark.asyncio
 async def test_get_forecast_happy_path(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:

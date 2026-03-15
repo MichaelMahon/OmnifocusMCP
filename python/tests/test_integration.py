@@ -90,7 +90,7 @@ def _test_name(suffix: str) -> str:
 
 @pytest_asyncio.fixture
 async def cleanup_registry() -> dict[str, list[str]]:
-    registry: dict[str, list[str]] = {"task_ids": [], "project_ids": []}
+    registry: dict[str, list[str]] = {"task_ids": [], "project_ids": [], "folder_ids": []}
     try:
         yield registry
     finally:
@@ -103,6 +103,11 @@ async def cleanup_registry() -> dict[str, list[str]]:
         for project_id in reversed(registry["project_ids"]):
             try:
                 await complete_project(project_id_or_name=project_id)
+            except Exception:
+                continue
+        for folder_id in reversed(registry["folder_ids"]):
+            try:
+                await delete_folder(folder_name_or_id=folder_id)
             except Exception:
                 continue
 
@@ -597,3 +602,70 @@ async def test_plan_a_parent_child_batch_delete_effective_success() -> None:
                 await delete_folder(folder_name_or_id=folder_id)
             except Exception:
                 continue
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_plan_b_statuses_are_canonical_in_tags_and_folder_projects(
+    cleanup_registry: dict[str, list[str]],
+) -> None:
+    allowed_statuses = {"active", "on_hold", "dropped"}
+    tag_id: str | None = None
+    folder_id: str | None = None
+    project_id: str | None = None
+    try:
+        created_tag = _parse_json(await create_tag(name=_test_name("Plan B status tag")))
+        assert isinstance(created_tag, dict)
+        tag_id = created_tag.get("id")
+        assert isinstance(tag_id, str)
+
+        created_folder = _parse_json(await create_folder(name=_test_name("Plan B status folder")))
+        assert isinstance(created_folder, dict)
+        folder_id = created_folder.get("id")
+        folder_name = created_folder.get("name")
+        assert isinstance(folder_id, str)
+        assert isinstance(folder_name, str)
+        cleanup_registry["folder_ids"].append(folder_id)
+
+        created_project = _parse_json(
+            await create_project(name=_test_name("Plan B status project"), folder=folder_name)
+        )
+        assert isinstance(created_project, dict)
+        project_id = created_project.get("id")
+        assert isinstance(project_id, str)
+        cleanup_registry["project_ids"].append(project_id)
+
+        listed_tags = _parse_json(await list_tags(limit=100))
+        assert isinstance(listed_tags, list)
+        matching_tag = next(
+            (
+                item
+                for item in listed_tags
+                if isinstance(item, dict) and item.get("id") == tag_id
+            ),
+            None,
+        )
+        assert isinstance(matching_tag, dict)
+        assert matching_tag.get("status") in allowed_statuses
+
+        folder_details = _parse_json(await get_folder(folder_name_or_id=folder_id))
+        assert isinstance(folder_details, dict)
+        assert folder_details.get("status") in allowed_statuses
+        folder_projects = folder_details.get("projects")
+        assert isinstance(folder_projects, list)
+        matching_project = next(
+            (
+                item
+                for item in folder_projects
+                if isinstance(item, dict) and item.get("id") == project_id
+            ),
+            None,
+        )
+        assert isinstance(matching_project, dict)
+        assert matching_project.get("status") in allowed_statuses
+    finally:
+        if tag_id is not None:
+            try:
+                await delete_tag(tag_name_or_id=tag_id)
+            except Exception:
+                pass

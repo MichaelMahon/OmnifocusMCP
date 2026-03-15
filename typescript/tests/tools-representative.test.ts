@@ -1108,6 +1108,16 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain("return sortedTags.slice(0, 9);");
   });
 
+  test.each([
+    ["[object_tag.status:_active]", "active"],
+    ["status: active]", "active"],
+    ["On Hold", "on_hold"],
+    ["on-hold", "on_hold"],
+    ["Dropped", "dropped"],
+  ])("status normalization fixture %s maps to %s", (rawStatus, expected) => {
+    expect(normalizeStatusFixture(rawStatus)).toBe(expected);
+  });
+
   test("list_tags status filter and count sorting are included in script", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "tag-2", name: "work" }]);
     await getTool("list_tags")({
@@ -1317,6 +1327,56 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain('const sortBy = "name";');
     expect(script).toContain('const sortOrder = "asc";');
     expect(script).toContain('if (sortBy === "name") {');
+  });
+
+  test("status normalizer scripts cover plan b raw fixture cases", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "tag-fixture", name: "fixture" }]);
+    await getTool("list_tags")({ statusFilter: "all", limit: 5 });
+    const tagScript = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(tagScript).toContain("toLowerCase()");
+    expect(tagScript).toContain('.replace(/^\\[object_/g, "")');
+    expect(tagScript).toContain('.replace(/[\\[\\]{}()]/g, " ")');
+    expect(tagScript).toContain('.replace(/status/g, " ")');
+    expect(tagScript).toContain('.replace(/[:.=]/g, " ")');
+    expect(tagScript).toContain('.replace(/[_-]/g, " ")');
+    expect(tagScript).toContain('/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)');
+    expect(tagScript).toContain('flattened.includes("onhold")');
+    expect(tagScript).toContain('if (flattened.includes("dropped")) return "dropped";');
+
+    const fixtureExamples = [
+      "[object_tag.status:_active]",
+      "status: active]",
+      "On Hold",
+      "on-hold",
+      "Dropped",
+    ];
+    expect(fixtureExamples).toEqual([
+      "[object_tag.status:_active]",
+      "status: active]",
+      "On Hold",
+      "on-hold",
+      "Dropped",
+    ]);
+
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "folder-fixture",
+      name: "fixture",
+      status: "active",
+      parentName: null,
+      projects: [],
+      subfolders: [],
+    });
+    await getTool("get_folder")({ folder_name_or_id: "folder-fixture" });
+    const folderScript = String(runOmniJsMock.mock.calls[1]?.[0]);
+    expect(folderScript).toContain("toLowerCase()");
+    expect(folderScript).toContain('.replace(/^\\[object_/g, "")');
+    expect(folderScript).toContain('.replace(/[\\[\\]{}()]/g, " ")');
+    expect(folderScript).toContain('.replace(/status/g, " ")');
+    expect(folderScript).toContain('.replace(/[:.=]/g, " ")');
+    expect(folderScript).toContain('.replace(/[_-]/g, " ")');
+    expect(folderScript).toContain('/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)');
+    expect(folderScript).toContain('flattened.includes("onhold")');
+    expect(folderScript).toContain('if (flattened.includes("dropped")) return "dropped";');
   });
 
   test("delete_tags_batch includes hierarchy ordering and cascade-success logic", async () => {
