@@ -603,6 +603,8 @@ async def test_plan_a_parent_child_batch_delete_effective_success() -> None:
                 continue
 
 
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_plan_b_statuses_are_canonical_in_tags_and_folder_projects(
     cleanup_registry: dict[str, list[str]],
 ) -> None:

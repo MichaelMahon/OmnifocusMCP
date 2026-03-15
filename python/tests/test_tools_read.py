@@ -1790,7 +1790,7 @@ async def test_status_normalizer_scripts_cover_plan_b_raw_fixture_cases(
     tag_script = state["calls"][0]["script"]
     assert "toLowerCase()" in tag_script
     assert '.replace(/^\\[object_/g, "")' in tag_script
-    assert '.replace(/[\\[\\]{{}}()]/g, " ")' in tag_script
+    assert '.replace(/[\\[\\]{}()]/g, " ")' in tag_script
     assert '.replace(/status/g, " ")' in tag_script
     assert '.replace(/[:.=]/g, " ")' in tag_script
     assert '.replace(/[_-]/g, " ")' in tag_script
@@ -1817,7 +1817,7 @@ async def test_status_normalizer_scripts_cover_plan_b_raw_fixture_cases(
     folder_script = state["calls"][1]["script"]
     assert "toLowerCase()" in folder_script
     assert '.replace(/^\\[object_/g, "")' in folder_script
-    assert '.replace(/[\\[\\]{{}}()]/g, " ")' in folder_script
+    assert '.replace(/[\\[\\]{}()]/g, " ")' in folder_script
     assert '.replace(/status/g, " ")' in folder_script
     assert '.replace(/[:.=]/g, " ")' in folder_script
     assert '.replace(/[_-]/g, " ")' in folder_script
