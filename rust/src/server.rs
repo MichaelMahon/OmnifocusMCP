@@ -214,11 +214,15 @@ struct CreateTaskParams {
     name: String,
     project: Option<String>,
     note: Option<String>,
+    #[serde(rename = "dueDate")]
     due_date: Option<String>,
+    #[serde(rename = "deferDate")]
     defer_date: Option<String>,
+    #[serde(rename = "plannedDate")]
     planned_date: Option<String>,
     flagged: Option<bool>,
     tags: Option<Vec<String>>,
+    #[serde(rename = "estimatedMinutes")]
     estimated_minutes: Option<i32>,
 }
 
@@ -249,11 +253,15 @@ struct BatchCreateTaskInput {
     name: String,
     project: Option<String>,
     note: Option<String>,
+    #[serde(rename = "dueDate")]
     due_date: Option<String>,
+    #[serde(rename = "deferDate")]
     defer_date: Option<String>,
+    #[serde(rename = "plannedDate")]
     planned_date: Option<String>,
     flagged: Option<bool>,
     tags: Option<Vec<String>>,
+    #[serde(rename = "estimatedMinutes")]
     estimated_minutes: Option<i32>,
 }
 
@@ -262,11 +270,15 @@ struct UpdateTaskParams {
     task_id: String,
     name: Option<String>,
     note: Option<String>,
+    #[serde(rename = "dueDate")]
     due_date: Option<String>,
+    #[serde(rename = "deferDate")]
     defer_date: Option<String>,
+    #[serde(rename = "plannedDate")]
     planned_date: Option<String>,
     flagged: Option<bool>,
     tags: Option<Vec<String>>,
+    #[serde(rename = "estimatedMinutes")]
     estimated_minutes: Option<i32>,
 }
 
