@@ -19,6 +19,7 @@ use std::sync::Arc;
 
 use crate::{
     error::OmniFocusError,
+    flexible_tags::{tags_as_opt_vec, FlexibleTagList},
     jxa::JxaRunner,
     prompts::{daily_review, inbox_processing, project_planning, weekly_review},
     resources::{
@@ -70,8 +71,8 @@ struct GetPerspectiveTasksParams {
 struct ListTasksParams {
     project: Option<String>,
     tag: Option<String>,
-    tags: Option<Vec<String>>,
-    #[serde(rename = "tagFilterMode")]
+    tags: Option<FlexibleTagList>,
+    #[serde(rename = "tagFilterMode", alias = "tag_filter_mode")]
     #[schemars(description = "tag matching mode: any/all. aliases: and/or (case-insensitive).")]
     tag_filter_mode: Option<String>,
     flagged: Option<bool>,
@@ -79,31 +80,31 @@ struct ListTasksParams {
         description = "task status filter: available, due_soon, overdue, on_hold, completed, all. aliases: due soon/due-soon, on hold/on-hold."
     )]
     status: Option<String>,
-    #[serde(rename = "dueBefore")]
+    #[serde(rename = "dueBefore", alias = "due_before")]
     due_before: Option<String>,
-    #[serde(rename = "dueAfter")]
+    #[serde(rename = "dueAfter", alias = "due_after")]
     due_after: Option<String>,
-    #[serde(rename = "deferBefore")]
+    #[serde(rename = "deferBefore", alias = "defer_before")]
     defer_before: Option<String>,
-    #[serde(rename = "deferAfter")]
+    #[serde(rename = "deferAfter", alias = "defer_after")]
     defer_after: Option<String>,
-    #[serde(rename = "completedBefore")]
+    #[serde(rename = "completedBefore", alias = "completed_before")]
     completed_before: Option<String>,
-    #[serde(rename = "completedAfter")]
+    #[serde(rename = "completedAfter", alias = "completed_after")]
     completed_after: Option<String>,
     added_after: Option<String>,
     added_before: Option<String>,
     changed_after: Option<String>,
     changed_before: Option<String>,
-    #[serde(rename = "plannedBefore")]
+    #[serde(rename = "plannedBefore", alias = "planned_before")]
     planned_before: Option<String>,
-    #[serde(rename = "plannedAfter")]
+    #[serde(rename = "plannedAfter", alias = "planned_after")]
     planned_after: Option<String>,
-    #[serde(rename = "maxEstimatedMinutes")]
+    #[serde(rename = "maxEstimatedMinutes", alias = "max_estimated_minutes")]
     max_estimated_minutes: Option<i32>,
-    #[serde(rename = "sortBy")]
+    #[serde(rename = "sortBy", alias = "sort_by")]
     sort_by: Option<String>,
-    #[serde(rename = "sortOrder")]
+    #[serde(rename = "sortOrder", alias = "sort_order")]
     #[schemars(description = "sort direction: asc/desc. aliases: ascending/descending.")]
     sort_order: Option<String>,
     limit: Option<i32>,
@@ -113,32 +114,32 @@ struct ListTasksParams {
 struct GetTaskCountsParams {
     project: Option<String>,
     tag: Option<String>,
-    tags: Option<Vec<String>>,
-    #[serde(rename = "tagFilterMode")]
+    tags: Option<FlexibleTagList>,
+    #[serde(rename = "tagFilterMode", alias = "tag_filter_mode")]
     #[schemars(description = "tag matching mode: any/all. aliases: and/or (case-insensitive).")]
     tag_filter_mode: Option<String>,
     flagged: Option<bool>,
-    #[serde(rename = "dueBefore")]
+    #[serde(rename = "dueBefore", alias = "due_before")]
     due_before: Option<String>,
-    #[serde(rename = "dueAfter")]
+    #[serde(rename = "dueAfter", alias = "due_after")]
     due_after: Option<String>,
-    #[serde(rename = "deferBefore")]
+    #[serde(rename = "deferBefore", alias = "defer_before")]
     defer_before: Option<String>,
-    #[serde(rename = "deferAfter")]
+    #[serde(rename = "deferAfter", alias = "defer_after")]
     defer_after: Option<String>,
-    #[serde(rename = "completedBefore")]
+    #[serde(rename = "completedBefore", alias = "completed_before")]
     completed_before: Option<String>,
-    #[serde(rename = "completedAfter")]
+    #[serde(rename = "completedAfter", alias = "completed_after")]
     completed_after: Option<String>,
     added_after: Option<String>,
     added_before: Option<String>,
     changed_after: Option<String>,
     changed_before: Option<String>,
-    #[serde(rename = "plannedBefore")]
+    #[serde(rename = "plannedBefore", alias = "planned_before")]
     planned_before: Option<String>,
-    #[serde(rename = "plannedAfter")]
+    #[serde(rename = "plannedAfter", alias = "planned_after")]
     planned_after: Option<String>,
-    #[serde(rename = "maxEstimatedMinutes")]
+    #[serde(rename = "maxEstimatedMinutes", alias = "max_estimated_minutes")]
     max_estimated_minutes: Option<i32>,
 }
 
@@ -156,16 +157,16 @@ struct TaskIdLimitParams {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct AddNotificationParams {
     task_id: String,
-    #[serde(rename = "absoluteDate")]
+    #[serde(rename = "absoluteDate", alias = "absolute_date")]
     absolute_date: Option<String>,
-    #[serde(rename = "relativeOffset")]
+    #[serde(rename = "relativeOffset", alias = "relative_offset")]
     relative_offset: Option<f64>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct DuplicateTaskParams {
     task_id: String,
-    #[serde(rename = "includeChildren")]
+    #[serde(rename = "includeChildren", alias = "include_children")]
     include_children: Option<bool>,
 }
 
@@ -180,8 +181,8 @@ struct SearchTasksParams {
     query: String,
     project: Option<String>,
     tag: Option<String>,
-    tags: Option<Vec<String>>,
-    #[serde(rename = "tagFilterMode")]
+    tags: Option<FlexibleTagList>,
+    #[serde(rename = "tagFilterMode", alias = "tag_filter_mode")]
     #[schemars(description = "tag matching mode: any/all. aliases: and/or (case-insensitive).")]
     tag_filter_mode: Option<String>,
     flagged: Option<bool>,
@@ -189,51 +190,51 @@ struct SearchTasksParams {
         description = "task status filter: available, due_soon, overdue, on_hold, completed, all. aliases: due soon/due-soon, on hold/on-hold."
     )]
     status: Option<String>,
-    #[serde(rename = "dueBefore")]
+    #[serde(rename = "dueBefore", alias = "due_before")]
     due_before: Option<String>,
-    #[serde(rename = "dueAfter")]
+    #[serde(rename = "dueAfter", alias = "due_after")]
     due_after: Option<String>,
-    #[serde(rename = "deferBefore")]
+    #[serde(rename = "deferBefore", alias = "defer_before")]
     defer_before: Option<String>,
-    #[serde(rename = "deferAfter")]
+    #[serde(rename = "deferAfter", alias = "defer_after")]
     defer_after: Option<String>,
-    #[serde(rename = "completedBefore")]
+    #[serde(rename = "completedBefore", alias = "completed_before")]
     completed_before: Option<String>,
-    #[serde(rename = "completedAfter")]
+    #[serde(rename = "completedAfter", alias = "completed_after")]
     completed_after: Option<String>,
     added_after: Option<String>,
     added_before: Option<String>,
     changed_after: Option<String>,
     changed_before: Option<String>,
-    #[serde(rename = "maxEstimatedMinutes")]
+    #[serde(rename = "maxEstimatedMinutes", alias = "max_estimated_minutes")]
     max_estimated_minutes: Option<i32>,
-    #[serde(rename = "plannedBefore")]
+    #[serde(rename = "plannedBefore", alias = "planned_before")]
     planned_before: Option<String>,
-    #[serde(rename = "plannedAfter")]
+    #[serde(rename = "plannedAfter", alias = "planned_after")]
     planned_after: Option<String>,
-    #[serde(rename = "sortBy")]
+    #[serde(rename = "sortBy", alias = "sort_by")]
     sort_by: Option<String>,
-    #[serde(rename = "sortOrder")]
+    #[serde(rename = "sortOrder", alias = "sort_order")]
     #[schemars(description = "sort direction: asc/desc. aliases: ascending/descending.")]
     sort_order: Option<String>,
     limit: Option<i32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-struct CreateTaskParams {
-    name: String,
-    project: Option<String>,
-    note: Option<String>,
-    #[serde(rename = "dueDate")]
-    due_date: Option<String>,
-    #[serde(rename = "deferDate")]
-    defer_date: Option<String>,
-    #[serde(rename = "plannedDate")]
-    planned_date: Option<String>,
-    flagged: Option<bool>,
-    tags: Option<Vec<String>>,
-    #[serde(rename = "estimatedMinutes")]
-    estimated_minutes: Option<i32>,
+pub struct CreateTaskParams {
+    pub name: String,
+    pub project: Option<String>,
+    pub note: Option<String>,
+    #[serde(rename = "dueDate", alias = "due_date")]
+    pub due_date: Option<String>,
+    #[serde(rename = "deferDate", alias = "defer_date")]
+    pub defer_date: Option<String>,
+    #[serde(rename = "plannedDate", alias = "planned_date")]
+    pub planned_date: Option<String>,
+    pub flagged: Option<bool>,
+    pub tags: Option<FlexibleTagList>,
+    #[serde(rename = "estimatedMinutes", alias = "estimated_minutes")]
+    pub estimated_minutes: Option<i32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -241,15 +242,15 @@ struct CreateSubtaskParams {
     name: String,
     parent_task_id: String,
     note: Option<String>,
-    #[serde(rename = "dueDate")]
+    #[serde(rename = "dueDate", alias = "due_date")]
     due_date: Option<String>,
-    #[serde(rename = "deferDate")]
+    #[serde(rename = "deferDate", alias = "defer_date")]
     defer_date: Option<String>,
     #[serde(rename = "plannedDate")]
     planned_date: Option<String>,
     flagged: Option<bool>,
-    tags: Option<Vec<String>>,
-    #[serde(rename = "estimatedMinutes")]
+    tags: Option<FlexibleTagList>,
+    #[serde(rename = "estimatedMinutes", alias = "estimated_minutes")]
     estimated_minutes: Option<i32>,
 }
 
@@ -259,37 +260,37 @@ struct CreateTasksBatchParams {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-struct BatchCreateTaskInput {
-    name: String,
-    project: Option<String>,
-    note: Option<String>,
-    #[serde(rename = "dueDate")]
-    due_date: Option<String>,
-    #[serde(rename = "deferDate")]
-    defer_date: Option<String>,
-    #[serde(rename = "plannedDate")]
-    planned_date: Option<String>,
-    flagged: Option<bool>,
-    tags: Option<Vec<String>>,
-    #[serde(rename = "estimatedMinutes")]
-    estimated_minutes: Option<i32>,
+pub struct BatchCreateTaskInput {
+    pub name: String,
+    pub project: Option<String>,
+    pub note: Option<String>,
+    #[serde(rename = "dueDate", alias = "due_date")]
+    pub due_date: Option<String>,
+    #[serde(rename = "deferDate", alias = "defer_date")]
+    pub defer_date: Option<String>,
+    #[serde(rename = "plannedDate", alias = "planned_date")]
+    pub planned_date: Option<String>,
+    pub flagged: Option<bool>,
+    pub tags: Option<FlexibleTagList>,
+    #[serde(rename = "estimatedMinutes", alias = "estimated_minutes")]
+    pub estimated_minutes: Option<i32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-struct UpdateTaskParams {
-    task_id: String,
-    name: Option<String>,
-    note: Option<String>,
-    #[serde(rename = "dueDate")]
-    due_date: Option<String>,
-    #[serde(rename = "deferDate")]
-    defer_date: Option<String>,
-    #[serde(rename = "plannedDate")]
-    planned_date: Option<String>,
-    flagged: Option<bool>,
-    tags: Option<Vec<String>>,
-    #[serde(rename = "estimatedMinutes")]
-    estimated_minutes: Option<i32>,
+pub struct UpdateTaskParams {
+    pub task_id: String,
+    pub name: Option<String>,
+    pub note: Option<String>,
+    #[serde(rename = "dueDate", alias = "due_date")]
+    pub due_date: Option<String>,
+    #[serde(rename = "deferDate", alias = "defer_date")]
+    pub defer_date: Option<String>,
+    #[serde(rename = "plannedDate", alias = "planned_date")]
+    pub planned_date: Option<String>,
+    pub flagged: Option<bool>,
+    pub tags: Option<FlexibleTagList>,
+    #[serde(rename = "estimatedMinutes", alias = "estimated_minutes")]
+    pub estimated_minutes: Option<i32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -329,15 +330,15 @@ struct SetTaskRepetitionParams {
 struct ListProjectsParams {
     folder: Option<String>,
     status: Option<String>,
-    #[serde(rename = "completedBefore")]
+    #[serde(rename = "completedBefore", alias = "completed_before")]
     completed_before: Option<String>,
-    #[serde(rename = "completedAfter")]
+    #[serde(rename = "completedAfter", alias = "completed_after")]
     completed_after: Option<String>,
-    #[serde(rename = "stalledOnly")]
+    #[serde(rename = "stalledOnly", alias = "stalled_only")]
     stalled_only: Option<bool>,
-    #[serde(rename = "sortBy")]
+    #[serde(rename = "sortBy", alias = "sort_by")]
     sort_by: Option<String>,
-    #[serde(rename = "sortOrder")]
+    #[serde(rename = "sortOrder", alias = "sort_order")]
     sort_order: Option<String>,
     limit: Option<i32>,
 }
@@ -361,11 +362,11 @@ struct SearchTagsParams {
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct ListTagsParams {
-    #[serde(rename = "statusFilter")]
+    #[serde(rename = "statusFilter", alias = "status_filter")]
     status_filter: Option<String>,
-    #[serde(rename = "sortBy")]
+    #[serde(rename = "sortBy", alias = "sort_by")]
     sort_by: Option<String>,
-    #[serde(rename = "sortOrder")]
+    #[serde(rename = "sortOrder", alias = "sort_order")]
     sort_order: Option<String>,
     limit: Option<i32>,
 }
@@ -397,9 +398,9 @@ struct CreateProjectParams {
     name: String,
     folder: Option<String>,
     note: Option<String>,
-    #[serde(rename = "dueDate")]
+    #[serde(rename = "dueDate", alias = "due_date")]
     due_date: Option<String>,
-    #[serde(rename = "deferDate")]
+    #[serde(rename = "deferDate", alias = "defer_date")]
     defer_date: Option<String>,
     sequential: Option<bool>,
 }
@@ -409,16 +410,16 @@ struct UpdateProjectParams {
     project_id_or_name: String,
     name: Option<String>,
     note: Option<String>,
-    #[serde(rename = "dueDate")]
+    #[serde(rename = "dueDate", alias = "due_date")]
     due_date: Option<String>,
-    #[serde(rename = "deferDate")]
+    #[serde(rename = "deferDate", alias = "defer_date")]
     defer_date: Option<String>,
     flagged: Option<bool>,
-    tags: Option<Vec<String>>,
+    tags: Option<FlexibleTagList>,
     sequential: Option<bool>,
-    #[serde(rename = "completedByChildren")]
+    #[serde(rename = "completedByChildren", alias = "completed_by_children")]
     completed_by_children: Option<bool>,
-    #[serde(rename = "reviewInterval")]
+    #[serde(rename = "reviewInterval", alias = "review_interval")]
     review_interval: Option<String>,
 }
 
@@ -557,7 +558,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             self.runner.as_ref(),
             project.as_deref(),
             tag.as_deref(),
-            tags,
+            tags_as_opt_vec(tags),
             tag_filter_mode.as_deref().unwrap_or("any"),
             flagged,
             status.as_deref().unwrap_or("available"),
@@ -594,7 +595,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             self.runner.as_ref(),
             params.project.as_deref(),
             params.tag.as_deref(),
-            params.tags,
+            tags_as_opt_vec(params.tags),
             params.tag_filter_mode.as_deref().unwrap_or("any"),
             params.flagged,
             params.due_before.as_deref(),
@@ -719,7 +720,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             &params.query,
             params.project.as_deref(),
             params.tag.as_deref(),
-            params.tags,
+            tags_as_opt_vec(params.tags),
             params.tag_filter_mode.as_deref().unwrap_or("any"),
             params.flagged,
             params.status.as_deref().unwrap_or("available"),
@@ -761,7 +762,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.defer_date.as_deref(),
             params.planned_date.as_deref(),
             params.flagged,
-            params.tags,
+            tags_as_opt_vec(params.tags),
             params.estimated_minutes,
         )
         .await
@@ -787,7 +788,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
                 defer_date: task.defer_date,
                 planned_date: task.planned_date,
                 flagged: task.flagged,
-                tags: task.tags,
+                tags: tags_as_opt_vec(task.tags),
                 estimated_minutes: task.estimated_minutes,
             })
             .collect();
@@ -813,7 +814,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.defer_date.as_deref(),
             params.planned_date.as_deref(),
             params.flagged,
-            params.tags,
+            tags_as_opt_vec(params.tags),
             params.estimated_minutes,
         )
         .await
@@ -881,7 +882,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.defer_date.as_deref(),
             params.planned_date.as_deref(),
             params.flagged,
-            params.tags,
+            tags_as_opt_vec(params.tags),
             params.estimated_minutes,
         )
         .await
@@ -1140,7 +1141,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.due_date.as_deref(),
             params.defer_date.as_deref(),
             params.flagged,
-            params.tags,
+            tags_as_opt_vec(params.tags),
             params.sequential,
             params.completed_by_children,
             params.review_interval.as_deref(),

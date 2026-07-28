@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.1.9] - 2026-04-05
+
+### Fixed
+- Rust MCP server: `tags` on task and project write tools, and on `list_tasks` / `search_tasks` / `get_task_counts`, now deserialize from either a JSON array of strings or a single string containing a JSON array (e.g. `"[\"Quick\",\"Home\"]"`). This matches MCP clients that serialize all tool parameters as strings.
+
+## [1.1.8] - 2026-04-04
+
+### Fixed
+- Rust MCP server: tool input JSON Schema now uses camelCase property names for task write tools (`dueDate`, `deferDate`, `estimatedMinutes`) consistent with Python and TypeScript, so `tags` is accepted as a JSON array and no longer fails MCP parameter deserialization (issue #7).
+
 ## [1.1.7] - 2026-03-15
 
 ### Fixed
