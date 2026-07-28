@@ -46,7 +46,7 @@ return unique.slice(0, ${limit});
 
   server.tool(
     "get_perspective_tasks",
-    "get tasks visible in a named OmniFocus perspective (custom or built-in). switches the front document window to the perspective, reads the visible tasks, then restores the previous perspective.",
+    "get tasks visible in a named OmniFocus perspective (custom or built-in). for built-in perspectives (Inbox, Flagged, Projects, Tags, Review, Forecast), uses dedicated queries. for custom perspectives, reads the perspective's filter rules and evaluates them against all tasks.",
     {
       perspectiveName: z.string().min(1).describe("name of the perspective to query"),
       limit: z.number().int().min(1).default(100),
@@ -55,73 +55,268 @@ return unique.slice(0, ${limit});
     async ({ perspectiveName, limit, includeMetadata }) => {
       try {
         const nameJson = escapeForJxa(perspectiveName);
+        // The OmniFocus scripting bridge does not populate win.content.trees
+        // when accessed programmatically, so we read perspective filter rules
+        // and evaluate them against flattenedTasks instead.
         const script = `
-var perspective = null;
-if (typeof Perspective !== "undefined" && Perspective.Custom && Perspective.Custom.byName) {
-  perspective = Perspective.Custom.byName(${nameJson});
-}
-if (!perspective && typeof Perspective !== "undefined" && Perspective.BuiltIn && Perspective.BuiltIn.all) {
-  Perspective.BuiltIn.all.forEach(function(p) {
-    if (!perspective && p.name === ${nameJson}) perspective = p;
-  });
-}
-if (!perspective && document.perspectives) {
-  document.perspectives.forEach(function(p) {
-    if (!perspective && p.name === ${nameJson}) perspective = p;
-  });
-}
-if (!perspective) {
-  return { error: "Perspective not found: " + ${nameJson} };
+var perspectiveName = ${nameJson};
+
+function getTaskStatus(task) {
+  var s = String(task.taskStatus);
+  if (s.indexOf("Available") >= 0) return "available";
+  if (s.indexOf("Blocked") >= 0) return "blocked";
+  if (s.indexOf("Next") >= 0) return "next";
+  if (s.indexOf("DueSoon") >= 0) return "due_soon";
+  if (s.indexOf("Overdue") >= 0) return "overdue";
+  if (s.indexOf("Completed") >= 0) return "completed";
+  if (s.indexOf("Dropped") >= 0) return "dropped";
+  return "unknown";
 }
 
-var win = document.windows[0];
-if (!win) {
-  return { error: "No open OmniFocus document window." };
+function isAvailable(task) {
+  var s = getTaskStatus(task);
+  return s === "available" || s === "due_soon" || s === "overdue" || s === "next";
 }
 
-var previousPerspective = win.perspective;
-win.perspective = perspective;
+function isRemaining(task) {
+  var s = getTaskStatus(task);
+  return s !== "completed" && s !== "dropped";
+}
 
-var trees = win.content.trees;
-var tasks = [];
-var count = 0;
-
-for (var i = 0; i < trees.length; i++) {
-  if (count >= ${limit}) break;
-  var node = trees[i];
-  var task = node.value;
-  if (!task || typeof task.name === "undefined") continue;
+function buildEntry(task, includeMeta) {
   var entry = {
     id: task.id ? task.id.primaryKey : null,
     name: task.name
   };
-  if (${includeMetadata}) {
+  if (includeMeta) {
     entry.dueDate = task.dueDate ? task.dueDate.toISOString() : null;
     entry.deferDate = task.deferDate ? task.deferDate.toISOString() : null;
     entry.flagged = task.flagged;
     entry.tags = task.tags ? task.tags.map(function(t) { return t.name; }) : [];
     entry.projectName = task.containingProject ? task.containingProject.name : null;
     entry.note = task.note || null;
-    entry.taskStatus = (function() {
-      var s = String(task.taskStatus);
-      if (s.includes("Available")) return "available";
-      if (s.includes("Blocked")) return "blocked";
-      if (s.includes("Next")) return "next";
-      if (s.includes("DueSoon")) return "due_soon";
-      if (s.includes("Overdue")) return "overdue";
-      if (s.includes("Completed")) return "completed";
-      if (s.includes("Dropped")) return "dropped";
-      return "unknown";
-    })();
+    entry.taskStatus = getTaskStatus(task);
   }
-  tasks.push(entry);
-  count += 1;
+  return entry;
 }
 
-win.perspective = previousPerspective;
+var builtinHandlers = {
+  "Inbox": function(lim, inclMeta) {
+    var tasks = [];
+    inbox.forEach(function(task) {
+      if (tasks.length >= lim) return;
+      if (!task.completed) tasks.push(buildEntry(task, inclMeta));
+    });
+    return tasks;
+  },
+  "Flagged": function(lim, inclMeta) {
+    var tasks = [];
+    flattenedTasks.forEach(function(task) {
+      if (tasks.length >= lim) return;
+      if (task.flagged && isAvailable(task)) {
+        tasks.push(buildEntry(task, inclMeta));
+      }
+    });
+    return tasks;
+  },
+  "Projects": function(lim, inclMeta) {
+    var entries = [];
+    flattenedProjects.forEach(function(proj) {
+      if (entries.length >= lim) return;
+      var s = String(proj.status);
+      if (s.indexOf("Dropped") >= 0 || s.indexOf("Done") >= 0) return;
+      var entry = {
+        id: proj.id ? proj.id.primaryKey : null,
+        name: proj.name
+      };
+      if (inclMeta) {
+        entry.dueDate = proj.dueDate ? proj.dueDate.toISOString() : null;
+        entry.deferDate = proj.deferDate ? proj.deferDate.toISOString() : null;
+        entry.flagged = proj.flagged;
+        entry.tags = proj.tags ? proj.tags.map(function(t) { return t.name; }) : [];
+        entry.note = proj.note || null;
+        entry.taskStatus = (function() {
+          var ps = String(proj.status);
+          if (ps.indexOf("Active") >= 0) return "active";
+          if (ps.indexOf("OnHold") >= 0) return "on_hold";
+          return "unknown";
+        })();
+      }
+      entries.push(entry);
+    });
+    return entries;
+  },
+  "Tags": function(lim, inclMeta) {
+    var entries = [];
+    flattenedTags.forEach(function(tag) {
+      if (entries.length >= lim) return;
+      entries.push({
+        id: tag.id ? tag.id.primaryKey : null,
+        name: tag.name
+      });
+    });
+    return entries;
+  },
+  "Review": function(lim, inclMeta) {
+    var entries = [];
+    flattenedProjects.forEach(function(proj) {
+      if (entries.length >= lim) return;
+      var s = String(proj.status);
+      if (s.indexOf("Dropped") >= 0 || s.indexOf("Done") >= 0) return;
+      if (proj.nextReviewDate && proj.nextReviewDate <= new Date()) {
+        var entry = {
+          id: proj.id ? proj.id.primaryKey : null,
+          name: proj.name
+        };
+        if (inclMeta) {
+          entry.dueDate = proj.dueDate ? proj.dueDate.toISOString() : null;
+          entry.nextReviewDate = proj.nextReviewDate ? proj.nextReviewDate.toISOString() : null;
+          entry.flagged = proj.flagged;
+          entry.tags = proj.tags ? proj.tags.map(function(t) { return t.name; }) : [];
+          entry.note = proj.note || null;
+        }
+        entries.push(entry);
+      }
+    });
+    return entries;
+  },
+  "Forecast": function(lim, inclMeta) {
+    var tasks = [];
+    flattenedTasks.forEach(function(task) {
+      if (tasks.length >= lim) return;
+      if (task.dueDate && isRemaining(task)) {
+        tasks.push(buildEntry(task, inclMeta));
+      }
+    });
+    tasks.sort(function(a, b) {
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return a.dueDate < b.dueDate ? -1 : a.dueDate > b.dueDate ? 1 : 0;
+    });
+    return tasks.slice(0, lim);
+  }
+};
+
+function taskHasAnyTag(task, tagIds) {
+  var taskTags = task.tags;
+  for (var i = 0; i < taskTags.length; i++) {
+    for (var j = 0; j < tagIds.length; j++) {
+      if (taskTags[i].id.primaryKey === tagIds[j]) return true;
+    }
+  }
+  return false;
+}
+
+function taskWithinFocus(task, focusIds) {
+  var proj = task.containingProject;
+  while (proj) {
+    if (proj.id) {
+      var projId = proj.id.primaryKey;
+      for (var i = 0; i < focusIds.length; i++) {
+        if (projId === focusIds[i]) return true;
+      }
+    }
+    var folder = proj.parentFolder;
+    while (folder) {
+      if (folder.id) {
+        var folderId = folder.id.primaryKey;
+        for (var i = 0; i < focusIds.length; i++) {
+          if (folderId === focusIds[i]) return true;
+        }
+      }
+      folder = folder.parentFolder;
+    }
+    break;
+  }
+  return false;
+}
+
+function evaluateRule(task, rule) {
+  if (rule.disabledRule) return true;
+
+  if (rule.aggregateRules) {
+    var subResults = rule.aggregateRules.map(function(sr) { return evaluateRule(task, sr); });
+    if (rule.aggregateType === "any") return subResults.some(function(r) { return r; });
+    if (rule.aggregateType === "none") return subResults.every(function(r) { return !r; });
+    return subResults.every(function(r) { return r; });
+  }
+
+  if (rule.actionAvailability === "available") return isAvailable(task);
+  if (rule.actionAvailability === "remaining") return isRemaining(task);
+  if (rule.actionAvailability === "completed") return getTaskStatus(task) === "completed";
+  if (rule.actionStatus === "flagged") return task.flagged;
+  if (rule.actionStatus === "due") return task.dueDate !== null;
+  if (rule.actionHasAnyOfTags) return taskHasAnyTag(task, rule.actionHasAnyOfTags);
+  if (rule.actionWithinFocus) return taskWithinFocus(task, rule.actionWithinFocus);
+  if (rule.actionDateIsToday && rule.actionDateField) {
+    var today = new Date();
+    today.setHours(0,0,0,0);
+    var tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    var dateVal = rule.actionDateField === "due" ? task.dueDate : task.deferDate;
+    if (!dateVal) return false;
+    return dateVal >= today && dateVal < tomorrow;
+  }
+
+  return true;
+}
+
+function evaluateCustomPerspective(perspective, lim, inclMeta) {
+  var rules = perspective.archivedFilterRules;
+  var topAgg = perspective.archivedTopLevelFilterAggregation || "all";
+
+  if (!rules || rules.length === 0) {
+    var tasks = [];
+    flattenedTasks.forEach(function(task) {
+      if (tasks.length >= lim) return;
+      if (isRemaining(task)) tasks.push(buildEntry(task, inclMeta));
+    });
+    return tasks;
+  }
+
+  var tasks = [];
+  flattenedTasks.forEach(function(task) {
+    if (tasks.length >= lim) return;
+    var results = rules.map(function(r) { return evaluateRule(task, r); });
+    var pass = (topAgg === "any")
+      ? results.some(function(r) { return r; })
+      : results.every(function(r) { return r; });
+    if (pass) tasks.push(buildEntry(task, inclMeta));
+  });
+  return tasks;
+}
+
+var isBuiltin = false;
+var builtinName = null;
+if (typeof Perspective !== "undefined" && Perspective.BuiltIn && Perspective.BuiltIn.all) {
+  Perspective.BuiltIn.all.forEach(function(p) {
+    if (p.name === perspectiveName) {
+      isBuiltin = true;
+      builtinName = p.name;
+    }
+  });
+}
+
+var customPerspective = null;
+if (!isBuiltin && typeof Perspective !== "undefined" && Perspective.Custom && Perspective.Custom.byName) {
+  customPerspective = Perspective.Custom.byName(perspectiveName);
+}
+
+if (!isBuiltin && !customPerspective) {
+  return { error: "Perspective not found: " + perspectiveName };
+}
+
+var tasks;
+if (isBuiltin && builtinHandlers[builtinName]) {
+  tasks = builtinHandlers[builtinName](${limit}, ${includeMetadata});
+} else if (customPerspective) {
+  tasks = evaluateCustomPerspective(customPerspective, ${limit}, ${includeMetadata});
+} else {
+  return { error: "Built-in perspective '" + builtinName + "' is not queryable via this tool. Use dedicated tools (get_inbox, get_forecast, search_tasks) instead." };
+}
 
 return {
-  perspectiveName: ${nameJson},
+  perspectiveName: perspectiveName,
   count: tasks.length,
   tasks: tasks
 };

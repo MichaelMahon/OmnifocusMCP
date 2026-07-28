@@ -32,7 +32,7 @@ use crate::{
             update_folder as update_folder_tool,
         },
         forecast::get_forecast,
-        perspectives::list_perspectives,
+        perspectives::{get_perspective_tasks, list_perspectives},
         projects::{
             complete_project, create_project, delete_project, delete_projects_batch, get_project,
             get_project_counts, list_projects, move_project, search_projects, set_project_status,
@@ -54,6 +54,16 @@ use crate::{
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct LimitParams {
     limit: Option<i32>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct GetPerspectiveTasksParams {
+    #[serde(rename = "perspectiveName")]
+    #[schemars(description = "name of the perspective to query")]
+    perspective_name: String,
+    limit: Option<i32>,
+    #[serde(rename = "includeMetadata")]
+    include_metadata: Option<bool>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -1352,6 +1362,24 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         let result = list_perspectives(self.runner.as_ref(), params.limit.unwrap_or(100))
             .await
             .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(
+        description = "get tasks visible in a named OmniFocus perspective (custom or built-in). for built-in perspectives (Inbox, Flagged, Projects, Tags, Review, Forecast), uses dedicated queries. for custom perspectives, reads the perspective's filter rules and evaluates them against all tasks."
+    )]
+    async fn get_perspective_tasks(
+        &self,
+        Parameters(params): Parameters<GetPerspectiveTasksParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = get_perspective_tasks(
+            self.runner.as_ref(),
+            &params.perspective_name,
+            params.limit.unwrap_or(100),
+            params.include_metadata.unwrap_or(true),
+        )
+        .await
+        .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 }
