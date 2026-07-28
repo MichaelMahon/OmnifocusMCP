@@ -3,6 +3,7 @@ use serde_json::Value;
 use std::collections::HashSet;
 
 use crate::{
+    dates::normalize_date_input,
     error::{OmniFocusError, Result},
     jxa::{escape_for_jxa, JxaRunner},
     types::{TaskCountsResult, TaskResult},
@@ -2229,13 +2230,13 @@ pub async fn create_task<R: JxaRunner>(
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
     let due_date_value = due_date
-        .map(escape_for_jxa)
+        .map(|value| escape_for_jxa(&normalize_date_input(value)))
         .unwrap_or_else(|| "null".to_string());
     let defer_date_value = defer_date
-        .map(escape_for_jxa)
+        .map(|value| escape_for_jxa(&normalize_date_input(value)))
         .unwrap_or_else(|| "null".to_string());
     let planned_date_value = planned_date
-        .map(escape_for_jxa)
+        .map(|value| escape_for_jxa(&normalize_date_input(value)))
         .unwrap_or_else(|| "null".to_string());
     let flagged_value = flagged
         .map(|value| {
@@ -2330,13 +2331,13 @@ pub async fn create_subtask<R: JxaRunner>(
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
     let due_date_value = due_date
-        .map(escape_for_jxa)
+        .map(|value| escape_for_jxa(&normalize_date_input(value)))
         .unwrap_or_else(|| "null".to_string());
     let defer_date_value = defer_date
-        .map(escape_for_jxa)
+        .map(|value| escape_for_jxa(&normalize_date_input(value)))
         .unwrap_or_else(|| "null".to_string());
     let planned_date_value = planned_date
-        .map(escape_for_jxa)
+        .map(|value| escape_for_jxa(&normalize_date_input(value)))
         .unwrap_or_else(|| "null".to_string());
     let flagged_value = flagged
         .map(|value| {
@@ -2516,9 +2517,9 @@ pub async fn create_tasks_batch<R: JxaRunner>(
             name: task.name.trim().to_string(),
             project: task.project.map(|project| project.trim().to_string()),
             note: task.note,
-            due_date: task.due_date,
-            defer_date: task.defer_date,
-            planned_date: task.planned_date,
+            due_date: task.due_date.as_deref().map(normalize_date_input),
+            defer_date: task.defer_date.as_deref().map(normalize_date_input),
+            planned_date: task.planned_date.as_deref().map(normalize_date_input),
             flagged: task.flagged,
             tags: task.tags,
             estimated_minutes: task.estimated_minutes,
@@ -2688,13 +2689,19 @@ pub async fn update_task<R: JxaRunner>(
         updates.insert("note".to_string(), Value::String(value.to_string()));
     }
     if let Some(value) = due_date {
-        updates.insert("dueDate".to_string(), Value::String(value.to_string()));
+        updates.insert("dueDate".to_string(), Value::String(normalize_date_input(value)));
     }
     if let Some(value) = defer_date {
-        updates.insert("deferDate".to_string(), Value::String(value.to_string()));
+        updates.insert(
+            "deferDate".to_string(),
+            Value::String(normalize_date_input(value)),
+        );
     }
     if let Some(value) = planned_date {
-        updates.insert("plannedDate".to_string(), Value::String(value.to_string()));
+        updates.insert(
+            "plannedDate".to_string(),
+            Value::String(normalize_date_input(value)),
+        );
     }
     if let Some(value) = flagged {
         updates.insert("flagged".to_string(), Value::Bool(value));

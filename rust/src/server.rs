@@ -19,6 +19,7 @@ use std::sync::Arc;
 
 use crate::{
     error::OmniFocusError,
+    flexible_int::FlexibleI32,
     flexible_tags::{tags_as_opt_vec, FlexibleTagList},
     jxa::JxaRunner,
     prompts::{daily_review, inbox_processing, project_planning, weekly_review},
@@ -54,7 +55,7 @@ use crate::{
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct LimitParams {
-    limit: Option<i32>,
+    limit: Option<FlexibleI32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -62,7 +63,7 @@ struct GetPerspectiveTasksParams {
     #[serde(rename = "perspectiveName")]
     #[schemars(description = "name of the perspective to query")]
     perspective_name: String,
-    limit: Option<i32>,
+    limit: Option<FlexibleI32>,
     #[serde(rename = "includeMetadata")]
     include_metadata: Option<bool>,
 }
@@ -101,13 +102,13 @@ struct ListTasksParams {
     #[serde(rename = "plannedAfter", alias = "planned_after")]
     planned_after: Option<String>,
     #[serde(rename = "maxEstimatedMinutes", alias = "max_estimated_minutes")]
-    max_estimated_minutes: Option<i32>,
+    max_estimated_minutes: Option<FlexibleI32>,
     #[serde(rename = "sortBy", alias = "sort_by")]
     sort_by: Option<String>,
     #[serde(rename = "sortOrder", alias = "sort_order")]
     #[schemars(description = "sort direction: asc/desc. aliases: ascending/descending.")]
     sort_order: Option<String>,
-    limit: Option<i32>,
+    limit: Option<FlexibleI32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -140,7 +141,7 @@ struct GetTaskCountsParams {
     #[serde(rename = "plannedAfter", alias = "planned_after")]
     planned_after: Option<String>,
     #[serde(rename = "maxEstimatedMinutes", alias = "max_estimated_minutes")]
-    max_estimated_minutes: Option<i32>,
+    max_estimated_minutes: Option<FlexibleI32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -151,7 +152,7 @@ struct TaskIdParams {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct TaskIdLimitParams {
     task_id: String,
-    limit: Option<i32>,
+    limit: Option<FlexibleI32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -207,7 +208,7 @@ struct SearchTasksParams {
     changed_after: Option<String>,
     changed_before: Option<String>,
     #[serde(rename = "maxEstimatedMinutes", alias = "max_estimated_minutes")]
-    max_estimated_minutes: Option<i32>,
+    max_estimated_minutes: Option<FlexibleI32>,
     #[serde(rename = "plannedBefore", alias = "planned_before")]
     planned_before: Option<String>,
     #[serde(rename = "plannedAfter", alias = "planned_after")]
@@ -217,7 +218,7 @@ struct SearchTasksParams {
     #[serde(rename = "sortOrder", alias = "sort_order")]
     #[schemars(description = "sort direction: asc/desc. aliases: ascending/descending.")]
     sort_order: Option<String>,
-    limit: Option<i32>,
+    limit: Option<FlexibleI32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -234,7 +235,7 @@ pub struct CreateTaskParams {
     pub flagged: Option<bool>,
     pub tags: Option<FlexibleTagList>,
     #[serde(rename = "estimatedMinutes", alias = "estimated_minutes")]
-    pub estimated_minutes: Option<i32>,
+    pub estimated_minutes: Option<FlexibleI32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -251,7 +252,7 @@ struct CreateSubtaskParams {
     flagged: Option<bool>,
     tags: Option<FlexibleTagList>,
     #[serde(rename = "estimatedMinutes", alias = "estimated_minutes")]
-    estimated_minutes: Option<i32>,
+    estimated_minutes: Option<FlexibleI32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -273,7 +274,7 @@ pub struct BatchCreateTaskInput {
     pub flagged: Option<bool>,
     pub tags: Option<FlexibleTagList>,
     #[serde(rename = "estimatedMinutes", alias = "estimated_minutes")]
-    pub estimated_minutes: Option<i32>,
+    pub estimated_minutes: Option<FlexibleI32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -290,7 +291,7 @@ pub struct UpdateTaskParams {
     pub flagged: Option<bool>,
     pub tags: Option<FlexibleTagList>,
     #[serde(rename = "estimatedMinutes", alias = "estimated_minutes")]
-    pub estimated_minutes: Option<i32>,
+    pub estimated_minutes: Option<FlexibleI32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -340,7 +341,7 @@ struct ListProjectsParams {
     sort_by: Option<String>,
     #[serde(rename = "sortOrder", alias = "sort_order")]
     sort_order: Option<String>,
-    limit: Option<i32>,
+    limit: Option<FlexibleI32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -351,13 +352,13 @@ struct GetProjectCountsParams {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct SearchProjectsParams {
     query: String,
-    limit: Option<i32>,
+    limit: Option<FlexibleI32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct SearchTagsParams {
     query: String,
-    limit: Option<i32>,
+    limit: Option<FlexibleI32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -368,7 +369,7 @@ struct ListTagsParams {
     sort_by: Option<String>,
     #[serde(rename = "sortOrder", alias = "sort_order")]
     sort_order: Option<String>,
-    limit: Option<i32>,
+    limit: Option<FlexibleI32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -517,7 +518,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<LimitParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = get_inbox(self.runner.as_ref(), params.limit.unwrap_or(100))
+        let result = get_inbox(self.runner.as_ref(), params.limit.map(FlexibleI32::value).unwrap_or(100))
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
@@ -574,10 +575,10 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             changed_before.as_deref(),
             planned_before.as_deref(),
             planned_after.as_deref(),
-            max_estimated_minutes,
+            max_estimated_minutes.map(FlexibleI32::value),
             sort_by.as_deref(),
             sort_order.as_deref().unwrap_or("asc"),
-            limit.unwrap_or(100),
+            limit.map(FlexibleI32::value).unwrap_or(100),
         )
         .await
         .map_err(to_mcp_error)?;
@@ -608,7 +609,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.added_before.as_deref(),
             params.changed_after.as_deref(),
             params.changed_before.as_deref(),
-            params.max_estimated_minutes,
+            params.max_estimated_minutes.map(FlexibleI32::value),
         )
         .await
         .map_err(to_mcp_error)?;
@@ -638,7 +639,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         let result = list_subtasks(
             self.runner.as_ref(),
             &params.task_id,
-            params.limit.unwrap_or(100),
+            params.limit.map(FlexibleI32::value).unwrap_or(100),
         )
         .await
         .map_err(to_mcp_error)?;
@@ -736,10 +737,10 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.changed_before.as_deref(),
             params.planned_before.as_deref(),
             params.planned_after.as_deref(),
-            params.max_estimated_minutes,
+            params.max_estimated_minutes.map(FlexibleI32::value),
             params.sort_by.as_deref(),
             params.sort_order.as_deref().unwrap_or("asc"),
-            params.limit.unwrap_or(100),
+            params.limit.map(FlexibleI32::value).unwrap_or(100),
         )
         .await
         .map_err(to_mcp_error)?;
@@ -763,7 +764,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.planned_date.as_deref(),
             params.flagged,
             tags_as_opt_vec(params.tags),
-            params.estimated_minutes,
+            params.estimated_minutes.map(FlexibleI32::value),
         )
         .await
         .map_err(to_mcp_error)?;
@@ -789,7 +790,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
                 planned_date: task.planned_date,
                 flagged: task.flagged,
                 tags: tags_as_opt_vec(task.tags),
-                estimated_minutes: task.estimated_minutes,
+                estimated_minutes: task.estimated_minutes.map(FlexibleI32::value),
             })
             .collect();
         let result = create_tasks_batch(self.runner.as_ref(), tasks)
@@ -815,7 +816,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.planned_date.as_deref(),
             params.flagged,
             tags_as_opt_vec(params.tags),
-            params.estimated_minutes,
+            params.estimated_minutes.map(FlexibleI32::value),
         )
         .await
         .map_err(to_mcp_error)?;
@@ -883,7 +884,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.planned_date.as_deref(),
             params.flagged,
             tags_as_opt_vec(params.tags),
-            params.estimated_minutes,
+            params.estimated_minutes.map(FlexibleI32::value),
         )
         .await
         .map_err(to_mcp_error)?;
@@ -986,7 +987,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.stalled_only.unwrap_or(false),
             params.sort_by.as_deref(),
             params.sort_order.as_deref().unwrap_or("asc"),
-            params.limit.unwrap_or(100),
+            params.limit.map(FlexibleI32::value).unwrap_or(100),
         )
         .await
         .map_err(to_mcp_error)?;
@@ -1016,7 +1017,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         let result = search_projects(
             self.runner.as_ref(),
             &params.query,
-            params.limit.unwrap_or(100),
+            params.limit.map(FlexibleI32::value).unwrap_or(100),
         )
         .await
         .map_err(to_mcp_error)?;
@@ -1178,7 +1179,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         let result = search_tags(
             self.runner.as_ref(),
             &params.query,
-            params.limit.unwrap_or(100),
+            params.limit.map(FlexibleI32::value).unwrap_or(100),
         )
         .await
         .map_err(to_mcp_error)?;
@@ -1197,7 +1198,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.status_filter.as_deref().unwrap_or("all"),
             params.sort_by.as_deref(),
             params.sort_order.as_deref().unwrap_or("asc"),
-            params.limit.unwrap_or(100),
+            params.limit.map(FlexibleI32::value).unwrap_or(100),
         )
         .await
         .map_err(to_mcp_error)?;
@@ -1266,7 +1267,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<LimitParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = list_folders(self.runner.as_ref(), params.limit.unwrap_or(100))
+        let result = list_folders(self.runner.as_ref(), params.limit.map(FlexibleI32::value).unwrap_or(100))
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
@@ -1347,7 +1348,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<LimitParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = get_forecast(self.runner.as_ref(), params.limit.unwrap_or(100))
+        let result = get_forecast(self.runner.as_ref(), params.limit.map(FlexibleI32::value).unwrap_or(100))
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
@@ -1360,7 +1361,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<LimitParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = list_perspectives(self.runner.as_ref(), params.limit.unwrap_or(100))
+        let result = list_perspectives(self.runner.as_ref(), params.limit.map(FlexibleI32::value).unwrap_or(100))
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
@@ -1376,7 +1377,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         let result = get_perspective_tasks(
             self.runner.as_ref(),
             &params.perspective_name,
-            params.limit.unwrap_or(100),
+            params.limit.map(FlexibleI32::value).unwrap_or(100),
             params.include_metadata.unwrap_or(true),
         )
         .await

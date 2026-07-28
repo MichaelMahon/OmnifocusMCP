@@ -1,6 +1,7 @@
 use serde_json::Value;
 
 use crate::{
+    dates::normalize_date_input,
     error::{OmniFocusError, Result},
     jxa::{escape_for_jxa, JxaRunner},
     types::ProjectCountsResult,
@@ -453,10 +454,10 @@ pub async fn create_project<R: JxaRunner>(
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
     let due_date_value = due_date
-        .map(escape_for_jxa)
+        .map(|value| escape_for_jxa(&normalize_date_input(value)))
         .unwrap_or_else(|| "null".to_string());
     let defer_date_value = defer_date
-        .map(escape_for_jxa)
+        .map(|value| escape_for_jxa(&normalize_date_input(value)))
         .unwrap_or_else(|| "null".to_string());
     let sequential_value = sequential
         .map(|value| {
@@ -851,10 +852,13 @@ pub async fn update_project<R: JxaRunner>(
         updates.insert("note".to_string(), Value::String(value.to_string()));
     }
     if let Some(value) = due_date {
-        updates.insert("dueDate".to_string(), Value::String(value.to_string()));
+        updates.insert("dueDate".to_string(), Value::String(normalize_date_input(value)));
     }
     if let Some(value) = defer_date {
-        updates.insert("deferDate".to_string(), Value::String(value.to_string()));
+        updates.insert(
+            "deferDate".to_string(),
+            Value::String(normalize_date_input(value)),
+        );
     }
     if let Some(value) = flagged {
         updates.insert("flagged".to_string(), Value::Bool(value));

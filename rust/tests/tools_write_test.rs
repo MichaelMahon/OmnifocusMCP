@@ -2521,3 +2521,124 @@ fn update_task_params_accepts_tags_as_json_encoded_string() {
     let p: UpdateTaskParams = serde_json::from_str(json).expect("string-encoded tags on update");
     assert_eq!(p.tags.expect("tags").into_vec(), vec!["Quick".to_string()]);
 }
+
+// --- Fork regression tests: bare calendar dates must reach JXA as local midnight ---
+//
+// `new Date("2026-08-01")` is the ECMA-262 date-only form and is parsed as UTC, which lands
+// on the previous day's evening in any negative-offset zone (20:00 Jul 31 in America/New_York).
+// Widening to "2026-08-01T00:00:00" makes JXA read it as local midnight instead.
+
+#[tokio::test]
+async fn create_task_widens_bare_dates_to_local_midnight() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "t-dates", "name": "Dated task"}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    create_task(
+        &runner,
+        "Dated task",
+        None,
+        None,
+        Some("2026-08-01"),
+        Some("2026-08-02"),
+        Some("2026-08-03"),
+        None,
+        None,
+        None,
+    )
+    .await
+    .expect("create_task should succeed");
+
+    let scripts = scripts.lock().expect("scripts lock should succeed");
+    let script = scripts.last().expect("a script should have been recorded");
+
+    assert!(
+        script.contains("2026-08-01T00:00:00"),
+        "bare dueDate should be widened to local midnight, got: {script}"
+    );
+    assert!(
+        script.contains("2026-08-02T00:00:00"),
+        "bare deferDate should be widened to local midnight, got: {script}"
+    );
+    assert!(
+        script.contains("2026-08-03T00:00:00"),
+        "bare plannedDate should be widened to local midnight, got: {script}"
+    );
+}
+
+#[tokio::test]
+async fn create_task_leaves_explicit_instants_untouched() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "t-dates", "name": "Dated task"}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    create_task(
+        &runner,
+        "Dated task",
+        None,
+        None,
+        Some("2026-08-01T09:30:00Z"),
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+    .await
+    .expect("create_task should succeed");
+
+    let scripts = scripts.lock().expect("scripts lock should succeed");
+    let script = scripts.last().expect("a script should have been recorded");
+
+    assert!(
+        script.contains("2026-08-01T09:30:00Z"),
+        "an explicit UTC instant must survive verbatim, got: {script}"
+    );
+    assert!(
+        !script.contains("2026-08-01T09:30:00ZT00:00:00"),
+        "an explicit instant must not be widened, got: {script}"
+    );
+}
+
+#[tokio::test]
+async fn update_task_widens_bare_dates_to_local_midnight() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "t-dates", "name": "Dated task"}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    update_task(
+        &runner,
+        "t-dates",
+        None,
+        None,
+        Some("2026-08-01"),
+        Some("2026-08-02"),
+        Some("2026-08-03"),
+        None,
+        None,
+        None,
+    )
+    .await
+    .expect("update_task should succeed");
+
+    let scripts = scripts.lock().expect("scripts lock should succeed");
+    let script = scripts.last().expect("a script should have been recorded");
+
+    assert!(
+        script.contains("2026-08-01T00:00:00"),
+        "bare dueDate should be widened on update, got: {script}"
+    );
+    assert!(
+        script.contains("2026-08-02T00:00:00"),
+        "bare deferDate should be widened on update, got: {script}"
+    );
+}

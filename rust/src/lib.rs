@@ -1,4 +1,6 @@
+pub mod dates;
 pub mod error;
+pub mod flexible_int;
 pub mod flexible_tags;
 pub mod jxa;
 pub mod prompts;
