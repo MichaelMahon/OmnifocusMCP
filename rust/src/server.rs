@@ -503,6 +503,21 @@ fn to_mcp_error(error: OmniFocusError) -> McpError {
     }
 }
 
+/// For tools that change OmniFocus. Killing osascript on timeout does not retract the Apple
+/// Event already queued to OmniFocus, so the write can still land after we report failure.
+/// Say so, or a client retry creates a duplicate.
+fn to_mcp_write_error(error: OmniFocusError) -> McpError {
+    match error {
+        OmniFocusError::Timeout { .. } => McpError::internal_error(
+            format!(
+                "{error} The change may still have applied in OmniFocus; check before retrying."
+            ),
+            None,
+        ),
+        _ => to_mcp_error(error),
+    }
+}
+
 fn as_call_tool_result<T: Serialize>(value: &T) -> std::result::Result<CallToolResult, McpError> {
     let text = serde_json::to_string(value)
         .map_err(|error| McpError::internal_error(error.to_string(), None))?;
@@ -518,9 +533,12 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<LimitParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = get_inbox(self.runner.as_ref(), params.limit.map(FlexibleI32::value).unwrap_or(100))
-            .await
-            .map_err(to_mcp_error)?;
+        let result = get_inbox(
+            self.runner.as_ref(),
+            params.limit.map(FlexibleI32::value).unwrap_or(100),
+        )
+        .await
+        .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 
@@ -673,7 +691,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.relative_offset,
         )
         .await
-        .map_err(to_mcp_error)?;
+        .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -690,7 +708,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.include_children.unwrap_or(true),
         )
         .await
-        .map_err(to_mcp_error)?;
+        .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -705,7 +723,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             &params.notification_id,
         )
         .await
-        .map_err(to_mcp_error)?;
+        .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -767,7 +785,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.estimated_minutes.map(FlexibleI32::value),
         )
         .await
-        .map_err(to_mcp_error)?;
+        .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -795,7 +813,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             .collect();
         let result = create_tasks_batch(self.runner.as_ref(), tasks)
             .await
-            .map_err(to_mcp_error)?;
+            .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -819,7 +837,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.estimated_minutes.map(FlexibleI32::value),
         )
         .await
-        .map_err(to_mcp_error)?;
+        .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -832,7 +850,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = complete_task(self.runner.as_ref(), &params.task_id)
             .await
-            .map_err(to_mcp_error)?;
+            .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -845,7 +863,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = uncomplete_task(self.runner.as_ref(), &params.task_id)
             .await
-            .map_err(to_mcp_error)?;
+            .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -863,7 +881,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.schedule_type.as_deref().unwrap_or("regularly"),
         )
         .await
-        .map_err(to_mcp_error)?;
+        .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -887,7 +905,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.estimated_minutes.map(FlexibleI32::value),
         )
         .await
-        .map_err(to_mcp_error)?;
+        .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -900,7 +918,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = delete_task(self.runner.as_ref(), &params.task_id)
             .await
-            .map_err(to_mcp_error)?;
+            .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -913,7 +931,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = delete_tasks_batch(self.runner.as_ref(), params.task_ids)
             .await
-            .map_err(to_mcp_error)?;
+            .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -931,7 +949,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.parent_task_id.as_deref(),
         )
         .await
-        .map_err(to_mcp_error)?;
+        .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -949,7 +967,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.parent_task_id.as_deref(),
         )
         .await
-        .map_err(to_mcp_error)?;
+        .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -967,7 +985,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             &params.text,
         )
         .await
-        .map_err(to_mcp_error)?;
+        .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1054,7 +1072,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.sequential,
         )
         .await
-        .map_err(to_mcp_error)?;
+        .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1067,7 +1085,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = complete_project(self.runner.as_ref(), &params.project_id_or_name)
             .await
-            .map_err(to_mcp_error)?;
+            .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1080,7 +1098,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = uncomplete_project(self.runner.as_ref(), &params.project_id_or_name)
             .await
-            .map_err(to_mcp_error)?;
+            .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1093,7 +1111,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = delete_project(self.runner.as_ref(), &params.project_id_or_name)
             .await
-            .map_err(to_mcp_error)?;
+            .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1106,7 +1124,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = delete_projects_batch(self.runner.as_ref(), params.project_ids_or_names)
             .await
-            .map_err(to_mcp_error)?;
+            .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1123,7 +1141,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.folder.as_deref(),
         )
         .await
-        .map_err(to_mcp_error)?;
+        .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1148,7 +1166,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.review_interval.as_deref(),
         )
         .await
-        .map_err(to_mcp_error)?;
+        .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1165,7 +1183,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             &params.status,
         )
         .await
-        .map_err(to_mcp_error)?;
+        .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1214,7 +1232,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = create_tag(self.runner.as_ref(), &params.name, params.parent.as_deref())
             .await
-            .map_err(to_mcp_error)?;
+            .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1230,7 +1248,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.status.as_deref(),
         )
         .await
-        .map_err(to_mcp_error)?;
+        .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1243,7 +1261,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = delete_tag(self.runner.as_ref(), &params.tag_name_or_id)
             .await
-            .map_err(to_mcp_error)?;
+            .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1256,7 +1274,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = delete_tags_batch(self.runner.as_ref(), params.tag_ids_or_names)
             .await
-            .map_err(to_mcp_error)?;
+            .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1267,9 +1285,12 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<LimitParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = list_folders(self.runner.as_ref(), params.limit.map(FlexibleI32::value).unwrap_or(100))
-            .await
-            .map_err(to_mcp_error)?;
+        let result = list_folders(
+            self.runner.as_ref(),
+            params.limit.map(FlexibleI32::value).unwrap_or(100),
+        )
+        .await
+        .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1282,7 +1303,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = create_folder(self.runner.as_ref(), &params.name, params.parent.as_deref())
             .await
-            .map_err(to_mcp_error)?;
+            .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1311,7 +1332,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.status.as_deref(),
         )
         .await
-        .map_err(to_mcp_error)?;
+        .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1324,7 +1345,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = delete_folder_tool(self.runner.as_ref(), &params.folder_name_or_id)
             .await
-            .map_err(to_mcp_error)?;
+            .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1337,7 +1358,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = delete_folders_batch_tool(self.runner.as_ref(), params.folder_ids_or_names)
             .await
-            .map_err(to_mcp_error)?;
+            .map_err(to_mcp_write_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1348,9 +1369,12 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<LimitParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = get_forecast(self.runner.as_ref(), params.limit.map(FlexibleI32::value).unwrap_or(100))
-            .await
-            .map_err(to_mcp_error)?;
+        let result = get_forecast(
+            self.runner.as_ref(),
+            params.limit.map(FlexibleI32::value).unwrap_or(100),
+        )
+        .await
+        .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1361,9 +1385,12 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<LimitParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = list_perspectives(self.runner.as_ref(), params.limit.map(FlexibleI32::value).unwrap_or(100))
-            .await
-            .map_err(to_mcp_error)?;
+        let result = list_perspectives(
+            self.runner.as_ref(),
+            params.limit.map(FlexibleI32::value).unwrap_or(100),
+        )
+        .await
+        .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 
@@ -1488,5 +1515,27 @@ impl<R: JxaRunner + Send + Sync + 'static> ServerHandler for OmniFocusServer<R> 
         Ok(ReadResourceResult {
             contents: vec![ResourceContents::text(content, uri)],
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn write_timeout_warns_change_may_have_applied() {
+        let error = to_mcp_write_error(OmniFocusError::Timeout { seconds: 90.0 });
+        assert_eq!(
+            error.message,
+            "JXA command timed out after 90s. The change may still have applied in OmniFocus; check before retrying."
+        );
+    }
+
+    #[test]
+    fn write_errors_other_than_timeout_are_unchanged() {
+        let error = to_mcp_write_error(OmniFocusError::Validation("bad".to_string()));
+        assert_eq!(error.message, "bad");
+        let error = to_mcp_error(OmniFocusError::Timeout { seconds: 90.0 });
+        assert_eq!(error.message, "JXA command timed out after 90s.");
     }
 }

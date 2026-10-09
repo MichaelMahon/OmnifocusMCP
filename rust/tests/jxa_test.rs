@@ -2,7 +2,10 @@ use std::{future::Future, pin::Pin};
 
 use omnifocus_mcp::{
     error::OmniFocusError,
-    jxa::{escape_for_jxa, run_script_with_runner, unwrap_omnijs_envelope, JxaRunner},
+    jxa::{
+        escape_for_jxa, parse_timeout_seconds, run_script_with_runner, unwrap_omnijs_envelope,
+        JxaRunner,
+    },
 };
 use serde_json::{json, Value};
 
@@ -16,6 +19,17 @@ fn escape_for_jxa_handles_special_strings() {
     assert_eq!(escape_for_jxa("line1\nline2"), r#""line1\nline2""#);
     assert_eq!(escape_for_jxa("emoji 😀"), "\"emoji 😀\"");
     assert_eq!(escape_for_jxa("a\0b"), r#""a\u0000b""#);
+}
+
+#[test]
+fn parse_timeout_seconds_uses_env_value_or_falls_back_to_90() {
+    assert_eq!(parse_timeout_seconds(None), 90.0);
+    assert_eq!(parse_timeout_seconds(Some("120".to_string())), 120.0);
+    assert_eq!(parse_timeout_seconds(Some(" 45.5 ".to_string())), 45.5);
+    assert_eq!(parse_timeout_seconds(Some("abc".to_string())), 90.0);
+    assert_eq!(parse_timeout_seconds(Some("0".to_string())), 90.0);
+    assert_eq!(parse_timeout_seconds(Some("-5".to_string())), 90.0);
+    assert_eq!(parse_timeout_seconds(Some("inf".to_string())), 90.0);
 }
 
 #[test]

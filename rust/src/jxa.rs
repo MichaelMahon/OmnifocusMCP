@@ -5,8 +5,24 @@ use tokio::{process::Command, sync::Mutex, time::timeout};
 
 use crate::error::{OmniFocusError, Result};
 
-const DEFAULT_TIMEOUT_SECONDS: f64 = 30.0;
+const FALLBACK_TIMEOUT_SECONDS: f64 = 90.0;
+const TIMEOUT_ENV_VAR: &str = "OMNIFOCUS_MCP_TIMEOUT_SECONDS";
 static JXA_CALL_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+static DEFAULT_TIMEOUT_SECONDS: OnceLock<f64> = OnceLock::new();
+
+/// Apple Event delivery to OmniFocus stalls for tens of seconds when the Mac is under heavy
+/// load, so the default is generous. Override with OMNIFOCUS_MCP_TIMEOUT_SECONDS.
+fn default_timeout_seconds() -> f64 {
+    *DEFAULT_TIMEOUT_SECONDS
+        .get_or_init(|| parse_timeout_seconds(std::env::var(TIMEOUT_ENV_VAR).ok()))
+}
+
+pub fn parse_timeout_seconds(value: Option<String>) -> f64 {
+    value
+        .and_then(|raw| raw.trim().parse::<f64>().ok())
+        .filter(|seconds| seconds.is_finite() && *seconds > 0.0)
+        .unwrap_or(FALLBACK_TIMEOUT_SECONDS)
+}
 
 fn jxa_call_lock() -> &'static Mutex<()> {
     JXA_CALL_LOCK.get_or_init(|| Mutex::new(()))
@@ -69,7 +85,7 @@ pub fn friendly_omnijs_error(error: &str) -> String {
 }
 
 pub async fn run_jxa(script: &str) -> Result<String> {
-    run_jxa_with_timeout(script, DEFAULT_TIMEOUT_SECONDS).await
+    run_jxa_with_timeout(script, default_timeout_seconds()).await
 }
 
 pub async fn run_jxa_with_timeout(script: &str, timeout_seconds: f64) -> Result<String> {
@@ -107,7 +123,7 @@ pub async fn run_jxa_with_timeout(script: &str, timeout_seconds: f64) -> Result<
 }
 
 pub async fn run_jxa_json(script: &str) -> Result<Value> {
-    run_jxa_json_with_timeout(script, DEFAULT_TIMEOUT_SECONDS).await
+    run_jxa_json_with_timeout(script, default_timeout_seconds()).await
 }
 
 pub async fn run_jxa_json_with_timeout(script: &str, timeout_seconds: f64) -> Result<Value> {
@@ -121,7 +137,7 @@ pub async fn run_jxa_json_with_timeout(script: &str, timeout_seconds: f64) -> Re
 }
 
 pub async fn run_omnijs(script: &str) -> Result<Value> {
-    run_omnijs_with_timeout(script, DEFAULT_TIMEOUT_SECONDS).await
+    run_omnijs_with_timeout(script, default_timeout_seconds()).await
 }
 
 pub async fn run_omnijs_with_timeout(script: &str, timeout_seconds: f64) -> Result<Value> {
