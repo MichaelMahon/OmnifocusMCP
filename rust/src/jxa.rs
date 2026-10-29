@@ -140,28 +140,25 @@ pub async fn run_omnijs(script: &str) -> Result<Value> {
     run_omnijs_with_timeout(script, default_timeout_seconds()).await
 }
 
-pub async fn run_omnijs_with_timeout(script: &str, timeout_seconds: f64) -> Result<Value> {
-    let wrapped_omnijs = format!(
+/// Wraps an OmniJS tool script in the `{ ok, data }` envelope and gives `document` the
+/// `flattenedTasks`-style aliases the scripts use. The aliases are lazy getters: merely
+/// evaluating `flattenedTasks` materializes every task (about 9 s for 1,094 tasks on a 2012
+/// Mac mini), so only scripts that actually read a collection pay for it.
+pub fn wrap_omnijs(script: &str) -> String {
+    format!(
         r#"(function() {{
   try {{
     if (typeof document === "object" && document) {{
-      if (typeof document.flattenedTasks === "undefined" && typeof flattenedTasks !== "undefined") {{
-        document.flattenedTasks = flattenedTasks;
-      }}
-      if (
-        typeof document.flattenedProjects === "undefined"
-        && typeof flattenedProjects !== "undefined"
-      ) {{
-        document.flattenedProjects = flattenedProjects;
-      }}
-      if (typeof document.flattenedTags === "undefined" && typeof flattenedTags !== "undefined") {{
-        document.flattenedTags = flattenedTags;
-      }}
-      if (
-        typeof document.flattenedFolders === "undefined"
-        && typeof flattenedFolders !== "undefined"
-      ) {{
-        document.flattenedFolders = flattenedFolders;
+      const aliases = {{
+        flattenedTasks: () => flattenedTasks,
+        flattenedProjects: () => flattenedProjects,
+        flattenedTags: () => flattenedTags,
+        flattenedFolders: () => flattenedFolders
+      }};
+      for (const name of Object.keys(aliases)) {{
+        if (!(name in document)) {{
+          Object.defineProperty(document, name, {{ get: aliases[name], configurable: true }});
+        }}
       }}
     }}
     const __data = (function() {{
@@ -172,7 +169,11 @@ pub async fn run_omnijs_with_timeout(script: &str, timeout_seconds: f64) -> Resu
     return JSON.stringify({{ ok: false, error: e && e.message ? e.message : String(e) }});
   }}
 }})()"#
-    );
+    )
+}
+
+pub async fn run_omnijs_with_timeout(script: &str, timeout_seconds: f64) -> Result<Value> {
+    let wrapped_omnijs = wrap_omnijs(script);
 
     let outer_jxa = format!(
         "const app = Application('OmniFocus');\nconst result = app.evaluateJavascript({});\nresult;",
@@ -180,6 +181,26 @@ pub async fn run_omnijs_with_timeout(script: &str, timeout_seconds: f64) -> Resu
     );
 
     let envelope = run_jxa_json_with_timeout(&outer_jxa, timeout_seconds).await?;
+    unwrap_omnijs_envelope(envelope)
+}
+
+/// Runs a plain JXA script (outside OmniFocus) with the same `{ ok, data }` envelope as OmniJS.
+/// Bulk property reads such as `defaultDocument.flattenedTasks.dueDate()` return one array per
+/// Apple Event, which is far cheaper than OmniJS materializing every task object.
+pub async fn run_jxa_script(script: &str) -> Result<Value> {
+    let wrapped = format!(
+        r#"(function() {{
+  try {{
+    const __data = (function() {{
+{script}
+    }})();
+    return JSON.stringify({{ ok: true, data: __data }});
+  }} catch (e) {{
+    return JSON.stringify({{ ok: false, error: e && e.message ? e.message : String(e) }});
+  }}
+}})()"#
+    );
+    let envelope = run_jxa_json(&wrapped).await?;
     unwrap_omnijs_envelope(envelope)
 }
 
@@ -208,6 +229,15 @@ pub trait JxaRunner: Send + Sync {
         &'a self,
         script: &'a str,
     ) -> Pin<Box<dyn Future<Output = Result<Value>> + Send + 'a>>;
+
+    /// Plain JXA with bulk Apple Event reads. Test doubles that don't care which path a tool
+    /// takes get the OmniJS behavior by default.
+    fn run_jxa<'a>(
+        &'a self,
+        script: &'a str,
+    ) -> Pin<Box<dyn Future<Output = Result<Value>> + Send + 'a>> {
+        self.run_omnijs(script)
+    }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -225,6 +255,13 @@ impl JxaRunner for RealJxaRunner {
         script: &'a str,
     ) -> Pin<Box<dyn Future<Output = Result<Value>> + Send + 'a>> {
         Box::pin(async move { run_omnijs(script).await })
+    }
+
+    fn run_jxa<'a>(
+        &'a self,
+        script: &'a str,
+    ) -> Pin<Box<dyn Future<Output = Result<Value>> + Send + 'a>> {
+        Box::pin(async move { run_jxa_script(script).await })
     }
 }
 

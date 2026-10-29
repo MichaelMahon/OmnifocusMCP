@@ -4,7 +4,7 @@ use omnifocus_mcp::{
     error::OmniFocusError,
     jxa::{
         escape_for_jxa, parse_timeout_seconds, run_script_with_runner, unwrap_omnijs_envelope,
-        JxaRunner,
+        wrap_omnijs, JxaRunner,
     },
 };
 use serde_json::{json, Value};
@@ -92,4 +92,25 @@ fn unwrap_envelope_error_returns_friendly_message() {
         result.err().map(|e| e.to_string()),
         Some("Task not found: abc".to_string())
     );
+}
+
+// Evaluating `flattenedTasks` in OmniJS materializes every task (9 s for 1,094 tasks on a 2012
+// Mac mini), so the document aliases must be lazy getters, never eager reads in the prelude.
+#[test]
+fn omnijs_wrapper_aliases_flattened_collections_lazily() {
+    let wrapped = wrap_omnijs("return 1;");
+    for name in [
+        "flattenedTasks",
+        "flattenedProjects",
+        "flattenedTags",
+        "flattenedFolders",
+    ] {
+        assert!(wrapped.contains(&format!("{name}: () => {name}")));
+        assert!(!wrapped.contains(&format!("typeof {name}")));
+        assert!(!wrapped.contains(&format!("document.{name} = {name}")));
+    }
+    assert!(wrapped.contains(
+        "Object.defineProperty(document, name, { get: aliases[name], configurable: true });"
+    ));
+    assert!(wrapped.contains("return 1;"));
 }

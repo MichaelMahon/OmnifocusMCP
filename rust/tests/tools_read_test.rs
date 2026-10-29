@@ -3359,16 +3359,17 @@ async fn get_task_counts_added_changed_filters_are_included_in_script() {
     assert!(script.contains("const changedAfterRaw = \"2026-03-01T00:00:00Z\";"));
     assert!(script.contains("const changedBeforeRaw = \"2026-03-31T23:59:59Z\";"));
     assert!(script.contains(
-        "if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) continue;"
+        "if (addedBefore !== null && !(addedDates[i] !== null && addedDates[i] <= addedBefore)) continue;"
     ));
     assert!(script.contains(
-        "if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) continue;"
+        "if (addedAfter !== null && !(addedDates[i] !== null && addedDates[i] >= addedAfter)) continue;"
+    ));
+    assert!(script.contains("tasks.creationDate()"));
+    assert!(script.contains(
+        "if (changedBefore !== null && !(modifiedDates[i] !== null && modifiedDates[i] <= changedBefore)) continue;"
     ));
     assert!(script.contains(
-        "if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) continue;"
-    ));
-    assert!(script.contains(
-        "if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) continue;"
+        "if (changedAfter !== null && !(modifiedDates[i] !== null && modifiedDates[i] >= changedAfter)) continue;"
     ));
 }
 
@@ -3526,4 +3527,95 @@ async fn added_changed_invalid_date_errors_bubble_up_for_all_new_filter_fields()
         assert!(matches!(counts_error, OmniFocusError::OmniFocus(_)));
         assert_eq!(counts_error.to_string(), message);
     }
+}
+
+#[tokio::test]
+async fn get_task_script_looks_up_by_identifier_instead_of_scanning() {
+    let script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!({"id": "t3", "name": "task 3", "children": []}),
+        last_script: script.clone(),
+    };
+    let _ = get_task(&runner, "t3").await;
+    let text = script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(text.contains("const task = Task.byIdentifier(taskId);"));
+    assert!(!text.contains("flattenedTasks"));
+}
+
+// Touching flattenedTasks in OmniJS materializes every task (about 8 s for 1,094 tasks on a
+// 2012 Mac mini); Task.byIdentifier returns the same task, project root tasks included, in under 1 s.
+#[test]
+fn no_tool_scans_flattened_tasks_to_find_one_task_by_id() {
+    let sources = [
+        include_str!("../src/tools/tasks.rs"),
+        include_str!("../src/tools/utility.rs"),
+        include_str!("../src/tools/projects.rs"),
+        include_str!("../src/tools/tags.rs"),
+        include_str!("../src/tools/forecast.rs"),
+        include_str!("../src/tools/perspectives.rs"),
+        include_str!("../src/tools/folders_clean.rs"),
+    ];
+    for source in sources {
+        assert!(!source.contains("flattenedTasks.find(item => item.id.primaryKey ==="));
+    }
+}
+
+#[derive(Clone)]
+struct JxaOnlyRunner {
+    payload: Value,
+    last_script: Arc<Mutex<String>>,
+}
+
+impl JxaRunner for JxaOnlyRunner {
+    fn run_omnijs<'a>(
+        &'a self,
+        _script: &'a str,
+    ) -> Pin<Box<dyn Future<Output = omnifocus_mcp::error::Result<Value>> + Send + 'a>> {
+        Box::pin(async move {
+            Err(omnifocus_mcp::error::OmniFocusError::OmniFocus(
+                "OmniJS should not be used here".to_string(),
+            ))
+        })
+    }
+
+    fn run_jxa<'a>(
+        &'a self,
+        script: &'a str,
+    ) -> Pin<Box<dyn Future<Output = omnifocus_mcp::error::Result<Value>> + Send + 'a>> {
+        if let Ok(mut slot) = self.last_script.lock() {
+            *slot = script.to_string();
+        }
+        Box::pin(async move { Ok(self.payload.clone()) })
+    }
+}
+
+#[tokio::test]
+async fn get_task_counts_reads_properties_in_bulk_through_jxa() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = JxaOnlyRunner {
+        payload: json!({
+            "total": 1, "available": 1, "completed": 0, "overdue": 0,
+            "dueSoon": 0, "flagged": 0, "deferred": 0
+        }),
+        last_script: last_script.clone(),
+    };
+    let counts = get_task_counts(
+        &runner, None, None, None, "any", None, None, None, None, None, None, None, None, None,
+        None, None, None,
+    )
+    .await
+    .expect("counts should come from the JXA runner");
+    assert_eq!(counts.total, 1);
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains("Application('OmniFocus').defaultDocument.flattenedTasks"));
+    assert!(script.contains("const completedValues = tasks.completed();"));
+    assert!(script.contains("tasks.tags.name()"));
+    assert!(!script.contains("document.flattenedTasks"));
 }

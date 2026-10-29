@@ -1605,7 +1605,7 @@ async fn create_subtask_script_contains_parent_lookup_and_insert_position() {
         .last()
         .cloned()
         .expect("one script should be captured");
-    assert!(captured.contains("const parentTask = document.flattenedTasks.find"));
+    assert!(captured.contains("const parentTask = Task.byIdentifier(parentTaskId);"));
     assert!(captured.contains("const task = new Task(taskName, parentTask.ending);"));
 }
 

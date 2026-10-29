@@ -223,49 +223,59 @@ const counts = {{
   deferred: 0
 }};
 
-for (const task of document.flattenedTasks) {{
-  if (projectFilter !== null) {{
-    const projectName = task.containingProject ? task.containingProject.name : null;
-    if (projectName !== projectFilter) continue;
-  }}
-  if (tagNames !== null && tagNames.length > 0) {{
-    let tagMatches = false;
-    if (tagFilterMode === "all") {{
-      tagMatches = tagNames.every(tn => task.tags.some(t => t.name === tn));
-    }} else {{
-      tagMatches = task.tags.some(t => tagNames.includes(t.name));
-    }}
+const tasks = Application('OmniFocus').defaultDocument.flattenedTasks;
+const completedValues = tasks.completed();
+const flaggedValues = tasks.flagged();
+const dueDates = tasks.dueDate();
+const deferDates = tasks.deferDate();
+const projectNames = projectFilter !== null ? tasks.containingProject.name() : null;
+const tagNameLists = tagNames !== null && tagNames.length > 0 ? tasks.tags.name() : null;
+const completionDates = completedBefore !== null || completedAfter !== null ? tasks.completionDate() : null;
+const addedDates = addedBefore !== null || addedAfter !== null ? tasks.creationDate() : null;
+const modifiedDates = changedBefore !== null || changedAfter !== null ? tasks.modificationDate() : null;
+const estimatedMinutesValues = maxEstimatedMinutes !== null ? tasks.estimatedMinutes() : null;
+
+for (let i = 0; i < completedValues.length; i += 1) {{
+  if (projectFilter !== null && projectNames[i] !== projectFilter) continue;
+  if (tagNameLists !== null) {{
+    const taskTags = tagNameLists[i];
+    const tagMatches = tagFilterMode === "all"
+      ? tagNames.every(tn => taskTags.includes(tn))
+      : taskTags.some(tn => tagNames.includes(tn));
     if (!tagMatches) continue;
   }}
-  if (flaggedFilter !== null && task.flagged !== flaggedFilter) continue;
-  if (dueBefore !== null && !(task.dueDate !== null && task.dueDate < dueBefore)) continue;
-  if (dueAfter !== null && !(task.dueDate !== null && task.dueDate > dueAfter)) continue;
-  if (deferBefore !== null && !(task.deferDate !== null && task.deferDate < deferBefore)) continue;
-  if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) continue;
-  if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) continue;
-  if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) continue;
-  if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) continue;
-  if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) continue;
-  if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) continue;
-  if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) continue;
-  if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) continue;
+  const flagged = flaggedValues[i];
+  const dueDate = dueDates[i];
+  const deferDate = deferDates[i];
+  if (flaggedFilter !== null && flagged !== flaggedFilter) continue;
+  if (dueBefore !== null && !(dueDate !== null && dueDate < dueBefore)) continue;
+  if (dueAfter !== null && !(dueDate !== null && dueDate > dueAfter)) continue;
+  if (deferBefore !== null && !(deferDate !== null && deferDate < deferBefore)) continue;
+  if (deferAfter !== null && !(deferDate !== null && deferDate > deferAfter)) continue;
+  if (completedBefore !== null && !(completionDates[i] !== null && completionDates[i] < completedBefore)) continue;
+  if (completedAfter !== null && !(completionDates[i] !== null && completionDates[i] > completedAfter)) continue;
+  if (addedBefore !== null && !(addedDates[i] !== null && addedDates[i] <= addedBefore)) continue;
+  if (addedAfter !== null && !(addedDates[i] !== null && addedDates[i] >= addedAfter)) continue;
+  if (changedBefore !== null && !(modifiedDates[i] !== null && modifiedDates[i] <= changedBefore)) continue;
+  if (changedAfter !== null && !(modifiedDates[i] !== null && modifiedDates[i] >= changedAfter)) continue;
+  if (maxEstimatedMinutes !== null && !(estimatedMinutesValues[i] !== null && estimatedMinutesValues[i] <= maxEstimatedMinutes)) continue;
 
   counts.total += 1;
-  if (task.flagged) counts.flagged += 1;
-  if (task.completed) {{
+  if (flagged) counts.flagged += 1;
+  if (completedValues[i]) {{
     counts.completed += 1;
     continue;
   }}
-  const isAvailable = task.deferDate === null || task.deferDate <= now;
+  const isAvailable = deferDate === null || deferDate <= now;
   if (isAvailable) counts.available += 1;
-  if (task.deferDate !== null && task.deferDate > now) counts.deferred += 1;
-  if (task.dueDate !== null && task.dueDate < now) counts.overdue += 1;
-  if (task.dueDate !== null && task.dueDate >= now && task.dueDate <= soon) counts.dueSoon += 1;
+  if (deferDate !== null && deferDate > now) counts.deferred += 1;
+  if (dueDate !== null && dueDate < now) counts.overdue += 1;
+  if (dueDate !== null && dueDate >= now && dueDate <= soon) counts.dueSoon += 1;
 }}
 return counts;"#
     );
 
-    let value = runner.run_omnijs(&script).await?;
+    let value = runner.run_jxa(&script).await?;
     Ok(serde_json::from_value(value)?)
 }
 
@@ -1400,7 +1410,7 @@ pub async fn get_task<R: JxaRunner>(runner: &R, task_id: &str) -> Result<Value> 
     let task_id_filter = escape_for_jxa(task_id.trim());
     let script = format!(
         r#"const taskId = {task_id_filter};
-const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+const task = Task.byIdentifier(taskId);
 if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
@@ -1491,7 +1501,7 @@ pub async fn list_subtasks<R: JxaRunner>(
     let task_id_filter = escape_for_jxa(task_id.trim());
     let script = format!(
         r#"const taskId = {task_id_filter};
-const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+const task = Task.byIdentifier(taskId);
 if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
@@ -1541,7 +1551,7 @@ pub async fn list_notifications<R: JxaRunner>(runner: &R, task_id: &str) -> Resu
     let task_id_filter = escape_for_jxa(task_id.trim());
     let script = format!(
         r#"const taskId = {task_id_filter};
-const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+const task = Task.byIdentifier(taskId);
 if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
@@ -1594,7 +1604,7 @@ pub async fn add_notification<R: JxaRunner>(
         r#"const taskId = {task_id_filter};
 const absoluteDate = {absolute_date_value};
 const relativeOffset = {relative_offset_value};
-const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+const task = Task.byIdentifier(taskId);
 if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
@@ -1648,7 +1658,7 @@ pub async fn remove_notification<R: JxaRunner>(
     let script = format!(
         r#"const taskId = {task_id_filter};
 const notificationId = {notification_id_filter};
-const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+const task = Task.byIdentifier(taskId);
 if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
@@ -2368,7 +2378,7 @@ const flaggedValue = {flagged_value};
 const tagNames = {tags_value};
 const estimatedMinutesValue = {estimated_minutes_value};
 
-const parentTask = document.flattenedTasks.find(item => item.id.primaryKey === parentTaskId);
+const parentTask = Task.byIdentifier(parentTaskId);
 if (!parentTask) {{
   throw new Error(`Parent task not found: ${{parentTaskId}}`);
 }}
@@ -2416,7 +2426,7 @@ pub async fn duplicate_task<R: JxaRunner>(
     let script = format!(
         r#"const taskId = {task_id_filter};
 const includeChildren = {include_children_value};
-const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+const task = Task.byIdentifier(taskId);
 if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
@@ -2580,7 +2590,7 @@ pub async fn complete_task<R: JxaRunner>(runner: &R, task_id: &str) -> Result<Va
     let task_id_value = escape_for_jxa(task_id.trim());
     let script = format!(
         r#"const taskId = {task_id_value};
-const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+const task = Task.byIdentifier(taskId);
 if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
@@ -2629,7 +2639,7 @@ pub async fn set_task_repetition<R: JxaRunner>(
         r#"const taskId = {task_id_value};
 const ruleString = {rule_string_value};
 const scheduleTypeInput = {schedule_type_value};
-const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+const task = Task.byIdentifier(taskId);
 if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
@@ -2689,7 +2699,10 @@ pub async fn update_task<R: JxaRunner>(
         updates.insert("note".to_string(), Value::String(value.to_string()));
     }
     if let Some(value) = due_date {
-        updates.insert("dueDate".to_string(), Value::String(normalize_date_input(value)));
+        updates.insert(
+            "dueDate".to_string(),
+            Value::String(normalize_date_input(value)),
+        );
     }
     if let Some(value) = defer_date {
         updates.insert(
@@ -2722,7 +2735,7 @@ pub async fn update_task<R: JxaRunner>(
     let script = format!(
         r#"const taskId = {task_id_value};
 const updates = {updates_value};
-const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+const task = Task.byIdentifier(taskId);
 if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
@@ -2779,7 +2792,7 @@ pub async fn delete_task<R: JxaRunner>(runner: &R, task_id: &str) -> Result<Valu
     let task_id_value = escape_for_jxa(task_id.trim());
     let script = format!(
         r#"const taskId = {task_id_value};
-const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+const task = Task.byIdentifier(taskId);
 if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
@@ -2910,7 +2923,7 @@ pub async fn move_task<R: JxaRunner>(
         r#"const taskId = {task_id_value};
 const projectName = {project_value};
 const parentTaskId = {parent_task_id_value};
-const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+const task = Task.byIdentifier(taskId);
 if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
@@ -2920,7 +2933,7 @@ const destinationInfo = (() => {{
     if (parentTaskId === taskId) {{
       throw new Error("Cannot move a task under itself.");
     }}
-    const parentTask = document.flattenedTasks.find(item => item.id.primaryKey === parentTaskId);
+    const parentTask = Task.byIdentifier(parentTaskId);
     if (!parentTask) {{
       throw new Error(`Parent task not found: ${{parentTaskId}}`);
     }}
@@ -3042,7 +3055,7 @@ for (const task of document.flattenedTasks) {{
 
 const destinationInfo = (() => {{
   if (parentTaskId !== null && parentTaskId !== "") {{
-    const parentTask = taskById.get(parentTaskId) || document.flattenedTasks.find(item => item.id.primaryKey === parentTaskId);
+    const parentTask = taskById.get(parentTaskId) || Task.byIdentifier(parentTaskId);
     if (!parentTask) {{
       throw new Error(`Parent task not found: ${{parentTaskId}}`);
     }}
@@ -3145,7 +3158,7 @@ pub async fn uncomplete_task<R: JxaRunner>(runner: &R, task_id: &str) -> Result<
     let task_id_value = escape_for_jxa(task_id.trim());
     let script = format!(
         r#"const taskId = {task_id_value};
-const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+const task = Task.byIdentifier(taskId);
 if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
@@ -3196,7 +3209,7 @@ const textToAppend = {text_value};
 
 let obj;
 if (objectType === "task") {{
-  obj = document.flattenedTasks.find(item => item.id.primaryKey === objectId);
+  obj = Task.byIdentifier(objectId);
   if (!obj) {{
     throw new Error(`Task not found: ${{objectId}}`);
   }}

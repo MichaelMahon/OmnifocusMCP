@@ -15,7 +15,7 @@ pub async fn uncomplete_task<R: JxaRunner>(runner: &R, task_id: &str) -> Result<
     let task_id_value = escape_for_jxa(task_id.trim());
     let script = format!(
         r#"const taskId = {task_id_value};
-const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+const task = Task.byIdentifier(taskId);
 if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
@@ -66,7 +66,7 @@ const textToAppend = {text_value};
 
 let obj;
 if (objectType === "task") {{
-  obj = document.flattenedTasks.find(item => item.id.primaryKey === objectId);
+  obj = Task.byIdentifier(objectId);
   if (!obj) {{
     throw new Error(`Task not found: ${{objectId}}`);
   }}
