@@ -2103,7 +2103,8 @@ async fn delete_project_script_captures_task_count_before_deletion() {
         .cloned()
         .expect("one script should be captured");
     assert!(captured.contains("const projectFilter = \"p5\";"));
-    assert!(captured.contains("const taskCount = document.flattenedTasks.filter"));
+    assert!(captured
+        .contains("const taskCount = [project.task, ...project.flattenedTasks].length;"));
     assert!(captured.contains("deleteObject(project);"));
     assert!(captured.contains("taskCount: taskCount"));
 }

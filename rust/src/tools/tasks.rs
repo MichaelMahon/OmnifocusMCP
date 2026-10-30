@@ -6,6 +6,7 @@ use crate::{
     dates::normalize_date_input,
     error::{OmniFocusError, Result},
     jxa::{escape_for_jxa, JxaRunner},
+    tools::task_select::{hydrate_tasks_script, select_task_ids_script, TASK_RESULT_OMNIJS},
     types::{TaskCountsResult, TaskResult},
 };
 
@@ -75,6 +76,52 @@ pub async fn get_task_counts_with_added_changed<R: JxaRunner>(
     added_before: Option<&str>,
     changed_after: Option<&str>,
     changed_before: Option<&str>,
+    max_estimated_minutes: Option<i32>,
+) -> Result<TaskCountsResult> {
+    get_task_counts_with_planned(
+        runner,
+        project,
+        tag,
+        tags,
+        tag_filter_mode,
+        flagged,
+        due_before,
+        due_after,
+        defer_before,
+        defer_after,
+        completed_before,
+        completed_after,
+        added_after,
+        added_before,
+        changed_after,
+        changed_before,
+        None,
+        None,
+        max_estimated_minutes,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn get_task_counts_with_planned<R: JxaRunner>(
+    runner: &R,
+    project: Option<&str>,
+    tag: Option<&str>,
+    tags: Option<Vec<String>>,
+    tag_filter_mode: &str,
+    flagged: Option<bool>,
+    due_before: Option<&str>,
+    due_after: Option<&str>,
+    defer_before: Option<&str>,
+    defer_after: Option<&str>,
+    completed_before: Option<&str>,
+    completed_after: Option<&str>,
+    added_after: Option<&str>,
+    added_before: Option<&str>,
+    changed_after: Option<&str>,
+    changed_before: Option<&str>,
+    planned_before: Option<&str>,
+    planned_after: Option<&str>,
     max_estimated_minutes: Option<i32>,
 ) -> Result<TaskCountsResult> {
     if let Some(project_name) = project {
@@ -172,6 +219,12 @@ pub async fn get_task_counts_with_added_changed<R: JxaRunner>(
     let changed_before_filter = changed_before
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
+    let planned_before_filter = planned_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let planned_after_filter = planned_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
     let max_estimated_minutes_filter = max_estimated_minutes
         .map(|value| value.to_string())
         .unwrap_or_else(|| "null".to_string());
@@ -191,6 +244,8 @@ const addedAfterRaw = {added_after_filter};
 const addedBeforeRaw = {added_before_filter};
 const changedAfterRaw = {changed_after_filter};
 const changedBeforeRaw = {changed_before_filter};
+const plannedBeforeRaw = {planned_before_filter};
+const plannedAfterRaw = {planned_after_filter};
 const maxEstimatedMinutes = {max_estimated_minutes_filter};
 const now = new Date();
 const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
@@ -212,6 +267,8 @@ const addedAfter = parseOptionalDate(addedAfterRaw, "added_after");
 const addedBefore = parseOptionalDate(addedBeforeRaw, "added_before");
 const changedAfter = parseOptionalDate(changedAfterRaw, "changed_after");
 const changedBefore = parseOptionalDate(changedBeforeRaw, "changed_before");
+const plannedBefore = parseOptionalDate(plannedBeforeRaw, "plannedBefore");
+const plannedAfter = parseOptionalDate(plannedAfterRaw, "plannedAfter");
 
 const counts = {{
   total: 0,
@@ -234,6 +291,16 @@ const completionDates = completedBefore !== null || completedAfter !== null ? ta
 const addedDates = addedBefore !== null || addedAfter !== null ? tasks.creationDate() : null;
 const modifiedDates = changedBefore !== null || changedAfter !== null ? tasks.modificationDate() : null;
 const estimatedMinutesValues = maxEstimatedMinutes !== null ? tasks.estimatedMinutes() : null;
+// Older OmniFocus versions have no planned date; then planned filters are skipped, as in list_tasks.
+const plannedDates = plannedBefore !== null || plannedAfter !== null
+  ? (() => {{
+      try {{
+        return tasks.plannedDate();
+      }} catch (e) {{
+        return null;
+      }}
+    }})()
+  : null;
 
 for (let i = 0; i < completedValues.length; i += 1) {{
   if (projectFilter !== null && projectNames[i] !== projectFilter) continue;
@@ -258,6 +325,11 @@ for (let i = 0; i < completedValues.length; i += 1) {{
   if (addedAfter !== null && !(addedDates[i] !== null && addedDates[i] >= addedAfter)) continue;
   if (changedBefore !== null && !(modifiedDates[i] !== null && modifiedDates[i] <= changedBefore)) continue;
   if (changedAfter !== null && !(modifiedDates[i] !== null && modifiedDates[i] >= changedAfter)) continue;
+  if (plannedDates !== null) {{
+    const plannedDate = plannedDates[i];
+    if (plannedBefore !== null && !(plannedDate !== null && plannedDate < plannedBefore)) continue;
+    if (plannedAfter !== null && !(plannedDate !== null && plannedDate > plannedAfter)) continue;
+  }}
   if (maxEstimatedMinutes !== null && !(estimatedMinutesValues[i] !== null && estimatedMinutesValues[i] <= maxEstimatedMinutes)) continue;
 
   counts.total += 1;
@@ -903,7 +975,7 @@ pub async fn list_tasks_with_added_changed<R: JxaRunner>(
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
 
-    let script = format!(
+    let header = format!(
         r#"const projectFilter = {project_filter};
 const tagNames = {tag_names_filter};
 const tagFilterMode = {tag_filter_mode_filter};
@@ -947,177 +1019,15 @@ const changedBefore = parseOptionalDate(changedBeforeRaw, "changed_before");
 const plannedBefore = parseOptionalDate(plannedBeforeRaw, "plannedBefore");
 const plannedAfter = parseOptionalDate(plannedAfterRaw, "plannedAfter");
 const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;
-const supportsPlannedDate = (() => {{
-  try {{
-    const sampleTask = document.flattenedTasks[0];
-    if (!sampleTask) return true;
-    void sampleTask.plannedDate;
-    return true;
-  }} catch (e) {{
-    return false;
-  }}
-}})();
-const getPlannedDate = (task) => {{
-  if (!supportsPlannedDate) return null;
-  try {{
-    const value = task.plannedDate;
-    return value === undefined ? null : value;
-  }} catch (e) {{
-    return null;
-  }}
-}};
-
-const filteredTasks = document.flattenedTasks
-  .filter(task => {{
-    if (projectFilter !== null) {{
-      const projectName = task.containingProject ? task.containingProject.name : null;
-      if (projectName !== projectFilter) return false;
-    }}
-
-    if (tagNames !== null && tagNames.length > 0) {{
-      let tagMatches = false;
-      if (tagFilterMode === "all") {{
-        tagMatches = tagNames.every(tn => task.tags.some(t => t.name === tn));
-      }} else {{
-        tagMatches = task.tags.some(t => tagNames.includes(t.name));
-      }}
-      if (!tagMatches) return false;
-    }}
-
-    if (flaggedFilter !== null && task.flagged !== flaggedFilter) return false;
-
-    let statusMatches = false;
-    if (statusFilter === "all") {{
-      statusMatches = true;
-    }} else if (statusFilter === "completed") {{
-      statusMatches = task.completed;
-    }} else if (task.completed) {{
-      statusMatches = includeCompletedForDateFilter;
-    }} else {{
-      const dueDate = task.dueDate;
-      if (statusFilter === "available") {{
-        statusMatches = true;
-      }} else if (statusFilter === "overdue") {{
-        statusMatches = dueDate !== null && dueDate < now;
-      }} else if (statusFilter === "due_soon") {{
-        statusMatches = dueDate !== null && dueDate >= now && dueDate <= soon;
-      }} else if (statusFilter === "on_hold") {{
-        const projectStatus = task.containingProject ? String(task.containingProject.status || "").toLowerCase() : "";
-        statusMatches = projectStatus.includes("onhold") || projectStatus.includes("on hold") || projectStatus.includes("on_hold");
-      }}
-    }}
-    if (!statusMatches) return false;
-    if (dueBefore !== null && !(task.dueDate !== null && task.dueDate < dueBefore)) return false;
-    if (dueAfter !== null && !(task.dueDate !== null && task.dueDate > dueAfter)) return false;
-    if (deferBefore !== null && !(task.deferDate !== null && task.deferDate < deferBefore)) return false;
-    if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
-    if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
-    if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
-    if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) return false;
-    if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) return false;
-    if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) return false;
-    if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) return false;
-    if (supportsPlannedDate) {{
-      const plannedDate = getPlannedDate(task);
-      if (plannedBefore !== null && !(plannedDate !== null && plannedDate < plannedBefore)) return false;
-      if (plannedAfter !== null && !(plannedDate !== null && plannedDate > plannedAfter)) return false;
-    }}
-    if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;
-    return true;
-  }});
-
-const compareValues = (aValue, bValue, isString = false) => {{
-  if (aValue === null && bValue === null) return 0;
-  if (aValue === null) return 1;
-  if (bValue === null) return -1;
-  let left = aValue;
-  let right = bValue;
-  if (isString) {{
-    left = String(aValue).toLowerCase();
-    right = String(bValue).toLowerCase();
-  }}
-  if (left < right) return sortOrder === "asc" ? -1 : 1;
-  if (left > right) return sortOrder === "asc" ? 1 : -1;
-  return 0;
-}};
-
-const sortedTasks = sortBy === null ? filteredTasks : filteredTasks.slice().sort((a, b) => {{
-  let aValue = null;
-  let bValue = null;
-  let isString = false;
-  if (sortBy === "dueDate") {{
-    aValue = a.dueDate;
-    bValue = b.dueDate;
-  }} else if (sortBy === "deferDate") {{
-    aValue = a.deferDate;
-    bValue = b.deferDate;
-  }} else if (sortBy === "name") {{
-    aValue = a.name;
-    bValue = b.name;
-    isString = true;
-  }} else if (sortBy === "completionDate") {{
-    aValue = a.completionDate;
-    bValue = b.completionDate;
-  }} else if (sortBy === "estimatedMinutes") {{
-    aValue = a.estimatedMinutes;
-    bValue = b.estimatedMinutes;
-  }} else if (sortBy === "project") {{
-    aValue = a.containingProject ? a.containingProject.name : null;
-    bValue = b.containingProject ? b.containingProject.name : null;
-    isString = true;
-  }} else if (sortBy === "flagged") {{
-    aValue = a.flagged;
-    bValue = b.flagged;
-  }} else if (sortBy === "addedDate" || sortBy === "added") {{
-    aValue = a.added;
-    bValue = b.added;
-  }} else if (sortBy === "changedDate" || sortBy === "modified") {{
-    aValue = a.modified;
-    bValue = b.modified;
-  }} else if (sortBy === "plannedDate" || sortBy === "planned") {{
-    aValue = getPlannedDate(a);
-    bValue = getPlannedDate(b);
-  }}
-  return compareValues(aValue, bValue, isString);
-}});
-
-const tasks = sortedTasks.slice(0, {limit});
-
-return tasks.map(task => {{
-  const tags = task.tags.map(taskTag => taskTag.name);
-  const plannedDate = getPlannedDate(task);
-  return {{
-    id: task.id.primaryKey,
-    name: task.name,
-    note: task.note,
-    flagged: task.flagged,
-    dueDate: task.dueDate ? task.dueDate.toISOString() : null,
-    addedDate: task.added ? task.added.toISOString() : null,
-    changedDate: task.modified ? task.modified.toISOString() : null,
-    deferDate: task.deferDate ? task.deferDate.toISOString() : null,
-    completed: task.completed,
-    completionDate: task.completionDate ? task.completionDate.toISOString() : null,
-    plannedDate: plannedDate ? plannedDate.toISOString() : null,
-    projectName: task.containingProject ? task.containingProject.name : null,
-    tags: tags,
-    estimatedMinutes: task.estimatedMinutes,
-    hasChildren: task.hasChildren,
-    taskStatus: (() => {{
-      const s = String(task.taskStatus);
-      if (s.includes("Available")) return "available";
-      if (s.includes("Blocked")) return "blocked";
-      if (s.includes("Next")) return "next";
-      if (s.includes("DueSoon")) return "due_soon";
-      if (s.includes("Overdue")) return "overdue";
-      if (s.includes("Completed")) return "completed";
-      if (s.includes("Dropped")) return "dropped";
-      return "unknown";
-    }})()
-  }};
-}});"#
+const queryFilter = null;"#
     );
 
-    let value = runner.run_omnijs(&script).await?;
+    let selected_ids = runner
+        .run_jxa(&select_task_ids_script(&header, limit))
+        .await?;
+    let value = runner
+        .run_omnijs(&hydrate_tasks_script(&selected_ids, TASK_RESULT_OMNIJS))
+        .await?;
     parse_task_list(value)
 }
 
@@ -1862,7 +1772,7 @@ pub async fn search_tasks_with_added_changed<R: JxaRunner>(
         .unwrap_or_else(|| "null".to_string());
     let sort_order_filter = escape_for_jxa(effective_sort_order);
     let query_filter = escape_for_jxa(query.trim());
-    let script = format!(
+    let header = format!(
         r#"const queryFilter = {query_filter}.toLowerCase();
 const projectFilter = {project_filter};
 const tagNames = {tag_names_filter};
@@ -1906,184 +1816,15 @@ const changedAfter = parseOptionalDate(changedAfterRaw, "changed_after");
 const changedBefore = parseOptionalDate(changedBeforeRaw, "changed_before");
 const plannedBefore = parseOptionalDate(plannedBeforeRaw, "plannedBefore");
 const plannedAfter = parseOptionalDate(plannedAfterRaw, "plannedAfter");
-const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;
-const supportsPlannedDate = (() => {{
-  try {{
-    const sampleTask = document.flattenedTasks[0];
-    if (!sampleTask) return true;
-    void sampleTask.plannedDate;
-    return true;
-  }} catch (e) {{
-    return false;
-  }}
-}})();
-const getPlannedDate = (task) => {{
-  if (!supportsPlannedDate) return null;
-  try {{
-    const value = task.plannedDate;
-    return value === undefined ? null : value;
-  }} catch (e) {{
-    return null;
-  }}
-}};
-
-const filteredTasks = document.flattenedTasks
-  .filter(task => {{
-    const name = (task.name || "").toLowerCase();
-    const note = (task.note || "").toLowerCase();
-    if (!(name.includes(queryFilter) || note.includes(queryFilter))) return false;
-
-    if (projectFilter !== null) {{
-      const projectName = task.containingProject ? task.containingProject.name : null;
-      if (projectName !== projectFilter) return false;
-    }}
-
-    if (tagNames !== null && tagNames.length > 0) {{
-      let tagMatches = false;
-      if (tagFilterMode === "all") {{
-        tagMatches = tagNames.every(tn => task.tags.some(t => t.name === tn));
-      }} else {{
-        tagMatches = task.tags.some(t => tagNames.includes(t.name));
-      }}
-      if (!tagMatches) return false;
-    }}
-
-    if (flaggedFilter !== null && task.flagged !== flaggedFilter) return false;
-
-    let statusMatches = false;
-    if (statusFilter === "all") {{
-      statusMatches = true;
-    }} else if (statusFilter === "completed") {{
-      statusMatches = task.completed;
-    }} else if (task.completed) {{
-      statusMatches = includeCompletedForDateFilter;
-    }} else {{
-      const dueDate = task.dueDate;
-      if (statusFilter === "available") {{
-        statusMatches = true;
-      }} else if (statusFilter === "overdue") {{
-        statusMatches = dueDate !== null && dueDate < now;
-      }} else if (statusFilter === "due_soon") {{
-        statusMatches = dueDate !== null && dueDate >= now && dueDate <= soon;
-      }} else if (statusFilter === "on_hold") {{
-        const projectStatus = task.containingProject ? String(task.containingProject.status || "").toLowerCase() : "";
-        statusMatches = projectStatus.includes("onhold") || projectStatus.includes("on hold") || projectStatus.includes("on_hold");
-      }}
-    }}
-    if (!statusMatches) return false;
-
-    if (dueBefore !== null && !(task.dueDate !== null && task.dueDate < dueBefore)) return false;
-    if (dueAfter !== null && !(task.dueDate !== null && task.dueDate > dueAfter)) return false;
-    if (deferBefore !== null && !(task.deferDate !== null && task.deferDate < deferBefore)) return false;
-    if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
-    if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
-    if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
-    if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) return false;
-    if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) return false;
-    if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) return false;
-    if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) return false;
-    if (supportsPlannedDate) {{
-      const plannedDate = getPlannedDate(task);
-      if (plannedBefore !== null && !(plannedDate !== null && plannedDate < plannedBefore)) return false;
-      if (plannedAfter !== null && !(plannedDate !== null && plannedDate > plannedAfter)) return false;
-    }}
-    if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;
-
-    return true;
-  }});
-
-const compareValues = (aValue, bValue, isString = false) => {{
-  if (aValue === null && bValue === null) return 0;
-  if (aValue === null) return 1;
-  if (bValue === null) return -1;
-  let left = aValue;
-  let right = bValue;
-  if (isString) {{
-    left = String(aValue).toLowerCase();
-    right = String(bValue).toLowerCase();
-  }}
-  if (left < right) return sortOrder === "asc" ? -1 : 1;
-  if (left > right) return sortOrder === "asc" ? 1 : -1;
-  return 0;
-}};
-
-const sortedTasks = sortBy === null ? filteredTasks : filteredTasks.slice().sort((a, b) => {{
-  let aValue = null;
-  let bValue = null;
-  let isString = false;
-  if (sortBy === "dueDate") {{
-    aValue = a.dueDate;
-    bValue = b.dueDate;
-  }} else if (sortBy === "deferDate") {{
-    aValue = a.deferDate;
-    bValue = b.deferDate;
-  }} else if (sortBy === "name") {{
-    aValue = a.name;
-    bValue = b.name;
-    isString = true;
-  }} else if (sortBy === "completionDate") {{
-    aValue = a.completionDate;
-    bValue = b.completionDate;
-  }} else if (sortBy === "estimatedMinutes") {{
-    aValue = a.estimatedMinutes;
-    bValue = b.estimatedMinutes;
-  }} else if (sortBy === "project") {{
-    aValue = a.containingProject ? a.containingProject.name : null;
-    bValue = b.containingProject ? b.containingProject.name : null;
-    isString = true;
-  }} else if (sortBy === "flagged") {{
-    aValue = a.flagged;
-    bValue = b.flagged;
-  }} else if (sortBy === "addedDate" || sortBy === "added") {{
-    aValue = a.added;
-    bValue = b.added;
-  }} else if (sortBy === "changedDate" || sortBy === "modified") {{
-    aValue = a.modified;
-    bValue = b.modified;
-  }} else if (sortBy === "plannedDate" || sortBy === "planned") {{
-    aValue = getPlannedDate(a);
-    bValue = getPlannedDate(b);
-  }}
-  return compareValues(aValue, bValue, isString);
-}});
-
-const tasks = sortedTasks.slice(0, {limit});
-
-return tasks.map(task => {{
-  const tags = task.tags.map(taskTag => taskTag.name);
-  const plannedDate = getPlannedDate(task);
-  return {{
-    id: task.id.primaryKey,
-    name: task.name,
-    note: task.note,
-    flagged: task.flagged,
-    dueDate: task.dueDate ? task.dueDate.toISOString() : null,
-    addedDate: task.added ? task.added.toISOString() : null,
-    changedDate: task.modified ? task.modified.toISOString() : null,
-    deferDate: task.deferDate ? task.deferDate.toISOString() : null,
-    completed: task.completed,
-    completionDate: task.completionDate ? task.completionDate.toISOString() : null,
-    plannedDate: plannedDate ? plannedDate.toISOString() : null,
-    projectName: task.containingProject ? task.containingProject.name : null,
-    tags: tags,
-    estimatedMinutes: task.estimatedMinutes,
-    hasChildren: task.hasChildren,
-    taskStatus: (() => {{
-      const s = String(task.taskStatus);
-      if (s.includes("Available")) return "available";
-      if (s.includes("Blocked")) return "blocked";
-      if (s.includes("Next")) return "next";
-      if (s.includes("DueSoon")) return "due_soon";
-      if (s.includes("Overdue")) return "overdue";
-      if (s.includes("Completed")) return "completed";
-      if (s.includes("Dropped")) return "dropped";
-      return "unknown";
-    }})()
-  }};
-}});"#
+const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;"#
     );
 
-    let value = runner.run_omnijs(&script).await?;
+    let selected_ids = runner
+        .run_jxa(&select_task_ids_script(&header, limit))
+        .await?;
+    let value = runner
+        .run_omnijs(&hydrate_tasks_script(&selected_ids, TASK_RESULT_OMNIJS))
+        .await?;
     parse_task_list(value)
 }
 
@@ -2842,13 +2583,7 @@ pub async fn delete_tasks_batch<R: JxaRunner>(runner: &R, task_ids: Vec<String>)
     let task_ids_value = serde_json::to_string(&normalized_task_ids)?;
     let script = format!(
         r#"const taskIds = {task_ids_value};
-const taskById = new Map();
-for (const task of document.flattenedTasks) {{
-  try {{
-    taskById.set(task.id.primaryKey, task);
-  }} catch (e) {{
-  }}
-}}
+const taskById = {{ get: taskId => Task.byIdentifier(taskId) || undefined }};
 const results = taskIds.map(taskId => {{
   const task = taskById.get(taskId);
   if (!task) {{
@@ -3045,13 +2780,7 @@ pub async fn move_tasks_batch<R: JxaRunner>(
         r#"const taskIds = {task_ids_value};
 const projectName = {project_value};
 const parentTaskId = {parent_task_id_value};
-const taskById = new Map();
-for (const task of document.flattenedTasks) {{
-  try {{
-    taskById.set(task.id.primaryKey, task);
-  }} catch (e) {{
-  }}
-}}
+const taskById = {{ get: taskId => Task.byIdentifier(taskId) || undefined }};
 
 const destinationInfo = (() => {{
   if (parentTaskId !== null && parentTaskId !== "") {{

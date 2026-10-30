@@ -44,7 +44,7 @@ use crate::{
         tasks::{
             add_notification, complete_task, create_subtask, create_task, create_tasks_batch,
             delete_task, delete_tasks_batch, duplicate_task, get_inbox, get_task,
-            get_task_counts_with_added_changed, list_notifications, list_subtasks,
+            get_task_counts_with_planned, list_notifications, list_subtasks,
             list_tasks_with_added_changed, move_task, move_tasks_batch, remove_notification,
             search_tasks_with_added_changed, set_task_repetition, uncomplete_task, update_task,
             CreateTaskInput,
@@ -610,7 +610,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<GetTaskCountsParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = get_task_counts_with_added_changed(
+        let result = get_task_counts_with_planned(
             self.runner.as_ref(),
             params.project.as_deref(),
             params.tag.as_deref(),
@@ -627,6 +627,8 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.added_before.as_deref(),
             params.changed_after.as_deref(),
             params.changed_before.as_deref(),
+            params.planned_before.as_deref(),
+            params.planned_after.as_deref(),
             params.max_estimated_minutes.map(FlexibleI32::value),
         )
         .await

@@ -15,9 +15,9 @@ use omnifocus_mcp::{
         tags::{list_tags, search_tags},
         tasks::{
             add_notification, duplicate_task, get_inbox, get_task,
-            get_task_counts_with_added_changed, list_notifications, list_subtasks,
-            list_tasks as list_tasks_impl, list_tasks_with_added_changed, remove_notification,
-            search_tasks_with_added_changed,
+            get_task_counts_with_added_changed, get_task_counts_with_planned, list_notifications,
+            list_subtasks, list_tasks as list_tasks_impl, list_tasks_with_added_changed,
+            remove_notification, search_tasks_with_added_changed,
         },
     },
 };
@@ -43,13 +43,20 @@ struct CapturingRunner {
     last_script: Arc<Mutex<String>>,
 }
 
+// Keeps every script a tool call runs, so assertions see both the JXA select step and the
+// OmniJS step that builds the results. Each tool call starts a fresh capture.
 impl JxaRunner for CapturingRunner {
     fn run_omnijs<'a>(
         &'a self,
         script: &'a str,
     ) -> Pin<Box<dyn Future<Output = omnifocus_mcp::error::Result<Value>> + Send + 'a>> {
         if let Ok(mut slot) = self.last_script.lock() {
-            *slot = script.to_string();
+            if script.starts_with("const selected") {
+                slot.push('\n');
+                slot.push_str(script);
+            } else {
+                *slot = script.to_string();
+            }
         }
         Box::pin(async move { Ok(self.payload.clone()) })
     }
@@ -2101,7 +2108,7 @@ async fn added_changed_filters_are_included_in_list_search_and_count_scripts() {
         .clone();
     assert!(script.contains(r#"const addedBeforeRaw = "2026-02-28T23:59:59Z";"#));
     assert!(script.contains(
-        "if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) return false;"
+        "if (changedBefore !== null && !(modifiedDates[index] !== null && modifiedDates[index] <= changedBefore)) return false;"
     ));
 
     let count_runner = CapturingRunner {
@@ -2391,7 +2398,7 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         .clone();
     assert!(script_single.contains(r#"const tagNames = ["Home"];"#));
     assert!(script_single.contains(r#"const tagFilterMode = "any";"#));
-    assert!(script_single.contains("task.tags.some(t => tagNames.includes(t.name))"));
+    assert!(script_single.contains("taskTags.some(tn => tagNames.includes(tn))"));
 
     let listed_any = list_tasks(
         &runner,
@@ -2417,7 +2424,7 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         .expect("script capture lock should succeed")
         .clone();
     assert!(script_any.contains(r#"const tagNames = ["Home","Deep"];"#));
-    assert!(script_any.contains("task.tags.some(t => tagNames.includes(t.name))"));
+    assert!(script_any.contains("taskTags.some(tn => tagNames.includes(tn))"));
 
     let listed_all = list_tasks(
         &runner,
@@ -2443,7 +2450,7 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         .expect("script capture lock should succeed")
         .clone();
     assert!(script_all.contains(r#"const tagFilterMode = "all";"#));
-    assert!(script_all.contains("tagNames.every(tn => task.tags.some(t => t.name === tn))"));
+    assert!(script_all.contains("tagNames.every(tn => taskTags.includes(tn))"));
 
     let listed_merged = list_tasks(
         &runner,
@@ -2532,7 +2539,7 @@ async fn list_tasks_sorting_script_contains_expected_logic() {
         .clone();
     assert!(script_due.contains(r#"const sortBy = "dueDate";"#));
     assert!(script_due.contains(r#"const sortOrder = "asc";"#));
-    assert!(script_due.contains(r#"if (sortBy === "dueDate") {"#));
+    assert!(script_due.contains(r#"if (sortBy === "dueDate") return dueDates[index];"#));
 
     let listed_name = list_tasks_with_duration(
         &runner,
@@ -2632,7 +2639,7 @@ async fn list_tasks_duration_filter_script_contains_expected_logic() {
         .clone();
     assert!(script_15.contains("const maxEstimatedMinutes = 15;"));
     assert!(script_15.contains(
-        "if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;"
+        "if (maxEstimatedMinutes !== null && !(estimatedMinutesValues[index] !== null && estimatedMinutesValues[index] <= maxEstimatedMinutes)) return false;"
     ));
 
     let listed_60 = list_tasks_with_duration(
@@ -2663,7 +2670,7 @@ async fn list_tasks_duration_filter_script_contains_expected_logic() {
         .clone();
     assert!(script_60.contains("const maxEstimatedMinutes = 60;"));
     assert!(script_60.contains(
-        "task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes"
+        "estimatedMinutesValues[index] !== null && estimatedMinutesValues[index] <= maxEstimatedMinutes"
     ));
 }
 
@@ -2704,7 +2711,7 @@ async fn list_tasks_sort_due_date_asc_is_included_in_script() {
         .clone();
     assert!(script.contains(r#"const sortBy = "dueDate";"#));
     assert!(script.contains(r#"const sortOrder = "asc";"#));
-    assert!(script.contains(r#"if (sortBy === "dueDate") {"#));
+    assert!(script.contains(r#"if (sortBy === "dueDate") return dueDates[index];"#));
 }
 
 #[tokio::test]
@@ -3132,7 +3139,7 @@ async fn list_tasks_tags_filter_modes_and_merging_are_in_script() {
         .clone();
     assert!(script.contains("const tagNames = [\"Home\",\"Errands\"];"));
     assert!(script.contains("const tagFilterMode = \"all\";"));
-    assert!(script.contains("tagNames.every(tn => task.tags.some(t => t.name === tn))"));
+    assert!(script.contains("tagNames.every(tn => taskTags.includes(tn))"));
 }
 
 #[tokio::test]
@@ -3231,16 +3238,16 @@ async fn list_tasks_added_changed_filters_and_payload_fields_are_included() {
     assert!(script.contains("const changedAfterRaw = \"2026-03-01T00:00:00Z\";"));
     assert!(script.contains("const changedBeforeRaw = \"2026-03-31T23:59:59Z\";"));
     assert!(script.contains(
-        "if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) return false;"
+        "if (addedBefore !== null && !(addedDates[index] !== null && addedDates[index] <= addedBefore)) return false;"
     ));
     assert!(script.contains(
-        "if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) return false;"
+        "if (addedAfter !== null && !(addedDates[index] !== null && addedDates[index] >= addedAfter)) return false;"
     ));
     assert!(script.contains(
-        "if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) return false;"
+        "if (changedBefore !== null && !(modifiedDates[index] !== null && modifiedDates[index] <= changedBefore)) return false;"
     ));
     assert!(script.contains(
-        "if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) return false;"
+        "if (changedAfter !== null && !(modifiedDates[index] !== null && modifiedDates[index] >= changedAfter)) return false;"
     ));
     assert!(script.contains("addedDate: task.added ? task.added.toISOString() : null,"));
     assert!(script.contains("changedDate: task.modified ? task.modified.toISOString() : null,"));
@@ -3560,6 +3567,22 @@ fn no_tool_scans_flattened_tasks_to_find_one_task_by_id() {
     ];
     for source in sources {
         assert!(!source.contains("flattenedTasks.find(item => item.id.primaryKey ==="));
+        assert!(!source.contains("for (const task of document.flattenedTasks)"));
+    }
+}
+
+// The read tools moved to bulk JXA selection must not walk every task in OmniJS again.
+#[test]
+fn moved_tools_do_not_walk_all_tasks_in_omnijs() {
+    for source in [
+        include_str!("../src/tools/forecast.rs"),
+        include_str!("../src/tools/tags.rs"),
+        include_str!("../src/tools/projects.rs"),
+    ] {
+        assert!(!source.contains("document.flattenedTasks"));
+        assert!(!source.contains("project.flattenedTasks.some("));
+        // OmniJS collections are not Arrays: concat() would add the whole collection as one item.
+        assert!(!source.contains(".concat(project.flattenedTasks)"));
     }
 }
 
@@ -3618,4 +3641,171 @@ async fn get_task_counts_reads_properties_in_bulk_through_jxa() {
     assert!(script.contains("const completedValues = tasks.completed();"));
     assert!(script.contains("tasks.tags.name()"));
     assert!(!script.contains("document.flattenedTasks"));
+}
+
+// Answers the JXA select step with ids and the OmniJS step with tasks, recording each script.
+#[derive(Clone)]
+struct SplitRunner {
+    ids: Value,
+    tasks: Value,
+    jxa_script: Arc<Mutex<String>>,
+    omnijs_script: Arc<Mutex<String>>,
+}
+
+impl JxaRunner for SplitRunner {
+    fn run_omnijs<'a>(
+        &'a self,
+        script: &'a str,
+    ) -> Pin<Box<dyn Future<Output = omnifocus_mcp::error::Result<Value>> + Send + 'a>> {
+        if let Ok(mut slot) = self.omnijs_script.lock() {
+            *slot = script.to_string();
+        }
+        Box::pin(async move { Ok(self.tasks.clone()) })
+    }
+
+    fn run_jxa<'a>(
+        &'a self,
+        script: &'a str,
+    ) -> Pin<Box<dyn Future<Output = omnifocus_mcp::error::Result<Value>> + Send + 'a>> {
+        if let Ok(mut slot) = self.jxa_script.lock() {
+            *slot = script.to_string();
+        }
+        Box::pin(async move { Ok(self.ids.clone()) })
+    }
+}
+
+fn split_runner() -> SplitRunner {
+    SplitRunner {
+        ids: json!(["t1"]),
+        tasks: json!([task_value("t1", "first")]),
+        jxa_script: Arc::new(Mutex::new(String::new())),
+        omnijs_script: Arc::new(Mutex::new(String::new())),
+    }
+}
+
+#[tokio::test]
+async fn list_tasks_selects_ids_in_jxa_and_builds_only_those_in_omnijs() {
+    let runner = split_runner();
+    let tasks = list_tasks(
+        &runner,
+        Some("Errands"),
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        25,
+    )
+    .await
+    .expect("list_tasks should parse the OmniJS step");
+    assert_eq!(tasks.len(), 1);
+    assert_eq!(tasks[0].id, "t1");
+
+    let jxa = runner.jxa_script.lock().expect("lock").clone();
+    assert!(jxa.contains(r#"const projectFilter = "Errands";"#));
+    assert!(jxa.contains("const queryFilter = null;"));
+    assert!(jxa.contains("const outlineOrder ="));
+    assert!(jxa.contains("return sorted.slice(0, 25).map(index => taskIds[index]);"));
+
+    let omnijs = runner.omnijs_script.lock().expect("lock").clone();
+    assert!(omnijs.starts_with(r#"const selectedIds = ["t1"];"#));
+    assert!(omnijs.contains("selectedIds.map(id => Task.byIdentifier(id))"));
+    assert!(omnijs.contains("const sampleTask = tasks[0];"));
+    assert!(!omnijs.contains("flattenedTasks"));
+}
+
+#[tokio::test]
+async fn search_tasks_matches_name_and_note_in_the_jxa_step() {
+    let runner = split_runner();
+    let tasks = search_tasks(
+        &runner,
+        "Receipt",
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "asc",
+        10,
+    )
+    .await
+    .expect("search_tasks should parse the OmniJS step");
+    assert_eq!(tasks.len(), 1);
+
+    let jxa = runner.jxa_script.lock().expect("lock").clone();
+    assert!(jxa.contains(r#"const queryFilter = "Receipt".toLowerCase();"#));
+    assert!(jxa.contains("const notes = readIf(queryFilter !== null, () => allTasks.note());"));
+    assert!(jxa.contains("return sorted.slice(0, 10).map(index => taskIds[index]);"));
+    assert!(!runner
+        .omnijs_script
+        .lock()
+        .expect("lock")
+        .contains("flattenedTasks"));
+}
+
+#[tokio::test]
+async fn get_task_counts_applies_planned_date_filters() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = JxaOnlyRunner {
+        payload: json!({
+            "total": 2, "available": 2, "completed": 0, "overdue": 0,
+            "dueSoon": 0, "flagged": 0, "deferred": 0
+        }),
+        last_script: last_script.clone(),
+    };
+    let counts = get_task_counts_with_planned(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("2026-11-01T00:00:00Z"),
+        Some("2026-10-01T00:00:00Z"),
+        None,
+    )
+    .await
+    .expect("counts with planned filters should parse");
+    assert_eq!(counts.total, 2);
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const plannedBeforeRaw = "2026-11-01T00:00:00Z";"#));
+    assert!(script.contains(r#"const plannedAfterRaw = "2026-10-01T00:00:00Z";"#));
+    assert!(script.contains(
+        r#"const plannedBefore = parseOptionalDate(plannedBeforeRaw, "plannedBefore");"#
+    ));
+    assert!(script.contains(
+        "if (plannedBefore !== null && !(plannedDate !== null && plannedDate < plannedBefore)) continue;"
+    ));
+    assert!(script.contains(
+        "if (plannedAfter !== null && !(plannedDate !== null && plannedDate > plannedAfter)) continue;"
+    ));
 }

@@ -18,9 +18,7 @@ impl JxaRunner for ResourceRunner {
             if script.contains("const tasks = inbox") {
                 return Ok(json!([{ "id": "task-1", "name": "inbox item" }]));
             }
-            if script.contains("const now = new Date();")
-                && script.contains("const toTaskSummary = (task) =>")
-            {
+            if script.contains("const toTaskSummary = (task) =>") {
                 return Ok(json!({
                     "overdue": [{"id": "task-2", "name": "overdue item"}],
                     "dueToday": [],

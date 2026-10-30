@@ -50,7 +50,7 @@ impl JxaRunner for PromptRunner {
                     "sequential": false
                 }]));
             }
-            if script.contains("const statusFilter =") {
+            if script.contains("const statusFilter =") || script.contains("const selectedIds =") {
                 return Ok(json!([{
                     "id": "task-1",
                     "name": "next action",
@@ -127,7 +127,7 @@ impl JxaRunner for MissingProjectRunner {
                     "Project not found: new-idea".to_string(),
                 ));
             }
-            if script.contains("const statusFilter =") {
+            if script.contains("const statusFilter =") || script.contains("const selectedIds =") {
                 return Ok(json!([]));
             }
             Ok(Value::Null)

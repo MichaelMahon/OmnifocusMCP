@@ -7,6 +7,37 @@ use crate::{
     types::ProjectCountsResult,
 };
 
+/// JXA: per-project task counts from bulk reads, keyed by project id. `taskCount` and
+/// `remainingTaskCount` count every task whose containing project is that project, root task
+/// included, as the old `flattenedTasks` walk did. `remainingSubtaskCount` leaves out the root
+/// task (it shares the project's id), matching the old stalled check, which looked only at
+/// tasks below the root.
+const PROJECT_TASK_COUNTS_JXA: &str = r#"const allTasks = Application('OmniFocus').defaultDocument.flattenedTasks;
+const taskIds = allTasks.id();
+const projectIds = allTasks.containingProject.id();
+const completedValues = allTasks.completed();
+const counts = {};
+projectIds.forEach((projectId, index) => {
+  if (projectId === null) return;
+  const current = counts[projectId]
+    || (counts[projectId] = { taskCount: 0, remainingTaskCount: 0, remainingSubtaskCount: 0 });
+  current.taskCount += 1;
+  if (!completedValues[index]) {
+    current.remainingTaskCount += 1;
+    if (taskIds[index] !== projectId) current.remainingSubtaskCount += 1;
+  }
+});
+return counts;"#;
+
+/// OmniJS: `projectCounts` (a Map by project id) and `hasRemainingSubtasks(project)`, built from
+/// the counts `PROJECT_TASK_COUNTS_JXA` returned, read from `selectedProjectCounts`.
+const PROJECT_COUNTS_OMNIJS: &str = r#"const projectCounts = new Map();
+Object.entries(selectedProjectCounts || {}).forEach(([projectId, counts]) => projectCounts.set(projectId, counts));
+const hasRemainingSubtasks = project => {
+  const counts = projectCounts.get(project.id.primaryKey);
+  return counts !== undefined && counts.remainingSubtaskCount > 0;
+};"#;
+
 #[allow(clippy::too_many_arguments)]
 pub async fn list_projects<R: JxaRunner>(
     runner: &R,
@@ -82,8 +113,11 @@ pub async fn list_projects<R: JxaRunner>(
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
     let sort_order_filter = escape_for_jxa(effective_sort_order);
+    let project_counts = runner.run_jxa(PROJECT_TASK_COUNTS_JXA).await?;
+    let selected_project_counts = serde_json::to_string(&project_counts)?;
     let script = format!(
-        r#"const folderFilter = {folder_filter};
+        r#"const selectedProjectCounts = {selected_project_counts};
+const folderFilter = {folder_filter};
 const statusFilter = {status_filter};
 const completedBeforeRaw = {completed_before_filter};
 const completedAfterRaw = {completed_after_filter};
@@ -103,16 +137,7 @@ const parseOptionalDate = (rawValue, fieldName) => {{
 const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
 const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
 
-const projectCounts = new Map();
-document.flattenedTasks.forEach(task => {{
-  const project = task.containingProject;
-  if (!project) return;
-  const projectId = project.id.primaryKey;
-  const current = projectCounts.get(projectId) || {{ taskCount: 0, remainingTaskCount: 0 }};
-  current.taskCount += 1;
-  if (!task.completed) current.remainingTaskCount += 1;
-  projectCounts.set(projectId, current);
-}});
+{PROJECT_COUNTS_OMNIJS}
 
 const normalizeProjectStatus = (project) => {{
   const rawStatus = String(project.status || "").toLowerCase();
@@ -137,7 +162,7 @@ const projects = document.flattenedProjects
   .filter(project => {{
     const nextTask = project.nextTask;
     const isStalled = normalizeProjectStatus(project) === "active"
-      && project.flattenedTasks.some(t => !t.completed)
+      && hasRemainingSubtasks(project)
       && nextTask === null;
     if (folderFilter !== null) {{
       const folderName = project.folder ? project.folder.name : null;
@@ -155,7 +180,7 @@ const mappedProjects = projects.map(project => {{
   const counts = projectCounts.get(projectId) || {{ taskCount: 0, remainingTaskCount: 0 }};
   const nextTask = project.nextTask;
   const isStalled = normalizeProjectStatus(project) === "active"
-    && project.flattenedTasks.some(t => !t.completed)
+    && hasRemainingSubtasks(project)
     && nextTask === null;
   const reviewInterval = project.reviewInterval;
   return {{
@@ -282,8 +307,12 @@ pub async fn get_project_counts<R: JxaRunner>(
     let folder_filter = folder
         .map(|value| escape_for_jxa(value.trim()))
         .unwrap_or_else(|| "null".to_string());
+    let project_counts = runner.run_jxa(PROJECT_TASK_COUNTS_JXA).await?;
+    let selected_project_counts = serde_json::to_string(&project_counts)?;
     let script = format!(
-        r#"const folderFilter = {folder_filter};
+        r#"const selectedProjectCounts = {selected_project_counts};
+const folderFilter = {folder_filter};
+{PROJECT_COUNTS_OMNIJS}
 
 const normalizeProjectStatus = (project) => {{
   const rawStatus = String(project.status || "").toLowerCase();
@@ -321,7 +350,7 @@ document.flattenedProjects.forEach(project => {{
 
   const status = normalizeProjectStatus(project);
   const isStalled = status === "active"
-    && project.flattenedTasks.some(t => !t.completed)
+    && hasRemainingSubtasks(project)
     && project.nextTask === null;
 
   counts.total += 1;
@@ -375,9 +404,7 @@ const normalizeProjectStatus = (item) => {{
   return "active";
 }};
 
-const allProjectTasks = document.flattenedTasks.filter(task => {{
-  return task.containingProject && task.containingProject.id.primaryKey === project.id.primaryKey;
-}});
+const allProjectTasks = [project.task, ...project.flattenedTasks];
 const nextTask = project.nextTask;
 const isStalled = normalizeProjectStatus(project) === "active"
   && allProjectTasks.some(task => !task.completed)
@@ -582,9 +609,7 @@ if (!project) {{
 
 const projectId = project.id.primaryKey;
 const projectName = project.name;
-const taskCount = document.flattenedTasks.filter(task => {{
-  return task.containingProject && task.containingProject.id.primaryKey === projectId;
-}}).length;
+const taskCount = [project.task, ...project.flattenedTasks].length;
 
 deleteObject(project);
 
@@ -852,7 +877,10 @@ pub async fn update_project<R: JxaRunner>(
         updates.insert("note".to_string(), Value::String(value.to_string()));
     }
     if let Some(value) = due_date {
-        updates.insert("dueDate".to_string(), Value::String(normalize_date_input(value)));
+        updates.insert(
+            "dueDate".to_string(),
+            Value::String(normalize_date_input(value)),
+        );
     }
     if let Some(value) = defer_date {
         updates.insert(
@@ -957,9 +985,7 @@ if (has("tags")) {{
   }});
 }}
 
-const allProjectTasks = document.flattenedTasks.filter(task => {{
-  return task.containingProject && task.containingProject.id.primaryKey === project.id.primaryKey;
-}});
+const allProjectTasks = [project.task, ...project.flattenedTasks];
 const reviewIntervalValue = project.reviewInterval;
 return {{
   id: project.id.primaryKey,

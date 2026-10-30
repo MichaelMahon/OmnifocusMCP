@@ -5,6 +5,21 @@ use crate::{
     jxa::{escape_for_jxa, JxaRunner},
 };
 
+/// JXA: per-tag task counts from two bulk reads, keyed by tag id. The same counts an OmniJS
+/// walk over `flattenedTasks` produced, without materializing every task.
+const TAG_TASK_COUNTS_JXA: &str = r#"const allTasks = Application('OmniFocus').defaultDocument.flattenedTasks;
+const tagIdLists = allTasks.tags.id();
+const completedValues = allTasks.completed();
+const counts = {};
+tagIdLists.forEach((tagIds, index) => {
+  tagIds.forEach(tagId => {
+    const current = counts[tagId] || (counts[tagId] = { availableTaskCount: 0, totalTaskCount: 0 });
+    current.totalTaskCount += 1;
+    if (!completedValues[index]) current.availableTaskCount += 1;
+  });
+});
+return counts;"#;
+
 pub async fn list_tags<R: JxaRunner>(
     runner: &R,
     status_filter: &str,
@@ -40,21 +55,16 @@ pub async fn list_tags<R: JxaRunner>(
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
     let sort_order_value = escape_for_jxa(sort_order);
+    let tag_counts = runner.run_jxa(TAG_TASK_COUNTS_JXA).await?;
+    let selected_tag_counts = serde_json::to_string(&tag_counts)?;
     let script = format!(
-        r#"const statusFilter = {status_filter_value};
+        r#"const selectedTagCounts = {selected_tag_counts};
+const statusFilter = {status_filter_value};
 const sortBy = {sort_by_value};
 const sortOrder = {sort_order_value};
 
 const tagCounts = new Map();
-document.flattenedTasks.forEach(task => {{
-  task.tags.forEach(tag => {{
-    const tagId = tag.id.primaryKey;
-    const current = tagCounts.get(tagId) || {{ availableTaskCount: 0, totalTaskCount: 0 }};
-    current.totalTaskCount += 1;
-    if (!task.completed) current.availableTaskCount += 1;
-    tagCounts.set(tagId, current);
-  }});
-}});
+Object.entries(selectedTagCounts || {{}}).forEach(([tagId, counts]) => tagCounts.set(tagId, counts));
 
 const normalizeTagStatus = (tag) => {{
   const rawStatus = String(tag.status || "").toLowerCase();
