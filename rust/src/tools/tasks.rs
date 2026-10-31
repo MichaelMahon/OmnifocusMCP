@@ -398,7 +398,7 @@ pub async fn get_inbox<R: JxaRunner>(runner: &R, limit: i32) -> Result<Vec<TaskR
 
     let script = format!(
         r#"const tasks = inbox
-  .filter(task => !task.completed)
+  .filter(task => !task.completed && task.taskStatus !== Task.Status.Dropped)
   .slice(0, {limit});
 
 return tasks.map(task => {{
@@ -408,6 +408,8 @@ return tasks.map(task => {{
     name: task.name,
     note: task.note,
     flagged: task.flagged,
+    inInbox: true,
+    projectName: null,
     dueDate: task.dueDate ? task.dueDate.toISOString() : null,
     deferDate: task.deferDate ? task.deferDate.toISOString() : null,
     addedDate: task.added ? task.added.toISOString() : null,

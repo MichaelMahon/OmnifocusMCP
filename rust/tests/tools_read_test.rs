@@ -1053,6 +1053,29 @@ async fn get_inbox_script_includes_completion_and_children_fields() {
 }
 
 #[tokio::test]
+async fn get_inbox_marks_tasks_in_inbox_and_skips_dropped() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([]),
+        last_script: last_script.clone(),
+    };
+
+    get_inbox(&runner, 5).await.expect("inbox should parse");
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    // Without these every inbox task came back inInbox: false (the serde default), and dropped
+    // tasks the app's inbox hides were listed.
+    assert!(script.contains("inInbox: true,"));
+    assert!(script.contains("projectName: null,"));
+    assert!(script.contains(
+        ".filter(task => !task.completed && task.taskStatus !== Task.Status.Dropped)"
+    ));
+}
+
+#[tokio::test]
 async fn plan_c_unknown_alias_values_keep_actionable_errors() {
     let runner = MockRunner { payload: json!([]) };
 
