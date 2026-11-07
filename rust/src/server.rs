@@ -43,11 +43,11 @@ use crate::{
         tags::{create_tag, delete_tag, delete_tags_batch, list_tags, search_tags, update_tag},
         tasks::{
             add_notification, complete_task, create_subtask, create_task, create_tasks_batch,
-            delete_task, delete_tasks_batch, duplicate_task, get_inbox, get_task,
+            delete_task, delete_tasks_batch, drop_task, duplicate_task, get_inbox, get_task,
             get_task_counts_with_planned, list_notifications, list_subtasks,
             list_tasks_with_added_changed, move_task, move_tasks_batch, remove_notification,
-            search_tasks_with_added_changed, set_task_repetition, uncomplete_task, update_task,
-            CreateTaskInput,
+            search_tasks_with_added_changed, set_task_repetition, uncomplete_task, undrop_task,
+            update_task, CreateTaskInput,
         },
         utility::append_to_note as append_to_note_tool,
     },
@@ -162,6 +162,13 @@ struct AddNotificationParams {
     absolute_date: Option<String>,
     #[serde(rename = "relativeOffset", alias = "relative_offset")]
     relative_offset: Option<f64>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct DropTaskParams {
+    task_id: String,
+    #[serde(rename = "allOccurrences", alias = "all_occurrences")]
+    all_occurrences: Option<bool>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -870,6 +877,36 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     }
 
     #[tool(
+        description = "drop a task by id. dropped means intentionally abandoned/not-doing, not completed; for finished work use complete_task. for a repeating task, drops only the current occurrence unless allOccurrences is true, which ends the whole series. fails if the task is completed or already dropped."
+    )]
+    async fn drop_task(
+        &self,
+        Parameters(params): Parameters<DropTaskParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = drop_task(
+            self.runner.as_ref(),
+            &params.task_id,
+            params.all_occurrences.unwrap_or(false),
+        )
+        .await
+        .map_err(to_mcp_write_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(
+        description = "reactivate a dropped task by id (undo drop_task). fails if the task is not currently dropped."
+    )]
+    async fn undrop_task(
+        &self,
+        Parameters(params): Parameters<TaskIdParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = undrop_task(self.runner.as_ref(), &params.task_id)
+            .await
+            .map_err(to_mcp_write_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(
         description = "set or clear a task repetition rule by id. pass rule_string plus schedule_type (regularly/from_completion/none), or null rule_string to clear."
     )]
     async fn set_task_repetition(
@@ -1464,7 +1501,7 @@ impl<R: JxaRunner + Send + Sync + 'static> ServerHandler for OmniFocusServer<R> 
         let _ = &self.runner_dyn;
         ServerInfo {
             instructions: Some(
-                "OmniFocus MCP server exposing tools, resources, and prompts. treat conversations as active omnifocus workflows: ground responses in omnifocus data, engage users with concise clarifying questions when needed, propose concrete next actions, and offer to apply approved changes via tool calls. communicate at business-meaning level first: show object names and context (project/folder/status/counts), and use raw ids only as secondary references. project lifecycle semantics: complete_project is for finished/closed work; set_project_status(\"dropped\") means intentionally abandoned/cancelled; set_project_status(\"on_hold\") means paused. for user-requested changes, preserve existing objects by default and prefer update/move tools; never delete and recreate tasks/projects/folders as a shortcut unless the user explicitly asks for deletion. ask explicit confirmation before destructive operations and report resulting object ids after writes."
+                "OmniFocus MCP server exposing tools, resources, and prompts. treat conversations as active omnifocus workflows: ground responses in omnifocus data, engage users with concise clarifying questions when needed, propose concrete next actions, and offer to apply approved changes via tool calls. communicate at business-meaning level first: show object names and context (project/folder/status/counts), and use raw ids only as secondary references. project lifecycle semantics: complete_project is for finished/closed work; set_project_status(\"dropped\") means intentionally abandoned/cancelled; set_project_status(\"on_hold\") means paused. task lifecycle semantics: complete_task is for finished work; drop_task means intentionally abandoned/not-doing, and undrop_task reverses it. for user-requested changes, preserve existing objects by default and prefer update/move tools; never delete and recreate tasks/projects/folders as a shortcut unless the user explicitly asks for deletion. ask explicit confirmation before destructive operations and report resulting object ids after writes."
                     .to_string(),
             ),
             capabilities: ServerCapabilities::builder()

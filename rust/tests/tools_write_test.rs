@@ -17,8 +17,8 @@ use omnifocus_mcp::{
         tags::{create_tag, delete_tag, delete_tags_batch, update_tag},
         tasks::{
             complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
-            delete_tasks_batch, duplicate_task, move_task, move_tasks_batch, set_task_repetition,
-            uncomplete_task, update_task, CreateTaskInput,
+            delete_tasks_batch, drop_task, duplicate_task, move_task, move_tasks_batch,
+            set_task_repetition, uncomplete_task, undrop_task, update_task, CreateTaskInput,
         },
         utility::append_to_note,
     },
@@ -1996,6 +1996,91 @@ async fn uncomplete_task_script_marks_incomplete_and_checks_completed_state() {
         .expect("one script should be captured");
     assert!(captured.contains("if (!task.completed) {"));
     assert!(captured.contains("task.markIncomplete();"));
+}
+
+#[tokio::test]
+async fn drop_task_script_drops_current_occurrence_by_default_and_checks_state() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "t3", "name": "Abandoned", "dropped": true}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = drop_task(&runner, " t3 ", false).await;
+    assert!(result.is_ok());
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains(&format!("const taskId = {};", escape_for_jxa("t3"))));
+    assert!(captured.contains("const allOccurrences = false;"));
+    assert!(captured.contains("if (task.completed) {"));
+    assert!(captured.contains("if (task.taskStatus === Task.Status.Dropped) {"));
+    assert!(captured.contains("task.drop(allOccurrences);"));
+}
+
+#[tokio::test]
+async fn drop_task_script_passes_all_occurrences() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "t3", "dropped": true}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    drop_task(&runner, "t3", true)
+        .await
+        .expect("drop_task should succeed");
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains("const allOccurrences = true;"));
+}
+
+#[tokio::test]
+async fn drop_and_undrop_task_reject_empty_ids() {
+    let runner = MockRunner {
+        payload: json!({}),
+    };
+
+    assert!(matches!(
+        drop_task(&runner, "  ", false).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        undrop_task(&runner, "").await,
+        Err(OmniFocusError::Validation(_))
+    ));
+}
+
+#[tokio::test]
+async fn undrop_task_script_reactivates_and_checks_dropped_state() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "t3", "name": "Abandoned", "dropped": false}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = undrop_task(&runner, "t3").await;
+    assert!(result.is_ok());
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains("if (task.taskStatus !== Task.Status.Dropped) {"));
+    assert!(captured.contains("task.active = true;"));
 }
 
 #[tokio::test]

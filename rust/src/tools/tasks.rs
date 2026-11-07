@@ -2908,6 +2908,71 @@ return {{
     runner.run_omnijs(&script).await
 }
 
+pub async fn drop_task<R: JxaRunner>(
+    runner: &R,
+    task_id: &str,
+    all_occurrences: bool,
+) -> Result<Value> {
+    if task_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_id must not be empty.".to_string(),
+        ));
+    }
+    let task_id_value = escape_for_jxa(task_id.trim());
+    let script = format!(
+        r#"const taskId = {task_id_value};
+const allOccurrences = {all_occurrences};
+const task = Task.byIdentifier(taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+if (task.completed) {{
+  throw new Error(`Task is completed, not droppable: ${{taskId}}`);
+}}
+if (task.taskStatus === Task.Status.Dropped) {{
+  throw new Error(`Task is already dropped: ${{taskId}}`);
+}}
+
+task.drop(allOccurrences);
+
+return {{
+  id: task.id.primaryKey,
+  name: task.name,
+  dropped: task.taskStatus === Task.Status.Dropped,
+  all_occurrences: allOccurrences
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
+pub async fn undrop_task<R: JxaRunner>(runner: &R, task_id: &str) -> Result<Value> {
+    if task_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_id must not be empty.".to_string(),
+        ));
+    }
+    let task_id_value = escape_for_jxa(task_id.trim());
+    let script = format!(
+        r#"const taskId = {task_id_value};
+const task = Task.byIdentifier(taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+if (task.taskStatus !== Task.Status.Dropped) {{
+  throw new Error(`Task is not dropped: ${{taskId}}`);
+}}
+
+task.active = true;
+
+return {{
+  id: task.id.primaryKey,
+  name: task.name,
+  dropped: task.taskStatus === Task.Status.Dropped
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
 pub async fn append_to_note<R: JxaRunner>(
     runner: &R,
     object_type: &str,
